@@ -15,11 +15,12 @@ CRM SaaS multiempresa para centralizar el ciclo comercial, operativo y financier
 2. Iniciar Docker Desktop.
 3. Ejecutar `docker compose up --build` desde la raíz.
 
-Servicios:
+Servicios expuestos mediante Nginx:
 
 - Aplicación a través de Nginx: `http://localhost`
-- Frontend directo: `http://localhost:4200`
-- Backend directo: `http://localhost:8000/health`
+- Estado del backend: `http://localhost/api/health`
 - Swagger: `http://localhost/docs`
+
+El frontend, backend y PostgreSQL permanecen dentro de la red Docker y no publican sus puertos directamente en Windows.
 
 No se deben subir archivos `.env`, credenciales, `node_modules`, cachés de Python ni datos locales de PostgreSQL.

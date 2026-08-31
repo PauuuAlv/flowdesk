@@ -27,8 +27,8 @@ services:
       JWT_SECRET_KEY: ${JWT_SECRET_KEY:-change-me-in-local-development}
     volumes:
       - ./backend:/app
-    ports:
-      - "8000:8000"
+    expose:
+      - "8000"
     networks:
       - flowdesk_network
     depends_on:
@@ -47,8 +47,8 @@ services:
     volumes:
       - ./frontend/app:/usr/src/app
       - /usr/src/app/node_modules
-    ports:
-      - "4200:4200"
+    expose:
+      - "4200"
     networks:
       - flowdesk_network
     depends_on:
