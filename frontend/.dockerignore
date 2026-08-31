@@ -1,0 +1,7 @@
+app/node_modules
+app/dist
+app/.angular
+app/coverage
+app/.git
+app/.gitignore
+*.log

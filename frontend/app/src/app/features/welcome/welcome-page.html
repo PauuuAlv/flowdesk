@@ -1,0 +1,32 @@
+<main class="welcome">
+  <section class="brand-panel" aria-labelledby="flowdesk-title">
+    <div class="brand"><span class="brand-mark" aria-hidden="true"></span><span>Flowdesk</span></div>
+    <div>
+      <p class="eyebrow">CRM SaaS multiempresa</p>
+      <h1 id="flowdesk-title">Todo el ciclo comercial en un solo lugar.</h1>
+      <p class="description">Base del frontend para gestionar prospectos, oportunidades, cotizaciones y operaciones de cada empresa.</p>
+    </div>
+    <p class="technology">Angular 20 · FastAPI 0.115 · PostgreSQL 16 Alpine</p>
+  </section>
+
+  <section class="status-panel" aria-labelledby="deliverable-title">
+    <div class="status-card">
+      <p class="eyebrow">Primer entregable</p>
+      <h2 id="deliverable-title">Frontend base preparado</h2>
+      <p class="intro">Angular está funcionando y listo para integrarse con el Compose del equipo.</p>
+      <ul class="checklist">
+        <li><span aria-hidden="true">✓</span> Identidad inicial de Flowdesk</li>
+        <li><span aria-hidden="true">✓</span> Angular Router y HttpClient habilitados</li>
+        <li><span aria-hidden="true">✓</span> Proxy de desarrollo hacia FastAPI</li>
+        <li><span aria-hidden="true">✓</span> Dockerfile para desarrollo colaborativo</li>
+      </ul>
+      <div class="api-status" [attr.data-state]="apiState()" role="status" aria-live="polite">
+        <span class="status-dot" aria-hidden="true"></span>
+        <div><strong>Conexión con API</strong><p>{{ apiMessage() }}</p></div>
+      </div>
+      <button type="button" (click)="checkApi()" [disabled]="apiState() === 'checking'">
+        {{ apiState() === 'checking' ? 'Comprobando…' : 'Comprobar backend' }}
+      </button>
+    </div>
+  </section>
+</main>

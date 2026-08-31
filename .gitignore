@@ -1,0 +1,15 @@
+# Archivos temporales de revisión local
+/tmp/
+
+# Variables y secretos locales
+.env
+.env.*
+!.env.example
+
+# Datos locales de bases de datos y contenedores
+/postgres_data/
+/mysql_data/
+
+# Sistema operativo
+.DS_Store
+Thumbs.db

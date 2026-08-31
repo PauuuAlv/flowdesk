@@ -1,0 +1,33 @@
+:root {
+  --flowdesk-bg: #f1f3f5;
+  --flowdesk-surface: #ffffff;
+  --flowdesk-border: #e1e4e9;
+  --flowdesk-ink: #10161c;
+  --flowdesk-muted: #57626f;
+  --flowdesk-navy: #142a38;
+  --flowdesk-navy-light: #26526b;
+  --flowdesk-copper: #9c5309;
+  --flowdesk-success: #2f7d4f;
+  --flowdesk-danger: #b23a2e;
+  font-family: Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  color: var(--flowdesk-ink);
+  background: var(--flowdesk-bg);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  min-width: 320px;
+  min-height: 100vh;
+  background: var(--flowdesk-bg);
+}
+
+button,
+input,
+select,
+textarea {
+  font: inherit;
+}
