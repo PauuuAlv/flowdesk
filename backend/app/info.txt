@@ -1,0 +1,12 @@
+app/
+  api/          → routers por dominio (customers, leads, opportunities...)
+  core/         → config, settings, dependencias globales
+  models/       → SQLAlchemy models
+  schemas/      → Pydantic (request/response)
+  services/     → lógica de negocio
+  repositories/ → acceso a datos
+  security/     → JWT, hashing, permisos, tenant resolution
+  middleware/   → tenant context, logging, error handling
+  workers/      → tareas async
+  tests/
+Regla dura: los routers NO contienen lógica de negocio ni queries directas. Router → Service → Repository.
