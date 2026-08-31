@@ -55,6 +55,21 @@ services:
       backend:
         condition: service_healthy
 
+  nginx:
+    image: nginx:1.27-alpine
+    restart: unless-stopped
+    ports:
+      - "${NGINX_PORT:-80}:80"
+    volumes:
+      - ./nginx/default.conf:/etc/nginx/conf.d/default.conf:ro
+    networks:
+      - flowdesk_network
+    depends_on:
+      backend:
+        condition: service_healthy
+      frontend:
+        condition: service_started
+
 volumes:
   postgres_data:
 
