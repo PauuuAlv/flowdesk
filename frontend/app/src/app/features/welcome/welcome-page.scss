@@ -29,4 +29,7 @@ button { width: 100%; padding: .75rem 1rem; color: #fff; cursor: pointer; backgr
 button:hover:not(:disabled) { background: var(--flowdesk-navy-light); }
 button:focus-visible { outline: 3px solid rgb(38 82 107 / 25%); outline-offset: 2px; }
 button:disabled { cursor: wait; opacity: .7; }
+.register-link { display: block; margin-top: 1rem; color: var(--flowdesk-navy-light); font-size: .9rem; font-weight: 700; text-align: center; text-decoration: none; }
+.register-link:hover { text-decoration: underline; }
+.register-link:focus-visible { outline: 3px solid rgb(38 82 107 / 25%); outline-offset: 3px; }
 @media (max-width: 800px) { .welcome { grid-template-columns: 1fr; } .brand-panel { min-height: 24rem; } }

@@ -1,10 +1,12 @@
 import { Component, inject, signal } from '@angular/core';
+import { RouterLink } from '@angular/router';
 import { ApiHealthService } from '../../core/services/api-health.service';
 
 type ApiState = 'idle' | 'checking' | 'online' | 'offline';
 
 @Component({
   selector: 'app-welcome-page',
+  imports: [RouterLink],
   templateUrl: './welcome-page.html',
   styleUrl: './welcome-page.scss'
 })

@@ -27,6 +27,7 @@
       <button type="button" (click)="checkApi()" [disabled]="apiState() === 'checking'">
         {{ apiState() === 'checking' ? 'Comprobando…' : 'Comprobar backend' }}
       </button>
+      <a class="register-link" routerLink="/registro">Crear una cuenta en Flowdesk</a>
     </div>
   </section>
 </main>
