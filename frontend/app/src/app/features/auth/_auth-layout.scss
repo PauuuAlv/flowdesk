@@ -1,0 +1,44 @@
+:host { display: block; min-height: 100vh; }
+.auth-layout { display: grid; grid-template-columns: minmax(320px, .9fr) minmax(440px, 1.1fr); min-height: 100vh; }
+.brand-panel, .form-panel { padding: clamp(2rem, 5vw, 4.5rem); }
+.brand-panel { position: relative; display: flex; flex-direction: column; justify-content: space-between; overflow: hidden; color: #fff; background: var(--flowdesk-navy); }
+.brand-panel::after { position: absolute; right: -7rem; bottom: 5rem; width: 20rem; height: 20rem; content: ''; border: 1px dashed rgb(183 202 211 / 22%); border-radius: 50%; box-shadow: 0 0 0 4rem rgb(183 202 211 / 3%), 0 0 0 8rem rgb(183 202 211 / 2%); }
+.brand { z-index: 1; display: flex; align-items: center; width: fit-content; color: inherit; font-size: 1.25rem; font-weight: 700; text-decoration: none; }
+.brand-copy { z-index: 1; }
+.eyebrow { margin: 0 0 .65rem; color: var(--flowdesk-copper); font-size: .75rem; font-weight: 750; letter-spacing: .11em; text-transform: uppercase; }
+.brand-panel .eyebrow { color: #d9a064; }
+h1 { max-width: 35rem; margin: 0; font-size: clamp(2.25rem, 4.6vw, 4rem); line-height: 1.06; letter-spacing: -.04em; }
+.description { max-width: 34rem; margin: 1.5rem 0 0; color: #b7cad3; font-size: 1.05rem; line-height: 1.65; }
+.security-note { z-index: 1; margin: 2rem 0 0; color: #91aab6; font-size: .82rem; }
+.form-panel { display: grid; place-items: center; background: var(--flowdesk-bg); }
+.auth-card { width: min(100%, 25rem); padding: clamp(1.5rem, 4vw, 2.75rem); background: var(--flowdesk-surface); border: 1px solid var(--flowdesk-border); border-radius: 1rem; box-shadow: 0 1.5rem 4rem rgb(20 42 56 / 9%); }
+.form-heading { margin-bottom: 1.75rem; }
+h2 { margin: 0; font-size: 1.8rem; letter-spacing: -.025em; }
+.form-heading > p:last-child { margin: .6rem 0 0; color: var(--flowdesk-muted); line-height: 1.5; }
+.field { display: grid; gap: .45rem; margin-bottom: 1rem; }
+label { font-size: .88rem; font-weight: 700; line-height: 1.25; }
+input { width: 100%; padding: .75rem .85rem; color: var(--flowdesk-ink); background: #fff; border: 1px solid #cbd1d8; border-radius: .45rem; outline: none; }
+input:focus { border-color: var(--flowdesk-navy-light); box-shadow: 0 0 0 3px rgb(38 82 107 / 14%); }
+input.ng-touched.ng-invalid { border-color: var(--flowdesk-danger); }
+.password-input { position: relative; }
+.password-input input { padding-right: 2.75rem; }
+.password-toggle { position: absolute; top: 50%; right: .35rem; width: 2rem; height: 2rem; padding: .35rem; margin: 0; color: var(--flowdesk-muted); background: transparent; border-radius: .3rem; transform: translateY(-50%); }
+.password-toggle svg { width: 100%; height: 100%; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+.password-toggle.is-visible .eye-slash { display: none; }
+.password-toggle.is-visible { color: var(--flowdesk-navy-light); background: rgb(38 82 107 / 8%); }
+.password-toggle:hover:not(:disabled) { background: rgb(38 82 107 / 8%); }
+small { color: var(--flowdesk-danger); font-size: .76rem; }
+.message { padding: .85rem 1rem; margin-bottom: 1rem; border: 1px solid; border-radius: .5rem; font-size: .88rem; }
+.message.error { color: #842b22; background: #fff1ef; border-color: #efb8b1; }
+.message.success { color: #235e3c; background: #edf8f0; border-color: #b8ddc4; }
+button { width: 100%; padding: .82rem 1rem; margin-top: .35rem; color: #fff; cursor: pointer; background: var(--flowdesk-navy); border: 0; border-radius: .45rem; font-weight: 700; }
+button:hover:not(:disabled) { background: var(--flowdesk-navy-light); }
+button:focus-visible, a:focus-visible { outline: 3px solid rgb(38 82 107 / 25%); outline-offset: 2px; }
+button:disabled { cursor: wait; opacity: .7; }
+.form-options, .auth-link { color: var(--flowdesk-muted); font-size: .86rem; }
+.form-options { display: flex; justify-content: flex-end; margin: -.25rem 0 1rem; }
+.auth-link { margin: 1.25rem 0 0; text-align: center; }
+.form-options a, .auth-link a { color: var(--flowdesk-navy-light); font-weight: 700; text-decoration: none; }
+.form-options a:hover, .auth-link a:hover { text-decoration: underline; }
+@media (max-width: 900px) { .auth-layout { grid-template-columns: 1fr; } .brand-panel { min-height: 22rem; } }
+@media (max-width: 580px) { .brand-panel, .form-panel { padding: 1.5rem; } .brand-panel { min-height: 19rem; } h1 { font-size: 2.25rem; } }
