@@ -5,15 +5,15 @@ services:
     image: postgres:16-alpine
     restart: unless-stopped
     environment:
-      POSTGRES_DB: ${POSTGRES_DB:-flowdesk}
-      POSTGRES_USER: ${POSTGRES_USER:-flowdesk}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-flowdesk-local-password}
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
     volumes:
       - postgres_data:/var/lib/postgresql/data
     networks:
       - flowdesk_network
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-flowdesk} -d ${POSTGRES_DB:-flowdesk}"]
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
       interval: 5s
       timeout: 3s
       retries: 20
@@ -23,8 +23,8 @@ services:
       context: ./backend
     restart: unless-stopped
     environment:
-      SQLALCHEMY_DATABASE_URL: postgresql+psycopg://${POSTGRES_USER:-flowdesk}:${POSTGRES_PASSWORD:-flowdesk-local-password}@postgres:5432/${POSTGRES_DB:-flowdesk}
-      JWT_SECRET_KEY: ${JWT_SECRET_KEY:-change-me-in-local-development}
+      SQLALCHEMY_DATABASE_URL: postgresql+psycopg://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
+      JWT_SECRET_KEY: ${JWT_SECRET_KEY}
     volumes:
       - ./backend:/app
     expose:
