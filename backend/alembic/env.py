@@ -13,9 +13,11 @@ from app.core.config import settings
 from app.models.base import Base
 # A medida que crees modelos nuevos (User, Tenant, etc.), impórtalos aquí también,
 # aunque no los uses directamente, para que Alembic los detecte en autogenerate:
-# from app.models.user import User
-# from app.models.tenant import Tenant
-
+from app.models.user import User
+from app.models.tenant import Tenant
+from app.models.platform_admin import PlatformAdmin
+from app.models.password_reset_token import PasswordResetToken
+ 
  
 config = context.config
  

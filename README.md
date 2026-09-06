@@ -24,3 +24,7 @@ Servicios expuestos mediante Nginx:
 El frontend, backend y PostgreSQL permanecen dentro de la red Docker y no publican sus puertos directamente en Windows.
 
 No se deben subir archivos `.env`, credenciales, `node_modules`, cachés de Python ni datos locales de PostgreSQL.
+
+
+## Documentacion
+- [Endpoints de Auth](docs/api/auth-endpoints.md)

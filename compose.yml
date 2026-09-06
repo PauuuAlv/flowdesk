@@ -22,6 +22,8 @@ services:
     build:
       context: ./backend
     restart: unless-stopped
+    env_file:
+      - .env
     environment:
       SQLALCHEMY_DATABASE_URL: postgresql+psycopg://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
       JWT_SECRET_KEY: ${JWT_SECRET_KEY}

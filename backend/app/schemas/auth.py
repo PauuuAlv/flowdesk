@@ -27,13 +27,6 @@ class RegisterRequest(BaseModel):
     (recuerda: el modelo de negocio es 100% por invitación)."""
     token: str
     password: str = Field(min_length=8)
-     #Agregar validación de fuerza de password aquí
-    """
-    @field_validator("password")
-        @classmethod
-        def check_password_strength(cls, v: str) -> str:
-            return validate_password_strength(v)
-    """
 
 class ForgotPasswordRequest(BaseModel):
     email: EmailStr
@@ -41,15 +34,7 @@ class ForgotPasswordRequest(BaseModel):
 
 class ResetPasswordRequest(BaseModel):
     token: str
-   
     new_password: str = Field(min_length=8)
-     #Agregar validación de fuerza de password aquí
-    """
-    @field_validator("password")
-        @classmethod
-        def check_password_strength(cls, v: str) -> str:
-            return validate_password_strength(v)
-    """
 
 
 class MessageResponse(BaseModel):
