@@ -14,6 +14,18 @@ class Settings(BaseSettings):
     JWT_ACCESS_TOKEN_EXPIRE_MINUTES: int = 30
     JWT_REFRESH_TOKEN_EXPIRE_DAYS: int = 7
 
+    # Seed del PlatformAdmin inicial (ver app/scripts/seed_superadmin.py).
+    # OBLIGATORIO definirlas en .env antes de correr el seed — nunca
+    # hardcodear una contraseña por defecto aquí.
+    SUPERADMIN_EMAIL: str
+    SUPERADMIN_PASSWORD: str
+
+    # Base del link que se manda en invitaciones y reset de password.
+    # En dev es el nginx local; en prod será el dominio real.
+    FRONTEND_URL: str = "http://localhost"
+    INVITATION_TOKEN_EXPIRE_DAYS: int = 7
+    RESET_PASSWORD_TOKEN_EXPIRE_HOURS: int = 2
+
     class Config:
         env_file = ".env"
         extra = "ignore"
