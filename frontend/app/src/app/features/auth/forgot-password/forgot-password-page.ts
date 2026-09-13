@@ -31,9 +31,11 @@ export class ForgotPasswordPage {
 
     this.submitting.set(true);
     this.authService.forgotPassword(this.forgotPasswordForm.getRawValue()).subscribe({
-      next: (response) => {
+      next: () => {
         this.submitting.set(false);
-        this.successMessage.set(response.message || 'Si el correo está registrado, recibirás instrucciones para continuar.');
+        this.successMessage.set(
+          'Si el correo está registrado, recibirás instrucciones para continuar.'
+        );
       },
       error: (error: HttpErrorResponse) => {
         this.submitting.set(false);
@@ -43,7 +45,6 @@ export class ForgotPasswordPage {
   }
 
   private getErrorMessage(error: HttpErrorResponse): string {
-    if (typeof error.error?.detail === 'string') return error.error.detail;
     if (error.status === 0) return 'No fue posible conectar con el servidor. Intenta nuevamente más tarde.';
     return 'No fue posible procesar la solicitud. Intenta nuevamente.';
   }

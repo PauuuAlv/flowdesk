@@ -5,6 +5,7 @@ import { TestBed } from '@angular/core/testing';
 import {
   ForgotPasswordRequest,
   LoginRequest,
+  RefreshRequest,
   RegisterRequest,
   ResetPasswordRequest
 } from '../models/auth.models';
@@ -27,29 +28,21 @@ describe('AuthService', () => {
 
   it('should send the register contract to the API', () => {
     const requestBody: RegisterRequest = {
-      name: 'Paulina Alvarado',
-      company_name: 'ArmSystem',
-      email: 'palvaradocamacho@gmail.com',
+      token: 'invitation-token',
       password: 'Contraseña123!'
     };
 
     service.register(requestBody).subscribe((response) => {
-      expect(response.message).toBe('Usuario creado correctamente');
+      expect(response.token_type).toBe('bearer');
     });
 
     const request = httpController.expectOne('/api/auth/register');
     expect(request.request.method).toBe('POST');
     expect(request.request.body).toEqual(requestBody);
     request.flush({
-      message: 'Usuario creado correctamente',
-      user: {
-        id: 1,
-        name: requestBody.name,
-        email: requestBody.email,
-        is_active: true,
-        roles: ['owner']
-      },
-      tenant: { id: 1, name: requestBody.company_name }
+      access_token: 'access-token',
+      refresh_token: 'refresh-token',
+      token_type: 'bearer'
     });
   });
 
@@ -61,8 +54,6 @@ describe('AuthService', () => {
 
     service.login(requestBody).subscribe((response) => {
       expect(response.token_type).toBe('bearer');
-      expect(response.expires_in).toBe(1800);
-      expect(response.user.tenant_id).toBe(1);
     });
 
     const request = httpController.expectOne('/api/auth/login');
@@ -71,16 +62,108 @@ describe('AuthService', () => {
     request.flush({
       access_token: 'access-token',
       refresh_token: 'refresh-token',
-      token_type: 'bearer',
-      expires_in: 1800,
-      user: {
-        id: 1,
-        name: 'Paulina Alvarado',
-        email: requestBody.email,
-        tenant_id: 1,
-        roles: ['owner'],
-        permissions: []
-      }
+      token_type: 'bearer'
+    });
+  });
+
+  it('should request a new access token with the refresh token', () => {
+    const requestBody: RefreshRequest = { refresh_token: 'refresh-token' };
+
+    service.refresh(requestBody).subscribe((response) => {
+      expect(response.access_token).toBe('new-access-token');
+    });
+
+    const request = httpController.expectOne('/api/auth/refresh');
+    expect(request.request.method).toBe('POST');
+    expect(request.request.body).toEqual(requestBody);
+    request.flush({
+      access_token: 'new-access-token',
+      refresh_token: 'refresh-token',
+      token_type: 'bearer'
+    });
+  });
+
+  it('should request the current user profile', () => {
+    service.me().subscribe((response) => {
+      expect(response.tenant_id).toBe('tenant-uuid');
+      expect(response.role).toBe('admin');
+    });
+
+    const request = httpController.expectOne('/api/auth/me');
+    expect(request.request.method).toBe('GET');
+    request.flush({
+      id: 'user-uuid',
+      tenant_id: 'tenant-uuid',
+      email: 'paulina@empresa.com',
+      full_name: 'Paulina Alvarado',
+      role: 'admin',
+      status: 'active'
+    });
+  });
+
+  it('should use the separate platform administrator login endpoint', () => {
+    const requestBody = {
+      email: 'superadmin@flowdesk.com',
+      password: 'secure-password'
+    };
+
+    service.platformAdminLogin(requestBody).subscribe((response) => {
+      expect(response.token_type).toBe('bearer');
+    });
+
+    const request = httpController.expectOne('/api/platform-admin/auth/login');
+    expect(request.request.method).toBe('POST');
+    expect(request.request.body).toEqual(requestBody);
+    request.flush({ access_token: 'platform-access-token', token_type: 'bearer' });
+  });
+
+  it('should create a tenant with its first invited administrator', () => {
+    const requestBody = {
+      name: 'Empresa de prueba',
+      slug: 'empresa-prueba',
+      admin_email: 'admin@example.com',
+      admin_full_name: 'Admin de prueba'
+    };
+
+    service.createTenant(requestBody).subscribe((response) => {
+      expect(response.tenant_slug).toBe(requestBody.slug);
+      expect(response.dev_invitation_link).toContain('token=');
+    });
+
+    const request = httpController.expectOne('/api/platform-admin/tenants');
+    expect(request.request.method).toBe('POST');
+    expect(request.request.body).toEqual(requestBody);
+    request.flush({
+      tenant_id: 'tenant-id',
+      tenant_name: requestBody.name,
+      tenant_slug: requestBody.slug,
+      admin_user_id: 'user-id',
+      admin_email: requestBody.admin_email,
+      dev_invitation_link: 'http://localhost/accept-invite?token=test-token'
+    });
+  });
+
+  it('should invite a user without sending a tenant id', () => {
+    const requestBody = {
+      full_name: 'Daniel Ramírez',
+      email: 'daniel@example.com',
+      role: 'member' as const
+    };
+
+    service.inviteUser(requestBody).subscribe((response) => {
+      expect(response.role).toBe('member');
+      expect(response.dev_invitation_link).toContain('token=');
+    });
+
+    const request = httpController.expectOne('/api/users/invite');
+    expect(request.request.method).toBe('POST');
+    expect(request.request.body).toEqual(requestBody);
+    expect(request.request.body.tenant_id).toBeUndefined();
+    request.flush({
+      user_id: 'user-id',
+      email: requestBody.email,
+      role: requestBody.role,
+      dev_invitation_link: 'http://localhost/accept-invite?token=user-token'
     });
   });
 

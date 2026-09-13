@@ -1,8 +1,1 @@
 @use '../auth-layout';
-
-.auth-card--wide { width: min(100%, 42rem); }
-.field-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
-
-@media (max-width: 580px) {
-  .field-grid { grid-template-columns: 1fr; gap: 0; }
-}

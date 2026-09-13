@@ -1,0 +1,22 @@
+<main class="dashboard-shell">
+  <header>
+    <a href="/" class="brand">Flowdesk</a>
+    <button type="button" (click)="logout()">Cerrar sesión</button>
+  </header>
+
+  <section class="welcome-card">
+    <p class="eyebrow">Sesión protegida</p>
+    <h1>Bienvenido{{ user?.full_name ? ', ' + user?.full_name : '' }}</h1>
+    <p>Tu cuenta está autenticada y vinculada correctamente con tu empresa.</p>
+
+    <dl>
+      <div><dt>Correo</dt><dd>{{ user?.email }}</dd></div>
+      <div><dt>Rol</dt><dd>{{ user?.role }}</dd></div>
+      <div><dt>Estado</dt><dd>{{ user?.status }}</dd></div>
+    </dl>
+
+    @if (user?.role === 'admin') {
+      <a class="primary-link" routerLink="/panel/usuarios/invitar">Invitar usuarios de mi empresa</a>
+    }
+  </section>
+</main>

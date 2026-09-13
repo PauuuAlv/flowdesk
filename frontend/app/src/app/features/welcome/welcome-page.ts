@@ -18,7 +18,7 @@ export class WelcomePage {
 
   protected checkApi(): void {
     this.apiState.set('checking');
-    this.apiMessage.set('Consultando /api/health...');
+    this.apiMessage.set('Consultando /health...');
 
     this.apiHealth.check().subscribe({
       next: (response) => {

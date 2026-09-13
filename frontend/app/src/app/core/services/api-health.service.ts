@@ -13,6 +13,6 @@ export class ApiHealthService {
   private readonly http = inject(HttpClient);
 
   check(): Observable<ApiHealthResponse> {
-    return this.http.get<ApiHealthResponse>('/api/health');
+    return this.http.get<ApiHealthResponse>('/health');
   }
 }

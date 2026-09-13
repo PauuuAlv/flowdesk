@@ -1,0 +1,67 @@
+<main class="admin-shell">
+  <header>
+    <strong>Flowdesk</strong>
+    <span>Administración de plataforma</span>
+    <button class="secondary-button" type="button" (click)="logout()">Cerrar sesión</button>
+  </header>
+
+  <div class="content">
+    <section class="intro" aria-labelledby="admin-title">
+      <p class="eyebrow">Empresas clientes</p>
+      <h1 id="admin-title">Crear nueva empresa</h1>
+      <p>Registra un tenant y genera la invitación para su primer administrador.</p>
+    </section>
+
+    <section class="form-card" aria-labelledby="tenant-form-title">
+      <form [formGroup]="tenantForm" (ngSubmit)="submit()" novalidate>
+        <div class="form-heading">
+          <h2 id="tenant-form-title">Datos de la empresa</h2>
+          <p>Todos los campos son obligatorios.</p>
+        </div>
+
+        @if (errorMessage()) { <div class="message error" role="alert">{{ errorMessage() }}</div> }
+
+        <div class="field-grid">
+          <div class="field">
+            <label for="tenant-name">Nombre de la empresa</label>
+            <input id="tenant-name" type="text" formControlName="name" placeholder="Ej: Comercializadora del Norte" autocomplete="organization" (blur)="generateSlug()" />
+            @if (tenantForm.controls.name.touched && tenantForm.controls.name.invalid) { <small>Ingresa el nombre de la empresa.</small> }
+          </div>
+          <div class="field">
+            <label for="tenant-slug">Identificador</label>
+            <input id="tenant-slug" type="text" formControlName="slug" placeholder="Ej: comercializadora-norte" autocapitalize="none" />
+            @if (tenantForm.controls.slug.touched && tenantForm.controls.slug.invalid) { <small>Usa letras minúsculas, números y guiones.</small> }
+          </div>
+          <div class="field">
+            <label for="admin-name">Nombre del administrador</label>
+            <input id="admin-name" type="text" formControlName="admin_full_name" placeholder="Ej: Paulina Alvarado" autocomplete="name" />
+            @if (tenantForm.controls.admin_full_name.touched && tenantForm.controls.admin_full_name.invalid) { <small>Ingresa el nombre del administrador.</small> }
+          </div>
+          <div class="field">
+            <label for="admin-email">Correo del administrador</label>
+            <input id="admin-email" type="email" formControlName="admin_email" placeholder="Ej: admin@empresa.com" autocomplete="email" />
+            @if (tenantForm.controls.admin_email.touched && tenantForm.controls.admin_email.invalid) { <small>Ingresa un correo electrónico válido.</small> }
+          </div>
+        </div>
+
+        <button class="primary-button" type="submit" [disabled]="submitting()">
+          {{ submitting() ? 'Creando empresa…' : 'Crear empresa y generar invitación' }}
+        </button>
+      </form>
+
+      @if (createdTenant(); as tenant) {
+        <div class="result" role="status">
+          <p class="result-label">Empresa creada correctamente</p>
+          <h3>{{ tenant.tenant_name }}</h3>
+          <p>Invitación para <strong>{{ tenant.admin_email }}</strong></p>
+          <label for="invitation-link">Enlace de invitación de desarrollo</label>
+          <div class="invitation-row">
+            <input id="invitation-link" type="text" readonly [value]="tenant.dev_invitation_link" />
+            <button class="copy-button" type="button" (click)="copyInvitation()">{{ copied() ? 'Copiado' : 'Copiar' }}</button>
+          </div>
+          <small class="dev-note">Este enlace contiene un token personal. Compártelo únicamente con el administrador invitado.</small>
+        </div>
+      }
+    </section>
+  </div>
+</main>

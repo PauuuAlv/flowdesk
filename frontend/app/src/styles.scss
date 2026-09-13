@@ -31,3 +31,31 @@ select,
 textarea {
   font: inherit;
 }
+
+.password-rules {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: .3rem .8rem;
+  padding: 0;
+  margin: .2rem 0 0;
+  color: var(--flowdesk-muted);
+  font-size: .74rem;
+  list-style: none;
+}
+
+.password-rules li::before {
+  margin-right: .35rem;
+  content: '○';
+}
+
+.password-rules li.valid {
+  color: var(--flowdesk-success);
+}
+
+.password-rules li.valid::before {
+  content: '✓';
+}
+
+@media (max-width: 420px) {
+  .password-rules { grid-template-columns: 1fr; }
+}

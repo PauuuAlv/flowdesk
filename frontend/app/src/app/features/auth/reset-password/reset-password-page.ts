@@ -4,6 +4,10 @@ import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 
 import { AuthService } from '../../../core/services/auth.service';
+import {
+  getPasswordChecks,
+  strongPasswordValidator
+} from '../../../core/validators/password.validator';
 
 @Component({
   selector: 'app-reset-password-page',
@@ -22,13 +26,17 @@ export class ResetPasswordPage {
   protected readonly showPasswordConfirmation = signal(false);
   protected readonly token = this.route.snapshot.queryParamMap.get('token') ?? '';
   protected readonly resetPasswordForm = this.formBuilder.nonNullable.group({
-    new_password: ['', [Validators.required, Validators.minLength(8)]],
+    new_password: ['', [Validators.required, strongPasswordValidator]],
     password_confirmation: ['', Validators.required]
   });
 
   protected passwordsDoNotMatch(): boolean {
     const { new_password, password_confirmation } = this.resetPasswordForm.getRawValue();
     return password_confirmation.length > 0 && new_password !== password_confirmation;
+  }
+
+  protected passwordChecks() {
+    return getPasswordChecks(this.resetPasswordForm.controls.new_password.value);
   }
 
   protected togglePasswordVisibility(): void {
@@ -59,9 +67,9 @@ export class ResetPasswordPage {
 
     this.submitting.set(true);
     this.authService.resetPassword({ token: this.token, new_password }).subscribe({
-      next: (response) => {
+      next: () => {
         this.submitting.set(false);
-        this.successMessage.set(response.message || 'La contraseña fue actualizada correctamente.');
+        this.successMessage.set('La contraseña fue actualizada correctamente.');
         this.resetPasswordForm.reset();
       },
       error: (error: HttpErrorResponse) => {
@@ -72,7 +80,6 @@ export class ResetPasswordPage {
   }
 
   private getErrorMessage(error: HttpErrorResponse): string {
-    if (typeof error.error?.detail === 'string') return error.error.detail;
     if (error.status === 0) return 'No fue posible conectar con el servidor. Intenta nuevamente más tarde.';
     return 'El enlace es inválido o venció. Solicita uno nuevo e intenta nuevamente.';
   }
