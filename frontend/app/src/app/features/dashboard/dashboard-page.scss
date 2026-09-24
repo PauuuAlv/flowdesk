@@ -1,9 +1,6 @@
-:host { display: block; min-height: 100vh; background: var(--flowdesk-bg); }
-.dashboard-shell { max-width: 72rem; padding: 2rem; margin: auto; }
-header { display: flex; align-items: center; justify-content: space-between; }
-.brand { color: var(--flowdesk-navy); font-size: 1.35rem; font-weight: 800; text-decoration: none; }
-button { padding: .65rem 1rem; color: #fff; cursor: pointer; background: var(--flowdesk-navy); border: 0; border-radius: .45rem; font-weight: 700; }
-.welcome-card { max-width: 44rem; padding: clamp(1.5rem, 5vw, 3rem); margin-top: 5rem; background: #fff; border: 1px solid var(--flowdesk-border); border-radius: 1rem; box-shadow: 0 1.5rem 4rem rgb(20 42 56 / 9%); }
+:host { display: block; }
+.dashboard-page { max-width: 68rem; margin: 0 auto; }
+.welcome-card { max-width: 48rem; padding: clamp(1.5rem, 5vw, 3rem); background: #fff; border: 1px solid var(--flowdesk-border); border-radius: 1rem; box-shadow: 0 1.5rem 4rem rgb(20 42 56 / 9%); }
 .eyebrow { margin: 0 0 .65rem; color: var(--flowdesk-copper); font-size: .75rem; font-weight: 750; letter-spacing: .11em; text-transform: uppercase; }
 h1 { margin: 0; color: var(--flowdesk-navy); font-size: clamp(2rem, 5vw, 3rem); }
 .welcome-card > p:not(.eyebrow) { color: var(--flowdesk-muted); line-height: 1.6; }

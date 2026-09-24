@@ -1,6 +1,6 @@
 import { Routes } from '@angular/router';
 
-import { adminGuard, authGuard, platformAdminGuard } from './core/guards/auth.guard';
+import { authGuard, inviteUsersGuard, platformAdminGuard } from './core/guards/auth.guard';
 
 export const routes: Routes = [
   {
@@ -41,16 +41,29 @@ export const routes: Routes = [
       )
   },
   {
-    path: 'panel/usuarios/invitar',
-    canActivate: [authGuard, adminGuard],
-    loadComponent: () =>
-      import('./features/users/invite-user-page').then((component) => component.InviteUserPage)
-  },
-  {
     path: 'panel',
     canActivate: [authGuard],
     loadComponent: () =>
-      import('./features/dashboard/dashboard-page').then((component) => component.DashboardPage)
+      import('./layout/tenant-shell/tenant-shell').then((component) => component.TenantShell),
+    children: [
+      {
+        path: '',
+        pathMatch: 'full',
+        loadComponent: () =>
+          import('./features/dashboard/dashboard-page').then((component) => component.DashboardPage)
+      },
+      {
+        path: 'usuarios/invitar',
+        canActivate: [inviteUsersGuard],
+        loadComponent: () =>
+          import('./features/users/invite-user-page').then((component) => component.InviteUserPage)
+      },
+      {
+        path: 'perfil',
+        loadComponent: () =>
+          import('./features/profile/profile-page').then((component) => component.ProfilePage)
+      }
+    ]
   },
   {
     path: 'administracion-flowdesk/iniciar-sesion',

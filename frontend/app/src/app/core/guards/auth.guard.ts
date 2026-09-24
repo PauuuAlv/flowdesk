@@ -4,6 +4,7 @@ import { catchError, map, of, tap } from 'rxjs';
 
 import { AuthService } from '../services/auth.service';
 import { SessionService } from '../services/session.service';
+import { PERMISSIONS } from '../models/permission.models';
 
 export const authGuard: CanActivateFn = (_route, state) => {
   const authService = inject(AuthService);
@@ -37,11 +38,12 @@ export const platformAdminGuard: CanActivateFn = () => {
     : router.createUrlTree(['/administracion-flowdesk/iniciar-sesion']);
 };
 
-export const adminGuard: CanActivateFn = () => {
+export const inviteUsersGuard: CanActivateFn = () => {
   const sessionService = inject(SessionService);
   const router = inject(Router);
+  const user = sessionService.getUser();
 
-  return sessionService.getUser()?.role === 'admin'
+  return user?.role === 'admin' || user?.permissions?.includes(PERMISSIONS.usersInvite)
     ? true
     : router.createUrlTree(['/panel']);
 };

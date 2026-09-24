@@ -1,0 +1,28 @@
+<main class="profile-page">
+  <header>
+    <p class="eyebrow">Cuenta</p>
+    <h1>Mi perfil</h1>
+    <p>Consulta la información asociada con tu sesión.</p>
+  </header>
+
+  <section class="profile-card" aria-labelledby="personal-title">
+    <div>
+      <h2 id="personal-title">Información personal</h2>
+      <p>Los cambios se habilitarán cuando esté disponible la API de actualización de perfil.</p>
+    </div>
+    <dl>
+      <div><dt>Nombre</dt><dd>{{ user?.full_name || 'Sin nombre registrado' }}</dd></div>
+      <div><dt>Correo</dt><dd>{{ user?.email }}</dd></div>
+      <div><dt>Rol</dt><dd>{{ user?.role }}</dd></div>
+      <div><dt>Empresa</dt><dd>{{ user?.tenant_name || 'Mi empresa' }}</dd></div>
+    </dl>
+  </section>
+
+  <section class="security-card" id="seguridad" aria-labelledby="security-title">
+    <div>
+      <h2 id="security-title">Seguridad</h2>
+      <p>El cambio de contraseña desde una sesión iniciada requiere un endpoint protegido.</p>
+    </div>
+    <button type="button" disabled>Cambiar contraseña</button>
+  </section>
+</main>

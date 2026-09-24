@@ -1,14 +1,13 @@
 import { HttpErrorResponse } from '@angular/common/http';
 import { Component, inject, signal } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
-import { RouterLink } from '@angular/router';
 
 import { InviteUserResponse } from '../../core/models/auth.models';
 import { AuthService } from '../../core/services/auth.service';
 
 @Component({
   selector: 'app-invite-user-page',
-  imports: [ReactiveFormsModule, RouterLink],
+  imports: [ReactiveFormsModule],
   templateUrl: './invite-user-page.html',
   styleUrl: './invite-user-page.scss'
 })

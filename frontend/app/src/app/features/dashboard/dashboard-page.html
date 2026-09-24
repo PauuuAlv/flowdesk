@@ -1,18 +1,13 @@
-<main class="dashboard-shell">
-  <header>
-    <a href="/" class="brand">Flowdesk</a>
-    <button type="button" (click)="logout()">Cerrar sesión</button>
-  </header>
-
-  <section class="welcome-card">
+<main class="dashboard-page">
+  <section class="welcome-card" aria-labelledby="dashboard-title">
     <p class="eyebrow">Sesión protegida</p>
-    <h1>Bienvenido{{ user?.full_name ? ', ' + user?.full_name : '' }}</h1>
-    <p>Tu cuenta está autenticada y vinculada correctamente con tu empresa.</p>
+    <h1 id="dashboard-title">Bienvenido{{ user?.full_name ? ', ' + user?.full_name : '' }}</h1>
+    <p>Este es el inicio de tu espacio de trabajo en Flowdesk.</p>
 
     <dl>
       <div><dt>Correo</dt><dd>{{ user?.email }}</dd></div>
+      <div><dt>Empresa</dt><dd>{{ user?.tenant_name || 'Mi empresa' }}</dd></div>
       <div><dt>Rol</dt><dd>{{ user?.role }}</dd></div>
-      <div><dt>Estado</dt><dd>{{ user?.status }}</dd></div>
     </dl>
 
     @if (user?.role === 'admin') {

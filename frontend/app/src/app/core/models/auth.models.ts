@@ -21,9 +21,12 @@ export interface RefreshRequest {
 export interface UserMeResponse {
   id: string;
   tenant_id: string;
+  tenant_name?: string;
   email: string;
   full_name: string | null;
   role: string;
+  roles?: string[];
+  permissions?: PermissionCode[];
   status: string;
 }
 
@@ -84,3 +87,4 @@ export interface ResetPasswordRequest {
 export interface ResetPasswordResponse {
   message: string;
 }
+import { PermissionCode } from './permission.models';

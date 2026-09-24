@@ -1,10 +1,5 @@
-:host { display: block; min-height: 100vh; background: var(--flowdesk-bg); }
-.page-shell { min-height: 100vh; }
-header { display: flex; align-items: center; justify-content: space-between; padding: 1.25rem clamp(1.5rem, 5vw, 4.5rem); background: var(--flowdesk-navy); }
-.brand, .back-link { color: #fff; font-weight: 700; text-decoration: none; }
-.brand { font-size: 1.35rem; }
-.back-link { color: #d6e0e5; font-size: .86rem; }
-.content { max-width: 68rem; padding: clamp(2rem, 5vw, 4rem); margin: auto; }
+:host { display: block; }
+.content { max-width: 68rem; margin: auto; }
 .intro { margin-bottom: 2rem; }
 .eyebrow, .result-label { margin: 0 0 .6rem; color: var(--flowdesk-copper); font-size: .75rem; font-weight: 750; letter-spacing: .1em; text-transform: uppercase; }
 h1 { margin: 0; color: var(--flowdesk-navy); font-size: clamp(2.1rem, 5vw, 3.4rem); letter-spacing: -.035em; }
@@ -34,4 +29,4 @@ button:disabled { cursor: wait; opacity: .7; }
 .copy-button { padding: .7rem 1rem; color: #fff; background: var(--flowdesk-navy-light); }
 .dev-note { display: block; margin-top: .7rem; color: var(--flowdesk-muted); line-height: 1.4; }
 @media (max-width: 760px) { .card { grid-template-columns: 1fr; } }
-@media (max-width: 480px) { .content { padding: 1.5rem; } .invitation-row { grid-template-columns: 1fr; } }
+@media (max-width: 480px) { .invitation-row { grid-template-columns: 1fr; } }

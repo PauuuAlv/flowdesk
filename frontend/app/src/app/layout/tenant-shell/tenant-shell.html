@@ -1,0 +1,82 @@
+<div class="app-shell">
+  <aside class="sidebar" [class.is-open]="sidebarOpen()" aria-label="Navegación principal">
+    <div class="sidebar-heading">
+      <a class="brand" routerLink="/panel" (click)="closeSidebar()">Flowdesk</a>
+      <button class="sidebar-close" type="button" (click)="closeSidebar()" aria-label="Cerrar menú">×</button>
+    </div>
+
+    <nav>
+      <p class="nav-label">Espacio de trabajo</p>
+      <a routerLink="/panel" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }" (click)="closeSidebar()">
+        <span class="nav-icon" aria-hidden="true">⌂</span>
+        Inicio
+      </a>
+      @if (canManageUsers) {
+        <a routerLink="/panel/usuarios/invitar" routerLinkActive="active" (click)="closeSidebar()">
+          <span class="nav-icon" aria-hidden="true">＋</span>
+          Invitar usuario
+        </a>
+      }
+
+      <p class="nav-label modules-label">Módulos</p>
+      <span class="nav-item pending" title="Se habilitará en una siguiente etapa">
+        <span class="nav-icon" aria-hidden="true">◎</span>
+        Clientes
+        <small>Próximamente</small>
+      </span>
+      <span class="nav-item pending" title="Se habilitará en una siguiente etapa">
+        <span class="nav-icon" aria-hidden="true">◇</span>
+        Roles y permisos
+        <small>Próximamente</small>
+      </span>
+    </nav>
+
+    <div class="sidebar-footer">
+      <span>Empresa activa</span>
+      <strong>{{ companyName }}</strong>
+    </div>
+  </aside>
+
+  @if (sidebarOpen()) {
+    <button class="backdrop" type="button" (click)="closeSidebar()" aria-label="Cerrar menú"></button>
+  }
+
+  <section class="workspace">
+    <header class="topbar">
+      <div class="topbar-company">
+        <button class="menu-button" type="button" (click)="toggleSidebar()" aria-label="Abrir menú" [attr.aria-expanded]="sidebarOpen()">☰</button>
+        <div>
+          <span>Empresa</span>
+          <strong>{{ companyName }}</strong>
+        </div>
+      </div>
+
+      <div class="profile-area">
+        <button class="profile-trigger" type="button" (click)="toggleProfile()" [attr.aria-expanded]="profileOpen()" aria-haspopup="menu">
+          <span class="avatar" aria-hidden="true">{{ initials }}</span>
+          <span class="profile-copy">
+            <strong>{{ user?.full_name || 'Usuario' }}</strong>
+            <small>{{ user?.role || 'Sin rol' }}</small>
+          </span>
+          <span class="chevron" aria-hidden="true">⌄</span>
+        </button>
+
+        @if (profileOpen()) {
+          <div class="profile-menu" role="menu">
+            <div class="profile-summary">
+              <strong>{{ user?.full_name || 'Usuario' }}</strong>
+              <span>{{ user?.email }}</span>
+            </div>
+            <a role="menuitem" routerLink="/panel/perfil" (click)="closeProfile()">Mi perfil</a>
+            <a role="menuitem" routerLink="/panel/perfil" fragment="seguridad" (click)="closeProfile()">Cambiar contraseña</a>
+            <button role="menuitem" type="button" (click)="logout()">Cerrar sesión</button>
+          </div>
+        }
+      </div>
+    </header>
+
+    <main class="page-content" (click)="closeProfile()">
+      <router-outlet />
+    </main>
+  </section>
+</div>
