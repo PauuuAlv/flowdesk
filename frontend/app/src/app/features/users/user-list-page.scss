@@ -1,0 +1,215 @@
+:host {
+  display: block;
+}
+.module-page {
+  max-width: 74rem;
+  margin: 0 auto;
+}
+.page-heading {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 2rem;
+  margin-bottom: 1.5rem;
+}
+.eyebrow {
+  margin: 0 0 0.5rem;
+  color: var(--flowdesk-copper);
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+h1,
+h2 {
+  margin: 0;
+  color: var(--flowdesk-navy);
+}
+h1 {
+  font-size: clamp(2rem, 5vw, 3.2rem);
+  letter-spacing: -0.04em;
+}
+.page-heading p:last-child,
+.state-card p,
+.confirm-dialog p {
+  color: var(--flowdesk-muted);
+  line-height: 1.5;
+}
+.primary-action {
+  display: inline-block;
+  flex: 0 0 auto;
+  padding: 0.75rem 1rem;
+  color: #fff;
+  background: var(--flowdesk-navy);
+  border-radius: 0.5rem;
+  font-weight: 750;
+  text-decoration: none;
+}
+.preview-notice,
+.message {
+  padding: 0.8rem 1rem;
+  margin-bottom: 1rem;
+  border-radius: 0.55rem;
+  font-size: 0.82rem;
+}
+.preview-notice {
+  color: #68420f;
+  background: #fff8e8;
+  border: 1px solid #ead5aa;
+}
+.message.success {
+  color: #245f3d;
+  background: #eef8f1;
+  border: 1px solid #b9ddc5;
+}
+.filters {
+  display: grid;
+  grid-template-columns: 1fr 12rem 13rem;
+  gap: 0.8rem;
+  padding: 1rem;
+  margin-bottom: 1rem;
+  background: #fff;
+  border: 1px solid var(--flowdesk-border);
+  border-radius: 0.7rem;
+}
+.filters label {
+  display: grid;
+  gap: 0.35rem;
+}
+.filters span {
+  color: var(--flowdesk-muted);
+  font-size: 0.7rem;
+  font-weight: 750;
+}
+.filters input,
+.filters select,
+.role-select select {
+  width: 100%;
+  padding: 0.65rem 0.75rem;
+  background: #fff;
+  border: 1px solid #cbd1d8;
+  border-radius: 0.45rem;
+  outline: none;
+}
+.filters input:focus,
+.filters select:focus,
+.role-select select:focus {
+  border-color: var(--flowdesk-navy-light);
+  box-shadow: 0 0 0 3px rgb(38 82 107 / 14%);
+}
+.table-card {
+  overflow: hidden;
+  background: #fff;
+  border: 1px solid var(--flowdesk-border);
+  border-radius: 0.8rem;
+  box-shadow: 0 0.8rem 2.5rem rgb(20 42 56 / 6%);
+}
+.table-head,
+.user-row {
+  display: grid;
+  grid-template-columns: minmax(15rem, 1.4fr) minmax(9rem, 0.8fr) minmax(9rem, 0.7fr) minmax(
+      8rem,
+      0.6fr
+    );
+  gap: 1rem;
+  align-items: center;
+  padding: 0.9rem 1.1rem;
+}
+.table-head {
+  color: var(--flowdesk-muted);
+  background: #f8f9fa;
+  border-bottom: 1px solid var(--flowdesk-border);
+  font-size: 0.68rem;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+.user-row {
+  border-bottom: 1px solid var(--flowdesk-border);
+}
+.user-row:last-child {
+  border-bottom: 0;
+}
+.identity {
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+  min-width: 0;
+}
+.avatar {
+  display: grid;
+  flex: 0 0 auto;
+  width: 2.25rem;
+  height: 2.25rem;
+  place-items: center;
+  color: #fff;
+  background: var(--flowdesk-navy-light);
+  border-radius: 50%;
+  font-size: 0.78rem;
+  font-weight: 800;
+}
+.identity div {
+  display: grid;
+  min-width: 0;
+  gap: 0.2rem;
+}
+.identity strong,
+.identity small {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.identity strong {
+  font-size: 0.83rem;
+}
+.identity small {
+  color: var(--flowdesk-muted);
+  font-size: 0.72rem;
+}
+.role-select select {
+  padding: 0.55rem;
+  font-size: 0.76rem;
+}
+.role-select select:disabled {
+  background: var(--flowdesk-bg);
+  color: var(--flowdesk-muted);
+}
+.status {
+  width: fit-content;
+  padding: 0.3rem 0.5rem;
+  border-radius: 1rem;
+  font-size: 0.68rem;
+  font-weight: 750;
+}
+.status.active {
+  color: #276442;
+  background: #eaf7ef;
+}
+.status.pending {
+  color: #76500e;
+  background: #fff5d9;
+}
+.status.inactive {
+  color: #6a7077;
+  background: #eef0f2;
+}
+.actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.5rem;
+}
+.actions button {
+  padding: 0.35rem;
+  color: var(--flowdesk-navy-light);
+  background: transparent;
+  border: 0;
+  font-size: 0.72rem;
+  font-weight: 750;
+  cursor: pointer;
+}
+.actions .danger-link {
+  color: var(--flowdesk-danger);
+}
+.actions span {
+  color: var(--flowdesk-muted);
+  font-size: 0.7rem;
+}

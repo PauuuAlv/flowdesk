@@ -1,0 +1,45 @@
+<main class="module-page">
+  <header class="page-heading">
+    <div><p class="eyebrow">Administración de usuarios</p><h1>Integrantes</h1><p>Consulta quién tiene acceso y qué rol posee dentro de tu empresa.</p></div>
+    <a class="primary-action" routerLink="/panel/usuarios/invitar">Invitar usuario</a>
+  </header>
+
+  <div class="preview-notice" role="note"><strong>Vista de preparación:</strong> los usuarios y cambios mostrados son temporales hasta conectar las APIs.</div>
+  @if (successMessage()) { <div class="message success" role="status">{{ successMessage() }}</div> }
+
+  <section class="filters" aria-label="Filtros de usuarios">
+    <label class="search"><span>Buscar</span><input type="search" placeholder="Nombre o correo" [value]="search()" (input)="updateSearch($event)" /></label>
+    <label><span>Estado</span><select [value]="statusFilter()" (change)="updateStatus($event)"><option value="all">Todos</option><option value="active">Activos</option><option value="pending">Pendientes</option><option value="inactive">Inactivos</option></select></label>
+    <label><span>Rol</span><select [value]="roleFilter()" (change)="updateRoleFilter($event)"><option value="all">Todos los roles</option>@for (role of roles(); track role.id) { <option [value]="role.id">{{ role.name }}</option> }</select></label>
+  </section>
+
+  @if (errorMessage()) {
+    <section class="state-card" role="alert"><b aria-hidden="true">!</b><h2>No pudimos cargar la información</h2><p>{{ errorMessage() }}</p><button type="button" (click)="loadData()">Reintentar</button></section>
+  } @else if (loading()) {
+    <section class="table-card skeleton" aria-busy="true">@for (item of [1,2,3,4]; track item) { <i></i> }</section>
+  } @else if (users().length === 0) {
+    <section class="state-card"><b aria-hidden="true">＋</b><h2>Aún no hay integrantes</h2><p>Invita al primer usuario para comenzar a colaborar.</p><a class="primary-action" routerLink="/panel/usuarios/invitar">Invitar usuario</a></section>
+  } @else if (filteredUsers().length === 0) {
+    <section class="state-card"><b aria-hidden="true">⌕</b><h2>No encontramos resultados</h2><p>Prueba con otro nombre, correo, rol o estado.</p></section>
+  } @else {
+    <section class="table-card">
+      <div class="table-head"><span>Usuario</span><span>Rol</span><span>Estado</span><span>Acciones</span></div>
+      @for (user of filteredUsers(); track user.id) {
+        <article class="user-row">
+          <div class="identity"><span class="avatar">{{ user.full_name.charAt(0) }}</span><div><strong>{{ user.full_name }}</strong><small>{{ user.email }}</small></div></div>
+          <label class="role-select"><span class="sr-only">Rol de {{ user.full_name }}</span><select [value]="user.role_id" (change)="changeRole(user, $event)" [disabled]="user.status === 'inactive'">@for (role of roles(); track role.id) { <option [value]="role.id" [selected]="role.id === user.role_id">{{ role.name }}</option> }</select></label>
+          <span class="status" [class]="'status ' + user.status">{{ statusLabel(user.status) }}</span>
+          <div class="actions">
+            @if (user.status === 'pending') { <button type="button" (click)="resendInvitation(user)">Reenviar</button> }
+            @if (user.status === 'active') { <button class="danger-link" type="button" (click)="requestDeactivate(user)">Desactivar</button> }
+            @if (user.status === 'inactive') { <span>Sin acciones</span> }
+          </div>
+        </article>
+      }
+    </section>
+  }
+
+  @if (userToDeactivate(); as user) {
+    <div class="modal-backdrop"><section class="confirm-dialog" role="dialog" aria-modal="true" aria-labelledby="deactivate-title"><b aria-hidden="true">!</b><h2 id="deactivate-title">¿Desactivar a {{ user.full_name }}?</h2><p>Ya no podrá ingresar a la empresa hasta que su cuenta sea reactivada.</p><div><button type="button" (click)="cancelDeactivate()">Cancelar</button><button class="danger" type="button" (click)="confirmDeactivate()" [disabled]="processing()">{{ processing() ? 'Desactivando…' : 'Desactivar' }}</button></div></section></div>
+  }
+</main>

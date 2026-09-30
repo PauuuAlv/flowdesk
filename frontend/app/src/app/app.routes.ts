@@ -1,6 +1,12 @@
 import { Routes } from '@angular/router';
 
-import { authGuard, inviteUsersGuard, platformAdminGuard } from './core/guards/auth.guard';
+import {
+  authGuard,
+  inviteUsersGuard,
+  platformAdminGuard,
+  viewRolesGuard,
+  viewUsersGuard
+} from './core/guards/auth.guard';
 
 export const routes: Routes = [
   {
@@ -53,15 +59,46 @@ export const routes: Routes = [
           import('./features/dashboard/dashboard-page').then((component) => component.DashboardPage)
       },
       {
+        path: 'usuarios',
+        canActivate: [viewUsersGuard],
+        loadComponent: () =>
+          import('./features/users/user-list-page').then((component) => component.UserListPage)
+      },
+      {
         path: 'usuarios/invitar',
         canActivate: [inviteUsersGuard],
         loadComponent: () =>
           import('./features/users/invite-user-page').then((component) => component.InviteUserPage)
       },
       {
+        path: 'roles',
+        canActivate: [viewRolesGuard],
+        loadComponent: () =>
+          import('./features/roles/role-list-page').then((component) => component.RoleListPage)
+      },
+      {
+        path: 'roles/nuevo',
+        canActivate: [viewRolesGuard],
+        loadComponent: () =>
+          import('./features/roles/role-form-page').then((component) => component.RoleFormPage)
+      },
+      {
+        path: 'roles/:roleId/editar',
+        canActivate: [viewRolesGuard],
+        loadComponent: () =>
+          import('./features/roles/role-form-page').then((component) => component.RoleFormPage)
+      },
+      {
         path: 'perfil',
         loadComponent: () =>
           import('./features/profile/profile-page').then((component) => component.ProfilePage)
+      },
+      {
+        path: 'sin-permiso',
+        loadComponent: () =>
+          import('./features/access-denied/access-denied-page').then(
+            (component) => component.AccessDeniedPage
+          )
       }
     ]
   },

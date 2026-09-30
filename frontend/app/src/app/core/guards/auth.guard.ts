@@ -45,5 +45,17 @@ export const inviteUsersGuard: CanActivateFn = () => {
 
   return user?.role === 'admin' || user?.permissions?.includes(PERMISSIONS.usersInvite)
     ? true
-    : router.createUrlTree(['/panel']);
+    : router.createUrlTree(['/panel/sin-permiso']);
 };
+
+export const viewUsersGuard: CanActivateFn = () => permissionGuard(PERMISSIONS.usersView);
+export const viewRolesGuard: CanActivateFn = () => permissionGuard(PERMISSIONS.rolesView);
+
+function permissionGuard(permission: (typeof PERMISSIONS)[keyof typeof PERMISSIONS]) {
+  const sessionService = inject(SessionService);
+  const router = inject(Router);
+  const user = sessionService.getUser();
+  return user?.role === 'admin' || user?.permissions?.includes(permission)
+    ? true
+    : router.createUrlTree(['/panel/sin-permiso']);
+}

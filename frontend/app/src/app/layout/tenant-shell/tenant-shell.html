@@ -11,6 +11,12 @@
         <span class="nav-icon" aria-hidden="true">⌂</span>
         Inicio
       </a>
+      @if (canViewUsers) {
+        <a routerLink="/panel/usuarios" routerLinkActive="active" (click)="closeSidebar()">
+          <span class="nav-icon" aria-hidden="true">◎</span>
+          Usuarios
+        </a>
+      }
       @if (canManageUsers) {
         <a routerLink="/panel/usuarios/invitar" routerLinkActive="active" (click)="closeSidebar()">
           <span class="nav-icon" aria-hidden="true">＋</span>
@@ -24,11 +30,12 @@
         Clientes
         <small>Próximamente</small>
       </span>
-      <span class="nav-item pending" title="Se habilitará en una siguiente etapa">
-        <span class="nav-icon" aria-hidden="true">◇</span>
-        Roles y permisos
-        <small>Próximamente</small>
-      </span>
+      @if (canViewRoles) {
+        <a routerLink="/panel/roles" routerLinkActive="active" (click)="closeSidebar()">
+          <span class="nav-icon" aria-hidden="true">◇</span>
+          Roles y permisos
+        </a>
+      }
     </nav>
 
     <div class="sidebar-footer">

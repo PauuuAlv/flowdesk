@@ -1,0 +1,62 @@
+<main class="module-page">
+  <header class="page-heading">
+    <div>
+      <p class="eyebrow">Administración de acceso</p>
+      <h1>Roles y permisos</h1>
+      <p>Cada rol pertenece únicamente a tu empresa y determina lo que sus usuarios pueden realizar.</p>
+    </div>
+    <a class="primary-action" routerLink="/panel/roles/nuevo">Crear rol</a>
+  </header>
+
+  <div class="preview-notice" role="note">
+    <strong>Vista de preparación:</strong> estos datos son temporales y todavía no se guardan en el backend.
+  </div>
+
+  @if (successMessage()) { <div class="message success" role="status">{{ successMessage() }}</div> }
+  @if (errorMessage()) {
+    <section class="state-card error-state" role="alert">
+      <span aria-hidden="true">!</span><h2>No pudimos cargar la información</h2><p>{{ errorMessage() }}</p>
+      <button type="button" (click)="loadRoles()">Reintentar</button>
+    </section>
+  } @else if (loading()) {
+    <section class="role-grid" aria-label="Cargando roles" aria-busy="true">
+      @for (item of [1, 2, 3]; track item) { <div class="role-card skeleton"><i></i><i></i><i></i></div> }
+    </section>
+  } @else if (roles().length === 0) {
+    <section class="state-card">
+      <span aria-hidden="true">◇</span><h2>Aún no hay roles</h2><p>Crea el primer rol para comenzar a asignar permisos.</p>
+      <a class="primary-action" routerLink="/panel/roles/nuevo">Crear primer rol</a>
+    </section>
+  } @else {
+    <section class="role-grid" aria-label="Roles de la empresa">
+      @for (role of roles(); track role.id) {
+        <article class="role-card">
+          <div class="card-heading">
+            <div><span class="origin" [class.custom]="role.origin === 'custom'">{{ role.origin === 'template' ? 'Rol inicial' : 'Personalizado' }}</span><h2>{{ role.name }}</h2></div>
+            @if (role.is_protected) { <span class="protected">Protegido</span> }
+          </div>
+          <p>{{ role.description }}</p>
+          <dl>
+            <div><dt>Usuarios</dt><dd>{{ role.user_count }}</dd></div>
+            <div><dt>Permisos</dt><dd>{{ role.permissions.length }}</dd></div>
+          </dl>
+          <div class="card-actions">
+            <a [routerLink]="['/panel/roles', role.id, 'editar']">Ver y editar</a>
+            <button type="button" (click)="requestDelete(role)" [disabled]="role.is_protected || role.user_count > 0">Eliminar</button>
+          </div>
+        </article>
+      }
+    </section>
+  }
+
+  @if (roleToDelete(); as role) {
+    <div class="modal-backdrop" role="presentation">
+      <section class="confirm-dialog" role="dialog" aria-modal="true" aria-labelledby="delete-title">
+        <span class="warning-icon" aria-hidden="true">!</span>
+        <h2 id="delete-title">¿Eliminar el rol {{ role.name }}?</h2>
+        <p>Esta acción no se puede deshacer. Solo es posible eliminar roles que no estén asignados.</p>
+        <div><button class="secondary" type="button" (click)="cancelDelete()">Cancelar</button><button class="danger" type="button" (click)="confirmDelete()" [disabled]="deleting()">{{ deleting() ? 'Eliminando…' : 'Eliminar rol' }}</button></div>
+      </section>
+    </div>
+  }
+</main>

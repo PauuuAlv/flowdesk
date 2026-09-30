@@ -1,0 +1,266 @@
+:host {
+  display: block;
+}
+.module-page {
+  max-width: 72rem;
+  margin: 0 auto;
+}
+.page-heading {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 2rem;
+  margin-bottom: 1.5rem;
+}
+.eyebrow {
+  margin: 0 0 0.5rem;
+  color: var(--flowdesk-copper);
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+h1,
+h2 {
+  margin: 0;
+  color: var(--flowdesk-navy);
+}
+h1 {
+  font-size: clamp(2rem, 5vw, 3.2rem);
+  letter-spacing: -0.04em;
+}
+.page-heading p:last-child,
+.role-card > p,
+.state-card p,
+.confirm-dialog p {
+  color: var(--flowdesk-muted);
+  line-height: 1.55;
+}
+.primary-action {
+  display: inline-block;
+  flex: 0 0 auto;
+  padding: 0.75rem 1rem;
+  color: #fff;
+  background: var(--flowdesk-navy);
+  border-radius: 0.5rem;
+  font-weight: 750;
+  text-decoration: none;
+}
+.preview-notice,
+.message {
+  padding: 0.8rem 1rem;
+  margin-bottom: 1rem;
+  border-radius: 0.55rem;
+  font-size: 0.82rem;
+}
+.preview-notice {
+  color: #68420f;
+  background: #fff8e8;
+  border: 1px solid #ead5aa;
+}
+.message.success {
+  color: #245f3d;
+  background: #eef8f1;
+  border: 1px solid #b9ddc5;
+}
+.role-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 1rem;
+}
+.role-card {
+  display: flex;
+  min-height: 18rem;
+  flex-direction: column;
+  padding: 1.35rem;
+  background: #fff;
+  border: 1px solid var(--flowdesk-border);
+  border-radius: 0.85rem;
+  box-shadow: 0 0.8rem 2.5rem rgb(20 42 56 / 6%);
+}
+.card-heading {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+.origin,
+.protected {
+  font-size: 0.65rem;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+.origin {
+  color: var(--flowdesk-copper);
+}
+.origin.custom {
+  color: var(--flowdesk-navy-light);
+}
+.protected {
+  height: fit-content;
+  padding: 0.25rem 0.4rem;
+  color: var(--flowdesk-muted);
+  background: var(--flowdesk-bg);
+  border-radius: 0.3rem;
+}
+.role-card h2 {
+  margin-top: 0.35rem;
+  font-size: 1.25rem;
+}
+.role-card > p {
+  flex: 1;
+  font-size: 0.84rem;
+}
+dl {
+  display: flex;
+  gap: 1.5rem;
+  margin: 1rem 0;
+}
+dl div {
+  display: grid;
+  gap: 0.2rem;
+}
+dt {
+  color: var(--flowdesk-muted);
+  font-size: 0.68rem;
+}
+dd {
+  margin: 0;
+  font-weight: 800;
+}
+.card-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-top: 1rem;
+  border-top: 1px solid var(--flowdesk-border);
+}
+.card-actions a,
+.card-actions button {
+  color: var(--flowdesk-navy-light);
+  background: transparent;
+  border: 0;
+  font-size: 0.8rem;
+  font-weight: 750;
+  text-decoration: none;
+  cursor: pointer;
+}
+.card-actions button {
+  color: var(--flowdesk-danger);
+}
+.card-actions button:disabled {
+  color: #aeb5bb;
+  cursor: not-allowed;
+}
+.state-card {
+  padding: 3rem 1.5rem;
+  background: #fff;
+  border: 1px solid var(--flowdesk-border);
+  border-radius: 0.85rem;
+  text-align: center;
+}
+.state-card > span {
+  display: grid;
+  width: 3rem;
+  height: 3rem;
+  place-items: center;
+  margin: 0 auto 1rem;
+  color: var(--flowdesk-navy-light);
+  background: var(--flowdesk-bg);
+  border-radius: 50%;
+  font-size: 1.4rem;
+}
+.state-card button {
+  padding: 0.65rem 1rem;
+  color: #fff;
+  background: var(--flowdesk-navy);
+  border: 0;
+  border-radius: 0.45rem;
+  cursor: pointer;
+}
+.skeleton {
+  gap: 1rem;
+}
+.skeleton i {
+  display: block;
+  height: 1rem;
+  background: linear-gradient(90deg, #edf0f2, #f8f9fa, #edf0f2);
+  border-radius: 0.3rem;
+  animation: pulse 1.2s infinite;
+}
+.skeleton i:nth-child(2) {
+  width: 70%;
+  height: 2rem;
+}
+.skeleton i:nth-child(3) {
+  width: 85%;
+}
+@keyframes pulse {
+  50% {
+    opacity: 0.55;
+  }
+}
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  display: grid;
+  padding: 1rem;
+  background: rgb(8 20 28 / 55%);
+  place-items: center;
+}
+.confirm-dialog {
+  max-width: 27rem;
+  padding: 1.6rem;
+  background: #fff;
+  border-radius: 0.8rem;
+  box-shadow: 0 1.5rem 4rem rgb(0 0 0 / 24%);
+}
+.warning-icon {
+  display: grid;
+  width: 2.5rem;
+  height: 2.5rem;
+  place-items: center;
+  margin-bottom: 1rem;
+  color: #fff;
+  background: var(--flowdesk-danger);
+  border-radius: 50%;
+  font-weight: 900;
+}
+.confirm-dialog > div {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.7rem;
+  margin-top: 1.3rem;
+}
+.confirm-dialog button {
+  padding: 0.65rem 0.9rem;
+  border-radius: 0.45rem;
+  font-weight: 750;
+  cursor: pointer;
+}
+.secondary {
+  background: #fff;
+  border: 1px solid var(--flowdesk-border);
+}
+.danger {
+  color: #fff;
+  background: var(--flowdesk-danger);
+  border: 1px solid var(--flowdesk-danger);
+}
+@media (max-width: 900px) {
+  .role-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+@media (max-width: 620px) {
+  .page-heading {
+    align-items: stretch;
+    flex-direction: column;
+  }
+  .primary-action {
+    text-align: center;
+  }
+  .role-grid {
+    grid-template-columns: 1fr;
+  }
+}
