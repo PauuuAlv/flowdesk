@@ -3,6 +3,10 @@
 Esta guía prepara una versión de prueba sin modificar `main` ni `dev`. La rama de trabajo es
 `preview/fullstack`.
 
+En desarrollo local, PostgreSQL se publica en el puerto `5433` para no interferir con el proyecto
+Urbanik, que utiliza `5432`. Dentro de la red de Docker, Flowdesk continúa conectándose a
+`postgres:5432`.
+
 ## 1. Backend y PostgreSQL en Railway
 
 1. Crear un proyecto vacío en Railway.
