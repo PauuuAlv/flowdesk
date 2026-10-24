@@ -7,40 +7,43 @@ En desarrollo local, PostgreSQL se publica en el puerto `5433` para no interferi
 Urbanik, que utiliza `5432`. Dentro de la red de Docker, Flowdesk continúa conectándose a
 `postgres:5432`.
 
-## 1. Backend y PostgreSQL en Railway
+## 1. Backend y PostgreSQL en Render
 
-1. Crear un proyecto vacío en Railway.
-2. Agregar una base PostgreSQL administrada.
-3. Agregar un servicio desde el repositorio `PauuuAlv/flowdesk`.
-4. Seleccionar la rama `preview/fullstack`.
-5. Configurar **Root Directory** como `/backend`.
-6. Railway detectará `backend/Dockerfile`. El servidor escucha el puerto asignado mediante
-   la variable `PORT`.
-7. Configurar el healthcheck en `/health` y generar un dominio público.
+El archivo `render.yaml` de la raíz define un Blueprint con:
+
+- PostgreSQL 16 gratuito llamado `flowdesk-preview-db`;
+- servicio Docker gratuito llamado `flowdesk-preview-api`;
+- región `ohio` para ambos servicios;
+- rama `preview/fullstack`;
+- directorio raíz `backend`;
+- healthcheck `/health`;
+- conexión automática entre FastAPI y PostgreSQL.
+
+Pasos:
+
+1. En Render, crear un **Blueprint** desde `PauuuAlv/flowdesk`.
+2. Seleccionar la rama `preview/fullstack` y el archivo `render.yaml`.
+3. Capturar las variables marcadas como secretas.
+4. Revisar que ambos recursos utilicen el plan gratuito antes de confirmar.
 
 Variables requeridas en el servicio backend:
 
 ```text
-SQLALCHEMY_DATABASE_URL=<referencia a DATABASE_URL de PostgreSQL>
-JWT_SECRET_KEY=<valor aleatorio largo y secreto>
 SUPERADMIN_EMAIL=<correo de administración para el ambiente de prueba>
 SUPERADMIN_PASSWORD=<contraseña segura exclusiva del ambiente de prueba>
 CORS_ORIGINS=["https://DOMINIO-DE-VERCEL"]
 FRONTEND_URL=https://DOMINIO-DE-VERCEL
 ```
 
-No copies `.env` a Railway ni publiques credenciales en Git. Las variables se capturan en el
-panel de Railway.
+La conexión de la base y `JWT_SECRET_KEY` se generan automáticamente. No copies `.env` a Render
+ni publiques credenciales en Git. Las demás variables se capturan en el panel de Render.
 
-Antes del primer inicio funcional, ejecutar en el servicio backend:
+El contenedor ejecuta automáticamente `alembic upgrade head` y el seed idempotente antes de iniciar
+FastAPI. Si el superadministrador ya existe, no lo crea nuevamente.
 
-```text
-alembic upgrade head
-python -m app.scripts.seed_superadmin
-```
-
-Ambos comandos deben ejecutarse con las variables de Railway disponibles. El seed es idempotente:
-si el superadministrador ya existe, no lo crea nuevamente.
+El plan gratuito de PostgreSQL en Render expira 30 días después de crearse, no incluye respaldos y
+es exclusivamente para esta vista previa. Para conservar datos reales debe actualizarse a un plan
+de pago antes del vencimiento.
 
 ## 2. Frontend en Vercel
 
@@ -49,16 +52,21 @@ La URL pública del backend debe existir antes de conectar el frontend.
 1. Importar el mismo repositorio en Vercel.
 2. Seleccionar la rama `preview/fullstack` para el ambiente de prueba.
 3. Configurar **Root Directory** como `frontend/app`.
-4. Usar `npm run build` como comando de compilación.
-5. Usar `dist/app/browser` como directorio de salida.
-6. Configurar el enrutamiento SPA y la comunicación con la URL pública de Railway.
+4. La configuración de `frontend/app/vercel.ts` establece automáticamente:
+   - comando de compilación: `npm run build`;
+   - directorio de salida: `dist/app/browser`;
+   - enrutamiento de Angular para permitir recargas en rutas internas;
+   - proxy de `/api/*` hacia el backend.
+5. Crear la variable `FLOWDESK_BACKEND_URL` con el origen público de Render, sin `/api` y sin
+   diagonal final. Ejemplo: `https://flowdesk-preview-api.onrender.com`.
 
-El paso 6 se completará cuando Railway entregue el dominio real. Así evitamos guardar una URL
-inventada o temporal directamente en el código.
+Mientras `FLOWDESK_BACKEND_URL` no esté configurada, Vercel utilizará el dominio reservado
+`https://backend-pendiente.invalid`. Las pantallas y rutas de Angular se pueden revisar, pero las
+operaciones que llaman a la API fallarán de forma esperada hasta colocar la URL real.
 
 ## 3. Validación antes de integrar
 
-- Confirmar `GET /health` en Railway.
+- Confirmar `GET /health` en Render.
 - Probar inicio de sesión del superadministrador.
 - Crear una empresa y generar una invitación.
 - Aceptar la invitación y acceder al panel del tenant.
