@@ -11,8 +11,8 @@ import {
 export const routes: Routes = [
   {
     path: '',
-    loadComponent: () =>
-      import('./features/welcome/welcome-page').then((component) => component.WelcomePage)
+    redirectTo: 'iniciar-sesion',
+    pathMatch: 'full'
   },
   {
     path: 'accept-invite',

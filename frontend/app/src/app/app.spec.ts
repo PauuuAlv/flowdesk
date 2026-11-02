@@ -24,4 +24,10 @@ describe('App', () => {
     const compiled = fixture.nativeElement as HTMLElement;
     expect(compiled.querySelector('router-outlet')).toBeTruthy();
   });
+
+  it('should use the tenant login as the public entry point', () => {
+    const rootRoute = routes.find((route) => route.path === '');
+    expect(rootRoute?.redirectTo).toBe('iniciar-sesion');
+    expect(rootRoute?.pathMatch).toBe('full');
+  });
 });
