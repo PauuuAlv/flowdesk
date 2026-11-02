@@ -47,6 +47,10 @@ export class AccessControlService {
     return this.http.patch<TenantMember>(`/api/users/${memberId}/status`, { status: 'inactive' });
   }
 
+  activateMember(memberId: string): Observable<TenantMember> {
+    return this.http.patch<TenantMember>(`/api/users/${memberId}/status`, { status: 'active' });
+  }
+
   resendInvitation(memberId: string): Observable<{ message: string }> {
     return this.http.post<{ message: string }>(`/api/users/${memberId}/resend-invitation`, {});
   }

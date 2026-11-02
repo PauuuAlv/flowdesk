@@ -75,6 +75,14 @@ describe('AccessControlService', () => {
     request.flush({});
   });
 
+  it('should reactivate a member', () => {
+    service.activateMember('user-1').subscribe();
+    const request = httpController.expectOne('/api/users/user-1/status');
+    expect(request.request.method).toBe('PATCH');
+    expect(request.request.body).toEqual({ status: 'active' });
+    request.flush({});
+  });
+
   it('should request a new invitation for a pending member', () => {
     service.resendInvitation('user-1').subscribe();
     const request = httpController.expectOne('/api/users/user-1/resend-invitation');

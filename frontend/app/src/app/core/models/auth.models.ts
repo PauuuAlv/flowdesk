@@ -64,12 +64,15 @@ export interface InviteUserRequest {
   email: string;
   full_name: string;
   role: TenantUserRole;
+  role_id?: string;
 }
 
 export interface InviteUserResponse {
   user_id: string;
   email: string;
   role: TenantUserRole;
+  role_id?: string | null;
+  role_name?: string | null;
   dev_invitation_link: string;
 }
 

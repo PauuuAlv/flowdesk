@@ -1,7 +1,7 @@
 <main class="module-page">
   <header class="page-heading">
     <div><p class="eyebrow">Administración de usuarios</p><h1>Integrantes</h1><p>Consulta quién tiene acceso y qué rol posee dentro de tu empresa.</p></div>
-    <a class="primary-action" routerLink="/panel/usuarios/invitar">Invitar usuario</a>
+    @if (canInvite) { <a class="primary-action" routerLink="/panel/usuarios/invitar">Invitar usuario</a> }
   </header>
 
   @if (successMessage()) { <div class="message success" role="status">{{ successMessage() }}</div> }
@@ -17,7 +17,7 @@
   } @else if (loading()) {
     <section class="table-card skeleton" aria-busy="true">@for (item of [1,2,3,4]; track item) { <i></i> }</section>
   } @else if (users().length === 0) {
-    <section class="state-card"><b aria-hidden="true">＋</b><h2>Aún no hay integrantes</h2><p>Invita al primer usuario para comenzar a colaborar.</p><a class="primary-action" routerLink="/panel/usuarios/invitar">Invitar usuario</a></section>
+    <section class="state-card"><b aria-hidden="true">＋</b><h2>Aún no hay integrantes</h2><p>Invita al primer usuario para comenzar a colaborar.</p>@if (canInvite) { <a class="primary-action" routerLink="/panel/usuarios/invitar">Invitar usuario</a> }</section>
   } @else if (filteredUsers().length === 0) {
     <section class="state-card"><b aria-hidden="true">⌕</b><h2>No encontramos resultados</h2><p>Prueba con otro nombre, correo, rol o estado.</p></section>
   } @else {
@@ -26,12 +26,13 @@
       @for (user of filteredUsers(); track user.id) {
         <article class="user-row">
           <div class="identity"><span class="avatar">{{ user.full_name.charAt(0) }}</span><div><strong>{{ user.full_name }}</strong><small>{{ user.email }}</small></div></div>
-          <label class="role-select"><span class="sr-only">Rol de {{ user.full_name }}</span><select [value]="user.role_id" (change)="changeRole(user, $event)" [disabled]="user.status === 'inactive'">@for (role of roles(); track role.id) { <option [value]="role.id" [selected]="role.id === user.role_id">{{ role.name }}</option> }</select></label>
+          <label class="role-select"><span class="sr-only">Rol de {{ user.full_name }}</span><select [value]="user.role_id" (change)="changeRole(user, $event)" [disabled]="user.status === 'inactive' || !canUpdate">@for (role of roles(); track role.id) { <option [value]="role.id" [selected]="role.id === user.role_id">{{ role.name }}</option> }</select></label>
           <span class="status" [class]="'status ' + user.status">{{ statusLabel(user.status) }}</span>
           <div class="actions">
-            @if (user.status === 'pending') { <button type="button" (click)="resendInvitation(user)">Reenviar</button> }
-            @if (user.status === 'active') { <button class="danger-link" type="button" (click)="requestDeactivate(user)">Desactivar</button> }
-            @if (user.status === 'inactive') { <span>Sin acciones</span> }
+            @if (user.status === 'pending' && canInvite) { <button type="button" (click)="resendInvitation(user)">Reenviar</button> }
+            @if (user.status === 'active' && canDeactivate) { <button class="danger-link" type="button" (click)="requestDeactivate(user)">Desactivar</button> }
+            @if (user.status === 'inactive' && canDeactivate) { <button type="button" (click)="reactivate(user)" [disabled]="processing()">Reactivar</button> }
+            @if ((user.status === 'pending' && !canInvite) || (user.status !== 'pending' && !canDeactivate)) { <span>Sin acciones</span> }
           </div>
         </article>
       }

@@ -25,13 +25,17 @@
           <input id="invite-email" type="email" formControlName="email" autocomplete="email" placeholder="Ej: usuario@empresa.com" />
           @if (inviteForm.controls.email.touched && inviteForm.controls.email.invalid) { <small>Ingresa un correo electrónico válido.</small> }
         </div>
-        <div class="member-access" aria-label="Tipo de acceso asignado">
-          <span>Tipo de acceso</span>
-          <strong>Miembro</strong>
-          <p>Por ahora, todas las invitaciones se crean como miembro.</p>
+        <div class="field">
+          <label for="invite-role">Rol dentro de la empresa</label>
+          <select id="invite-role" formControlName="role_id">
+            <option value="" disabled>{{ loadingRoles() ? 'Consultando roles…' : 'Selecciona un rol' }}</option>
+            @for (role of roles(); track role.id) { <option [value]="role.id">{{ role.name }}</option> }
+          </select>
+          <span class="field-help">Los permisos del usuario dependerán del rol seleccionado.</span>
+          @if (inviteForm.controls.role_id.touched && inviteForm.controls.role_id.invalid) { <small>Selecciona un rol.</small> }
         </div>
 
-        <button class="primary-button" type="submit" [disabled]="submitting()">
+        <button class="primary-button" type="submit" [disabled]="submitting() || loadingRoles() || roles().length === 0">
           {{ submitting() ? 'Generando invitación…' : 'Generar invitación' }}
         </button>
       </form>
@@ -40,7 +44,7 @@
         <div class="result" role="status">
           <p class="result-label">Invitación creada correctamente</p>
           <h3>{{ user.email }}</h3>
-          <p>Tipo de acceso asignado: <strong>Miembro</strong></p>
+          <p>Rol asignado: <strong>{{ user.role_name || user.role }}</strong></p>
           <label for="user-invitation-link">Enlace de invitación de desarrollo</label>
           <div class="invitation-row">
             <input id="user-invitation-link" type="text" readonly [value]="user.dev_invitation_link" />
