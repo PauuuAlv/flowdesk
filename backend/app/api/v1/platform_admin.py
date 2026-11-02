@@ -18,6 +18,7 @@ from app.security.jwt import create_platform_admin_token
 from app.security.password import verify_password
 from app.security.platform_admin_auth import get_current_platform_admin
 from app.security.tokens import generate_raw_token, hash_token
+from app.services.access_control import create_role_templates
 
 router = APIRouter()
 
@@ -54,6 +55,7 @@ def create_tenant(
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Slug already in use")
 
     tenant = tenant_repo.create(db, name=payload.name, slug=payload.slug)
+    template_roles = create_role_templates(db, tenant.id)
 
     # Crea el primer usuario del tenant como admin, invitado (sin password todavía).
     raw_token = generate_raw_token()
@@ -62,6 +64,7 @@ def create_tenant(
         email=payload.admin_email,
         full_name=payload.admin_full_name,
         role="admin",
+        role_id=template_roles["admin"].id,
         status="invited",
         hashed_password=None,
         invited_by_user_id=None,  # lo invitó un PlatformAdmin, no otro User

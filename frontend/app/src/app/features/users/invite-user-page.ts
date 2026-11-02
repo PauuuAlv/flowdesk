@@ -3,6 +3,8 @@ import { Component, inject, signal } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 
 import { InviteUserResponse } from '../../core/models/auth.models';
+import { TenantRole } from '../../core/models/access-control.models';
+import { AccessControlService } from '../../core/services/access-control.service';
 import { AuthService } from '../../core/services/auth.service';
 
 @Component({
@@ -14,15 +16,34 @@ import { AuthService } from '../../core/services/auth.service';
 export class InviteUserPage {
   private readonly formBuilder = inject(FormBuilder);
   private readonly authService = inject(AuthService);
+  private readonly accessControl = inject(AccessControlService);
 
   protected readonly submitting = signal(false);
   protected readonly errorMessage = signal('');
   protected readonly invitedUser = signal<InviteUserResponse | null>(null);
   protected readonly copied = signal(false);
+  protected readonly roles = signal<TenantRole[]>([]);
+  protected readonly loadingRoles = signal(true);
   protected readonly inviteForm = this.formBuilder.nonNullable.group({
     full_name: ['', [Validators.required, Validators.minLength(3)]],
-    email: ['', [Validators.required, Validators.email]]
+    email: ['', [Validators.required, Validators.email]],
+    role_id: ['', Validators.required]
   });
+
+  constructor() {
+    this.accessControl.listRoles().subscribe({
+      next: (roles) => {
+        this.roles.set(roles);
+        this.loadingRoles.set(false);
+        const memberRole = roles.find((role) => role.name.toLowerCase() === 'miembro');
+        if (memberRole) this.inviteForm.controls.role_id.setValue(memberRole.id);
+      },
+      error: () => {
+        this.loadingRoles.set(false);
+        this.errorMessage.set('No fue posible consultar los roles disponibles.');
+      }
+    });
+  }
 
   protected submit(): void {
     this.errorMessage.set('');
@@ -41,7 +62,8 @@ export class InviteUserPage {
       next: (user) => {
         this.submitting.set(false);
         this.invitedUser.set(user);
-        this.inviteForm.reset();
+        const selectedRole = this.inviteForm.controls.role_id.value;
+        this.inviteForm.reset({ full_name: '', email: '', role_id: selectedRole });
       },
       error: (error: HttpErrorResponse) => {
         this.submitting.set(false);

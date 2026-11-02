@@ -1,5 +1,6 @@
 from sqlalchemy import Column, String, Boolean, DateTime, ForeignKey, UniqueConstraint
 from sqlalchemy.dialects.postgresql import UUID
+from sqlalchemy.orm import relationship
 
 from app.models.base import BaseModel, TenantMixin
 
@@ -28,6 +29,10 @@ class User(BaseModel, TenantMixin):
     # 'admin': administra su tenant, puede invitar/desactivar usuarios.
     # 'member': usuario normal, sin permisos de administración.
     role = Column(String(50), nullable=False, default="member")
+    # Compatibilidad progresiva: `role` conserva el valor anterior mientras
+    # los usuarios existentes migran a roles dinámicos por tenant.
+    role_id = Column(UUID(as_uuid=True), ForeignKey("roles.id"), nullable=True, index=True)
+    assigned_role = relationship("Role", lazy="joined")
 
     # 'invited' | 'active' | 'disabled'
     status = Column(String(50), nullable=False, default="invited")

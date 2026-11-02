@@ -10,8 +10,8 @@ h2, h3 { margin: 0; color: var(--flowdesk-navy); }
 .form-heading p { margin: .4rem 0 0; }
 .field { display: grid; gap: .45rem; margin-bottom: 1rem; }
 label { font-size: .88rem; font-weight: 700; }
-input { width: 100%; padding: .75rem .85rem; color: var(--flowdesk-ink); background: #fff; border: 1px solid #cbd1d8; border-radius: .45rem; outline: none; }
-input:focus { border-color: var(--flowdesk-navy-light); box-shadow: 0 0 0 3px rgb(38 82 107 / 14%); }
+input, select { width: 100%; padding: .75rem .85rem; color: var(--flowdesk-ink); background: #fff; border: 1px solid #cbd1d8; border-radius: .45rem; outline: none; }
+input:focus, select:focus { border-color: var(--flowdesk-navy-light); box-shadow: 0 0 0 3px rgb(38 82 107 / 14%); }
 input.ng-touched.ng-invalid { border-color: var(--flowdesk-danger); }
 small { color: var(--flowdesk-danger); font-size: .76rem; }
 .member-access { padding: 1rem; margin-bottom: 1rem; background: #f7f8fa; border: 1px solid var(--flowdesk-border); border-radius: .55rem; }

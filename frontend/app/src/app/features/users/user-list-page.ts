@@ -3,7 +3,9 @@ import { RouterLink } from '@angular/router';
 import { forkJoin } from 'rxjs';
 
 import { MemberStatus, TenantMember, TenantRole } from '../../core/models/access-control.models';
-import { AccessControlPreviewService } from '../../core/services/access-control-preview.service';
+import { AccessControlService } from '../../core/services/access-control.service';
+import { PERMISSIONS } from '../../core/models/permission.models';
+import { SessionService } from '../../core/services/session.service';
 
 @Component({
   selector: 'app-user-list-page',
@@ -12,7 +14,9 @@ import { AccessControlPreviewService } from '../../core/services/access-control-
   styleUrls: ['./user-list-page.scss', './user-list-page.states.scss']
 })
 export class UserListPage {
-  private readonly accessControl = inject(AccessControlPreviewService);
+  private readonly accessControl = inject(AccessControlService);
+  private readonly sessionService = inject(SessionService);
+  private readonly currentUser = this.sessionService.getUser();
 
   protected readonly users = signal<TenantMember[]>([]);
   protected readonly roles = signal<TenantRole[]>([]);
@@ -24,6 +28,10 @@ export class UserListPage {
   protected readonly roleFilter = signal('all');
   protected readonly userToDeactivate = signal<TenantMember | null>(null);
   protected readonly processing = signal(false);
+
+  protected readonly canInvite = this.hasPermission(PERMISSIONS.usersInvite);
+  protected readonly canUpdate = this.hasPermission(PERMISSIONS.usersUpdate);
+  protected readonly canDeactivate = this.hasPermission(PERMISSIONS.usersDelete);
 
   protected readonly filteredUsers = computed(() => {
     const term = this.search().trim().toLowerCase();
@@ -114,7 +122,27 @@ export class UserListPage {
     });
   }
 
+  protected reactivate(user: TenantMember): void {
+    this.processing.set(true);
+    this.errorMessage.set('');
+    this.accessControl.activateMember(user.id).subscribe({
+      next: (updated) => {
+        this.processing.set(false);
+        this.users.update((users) => users.map((item) => (item.id === updated.id ? updated : item)));
+        this.successMessage.set(`${updated.full_name} puede ingresar nuevamente.`);
+      },
+      error: () => {
+        this.processing.set(false);
+        this.errorMessage.set('No fue posible reactivar al usuario.');
+      }
+    });
+  }
+
   protected statusLabel(status: MemberStatus): string {
     return { active: 'Activo', pending: 'Invitación pendiente', inactive: 'Inactivo' }[status];
+  }
+
+  private hasPermission(permission: (typeof PERMISSIONS)[keyof typeof PERMISSIONS]): boolean {
+    return this.currentUser?.role === 'admin' || Boolean(this.currentUser?.permissions?.includes(permission));
   }
 }
