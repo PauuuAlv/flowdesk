@@ -8,6 +8,7 @@ from app.core.config import settings
 from app.core.database import get_db
 from app.models.user import User
 from app.models.role import Role
+from app.models.tenant import Tenant
 from app.schemas.access_control import (
     MessageResponse,
     TenantMemberResponse,
@@ -16,6 +17,7 @@ from app.schemas.access_control import (
 )
 from app.schemas.user import InviteUserRequest, InviteUserResponse
 from app.security.permissions import require_permission
+from app.services.email import EmailService, get_email_service
 from app.security.tokens import generate_raw_token, hash_token
 
 router = APIRouter()
@@ -63,6 +65,7 @@ def invite_user(
     payload: InviteUserRequest,
     db: Session = Depends(get_db),
     admin: User = Depends(require_permission("users.invite")),
+    email_service: EmailService = Depends(get_email_service),
 ):
     """Solo un admin puede invitar, y SIEMPRE dentro de su propio tenant
     (admin.tenant_id viene del token, nunca del body — así un admin de un
@@ -112,8 +115,14 @@ def invite_user(
     db.commit()
     db.refresh(new_user)
 
-    # TODO: mandar por correo (SES) en vez de regresarlo en la respuesta.
     invitation_link = f"{settings.FRONTEND_URL}/accept-invite?token={raw_token}"
+    tenant = db.query(Tenant).filter(Tenant.id == admin.tenant_id).first()
+    email_service.send_invitation(
+        recipient=new_user.email,
+        recipient_name=new_user.full_name,
+        invitation_url=invitation_link,
+        tenant_name=tenant.name if tenant else "Flowdesk",
+    )
 
     return InviteUserResponse(
         user_id=str(new_user.id),
@@ -170,6 +179,7 @@ def resend_invitation(
     user_id: uuid.UUID,
     db: Session = Depends(get_db),
     current_user: User = Depends(require_permission("users.invite")),
+    email_service: EmailService = Depends(get_email_service),
 ):
     user = _member_or_404(db, current_user.tenant_id, user_id)
     if user.status != "invited":
@@ -181,4 +191,11 @@ def resend_invitation(
     )
     db.commit()
     invitation_link = f"{settings.FRONTEND_URL}/accept-invite?token={raw_token}"
-    return MessageResponse(message=invitation_link)
+    tenant = db.query(Tenant).filter(Tenant.id == current_user.tenant_id).first()
+    email_service.send_invitation(
+        recipient=user.email,
+        recipient_name=user.full_name,
+        invitation_url=invitation_link,
+        tenant_name=tenant.name if tenant else "Flowdesk",
+    )
+    return MessageResponse(message="Invitation generated successfully")

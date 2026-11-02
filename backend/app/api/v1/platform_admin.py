@@ -19,6 +19,7 @@ from app.security.password import verify_password
 from app.security.platform_admin_auth import get_current_platform_admin
 from app.security.tokens import generate_raw_token, hash_token
 from app.services.access_control import create_role_templates
+from app.services.email import EmailService, get_email_service
 
 router = APIRouter()
 
@@ -48,6 +49,7 @@ def create_tenant(
     payload: CreateTenantRequest,
     db: Session = Depends(get_db),
     _admin=Depends(get_current_platform_admin),  # protegido: solo PlatformAdmin
+    email_service: EmailService = Depends(get_email_service),
 ):
     tenant_repo = TenantRepository()
 
@@ -77,9 +79,13 @@ def create_tenant(
     db.refresh(tenant)
     db.refresh(admin_user)
 
-    # TODO: mandar este link por correo (boto3/SES, MAIL_FROM ya está en .env)
-    # en vez de regresarlo en la respuesta. Ver nota en schemas/platform_admin.py.
     invitation_link = f"{settings.FRONTEND_URL}/accept-invite?token={raw_token}"
+    email_service.send_invitation(
+        recipient=admin_user.email,
+        recipient_name=admin_user.full_name,
+        invitation_url=invitation_link,
+        tenant_name=tenant.name,
+    )
 
     return CreateTenantResponse(
         tenant_id=str(tenant.id),

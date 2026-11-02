@@ -1,3 +1,4 @@
+import logging
 import uuid
 from datetime import datetime, timedelta, timezone
 
@@ -25,8 +26,10 @@ from app.security.jwt import create_access_token, create_refresh_token, decode_t
 from app.security.tokens import generate_raw_token, hash_token
 from app.security.user_auth import get_current_user
 from app.services.access_control import get_user_permission_codes
+from app.services.email import EmailService, get_email_service
 
 router = APIRouter()
+logger = logging.getLogger("flowdesk.auth")
 
 
 @router.post("/login", response_model=TokenResponse)
@@ -129,7 +132,11 @@ def get_me(current_user: User = Depends(get_current_user)):
     )
 
 @router.post("/forgot-password", response_model=MessageResponse)
-def forgot_password(payload: ForgotPasswordRequest, db: Session = Depends(get_db)):
+def forgot_password(
+    payload: ForgotPasswordRequest,
+    db: Session = Depends(get_db),
+    email_service: EmailService = Depends(get_email_service),
+):
     """SIEMPRE responde el mismo mensaje genérico, exista o no el email.
     Si reveláramos 'ese email no existe', cualquiera podría usar este endpoint
     para averiguar qué correos están registrados (enumeración de usuarios)."""
@@ -154,9 +161,16 @@ def forgot_password(payload: ForgotPasswordRequest, db: Session = Depends(get_db
         + timedelta(hours=settings.RESET_PASSWORD_TOKEN_EXPIRE_HOURS),
     )
 
-    # TODO: mandar por correo (SES) en vez de solo loguearlo/regresarlo.
     reset_link = f"{settings.FRONTEND_URL}/reset-password?token={raw_token}"
-    print(f"[DEV] Password reset link for {user.email}: {reset_link}")  # visible en docker logs
+    try:
+        email_service.send_password_reset(
+            recipient=user.email,
+            recipient_name=user.full_name,
+            reset_url=reset_link,
+        )
+    except Exception:
+        # La respuesta sigue siendo genérica para no revelar si el correo existe.
+        logger.exception("Password reset email delivery failed")
 
     return generic_response
 

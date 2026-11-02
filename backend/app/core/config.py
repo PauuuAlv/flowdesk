@@ -26,6 +26,12 @@ class Settings(BaseSettings):
     INVITATION_TOKEN_EXPIRE_DAYS: int = 7
     RESET_PASSWORD_TOKEN_EXPIRE_HOURS: int = 2
 
+    # Correo transaccional. En development los enlaces solo se escriben en logs.
+    # Cuando se elija proveedor, su implementación respetará EmailService.
+    EMAIL_PROVIDER: str = "development"
+    EMAIL_FROM_ADDRESS: str = "no-reply@flowdesk.local"
+    EMAIL_FROM_NAME: str = "Flowdesk"
+
     class Config:
         env_file = ".env"
         extra = "ignore"

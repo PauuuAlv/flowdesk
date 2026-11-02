@@ -30,3 +30,9 @@ services:
         sync: false
       - key: FRONTEND_URL
         sync: false
+      - key: EMAIL_PROVIDER
+        value: development
+      - key: EMAIL_FROM_ADDRESS
+        value: no-reply@flowdesk.local
+      - key: EMAIL_FROM_NAME
+        value: Flowdesk
