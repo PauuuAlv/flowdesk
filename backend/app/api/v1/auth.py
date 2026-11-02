@@ -24,6 +24,7 @@ from app.security.password import verify_password, hash_password
 from app.security.jwt import create_access_token, create_refresh_token, decode_token
 from app.security.tokens import generate_raw_token, hash_token
 from app.security.user_auth import get_current_user
+from app.services.access_control import get_user_permission_codes
 
 router = APIRouter()
 
@@ -121,6 +122,9 @@ def get_me(current_user: User = Depends(get_current_user)):
         email=current_user.email,
         full_name=current_user.full_name,
         role=current_user.role,
+        role_id=str(current_user.role_id) if current_user.role_id else None,
+        role_name=current_user.assigned_role.name if current_user.assigned_role else current_user.role.capitalize(),
+        permissions=get_user_permission_codes(current_user),
         status=current_user.status,
     )
 

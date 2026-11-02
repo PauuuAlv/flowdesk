@@ -1,6 +1,7 @@
+import uuid
 from typing import Literal
 
-from pydantic import BaseModel, EmailStr
+from pydantic import BaseModel, EmailStr, Field
 
 
 class InviteUserRequest(BaseModel):
@@ -9,6 +10,7 @@ class InviteUserRequest(BaseModel):
     # Un admin puede invitar a otro admin o a un member, pero nunca a un
     # platform_admin (ese rol ni siquiera existe en este modelo, ver User).
     role: Literal["admin", "member"] = "member"
+    role_id: uuid.UUID | None = None
 
 
 class InviteUserResponse(BaseModel):
@@ -25,4 +27,7 @@ class UserMeResponse(BaseModel):
     email: str
     full_name: str | None
     role: str
+    role_id: str | None = None
+    role_name: str | None = None
+    permissions: list[str] = Field(default_factory=list)
     status: str

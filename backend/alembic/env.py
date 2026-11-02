@@ -17,6 +17,7 @@ from app.models.user import User
 from app.models.tenant import Tenant
 from app.models.platform_admin import PlatformAdmin
 from app.models.password_reset_token import PasswordResetToken
+from app.models.role import Role, RolePermission
  
  
 config = context.config
