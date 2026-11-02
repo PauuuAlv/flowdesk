@@ -3,7 +3,7 @@ import { RouterLink } from '@angular/router';
 import { forkJoin } from 'rxjs';
 
 import { MemberStatus, TenantMember, TenantRole } from '../../core/models/access-control.models';
-import { AccessControlPreviewService } from '../../core/services/access-control-preview.service';
+import { AccessControlService } from '../../core/services/access-control.service';
 
 @Component({
   selector: 'app-user-list-page',
@@ -12,7 +12,7 @@ import { AccessControlPreviewService } from '../../core/services/access-control-
   styleUrls: ['./user-list-page.scss', './user-list-page.states.scss']
 })
 export class UserListPage {
-  private readonly accessControl = inject(AccessControlPreviewService);
+  private readonly accessControl = inject(AccessControlService);
 
   protected readonly users = signal<TenantMember[]>([]);
   protected readonly roles = signal<TenantRole[]>([]);

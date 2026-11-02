@@ -3,7 +3,7 @@ import { FormBuilder, FormControl, ReactiveFormsModule, Validators } from '@angu
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 
 import { PermissionCode, PERMISSION_MODULES } from '../../core/models/permission.models';
-import { AccessControlPreviewService } from '../../core/services/access-control-preview.service';
+import { AccessControlService } from '../../core/services/access-control.service';
 import { atLeastOnePermissionValidator } from '../../core/validators/role.validator';
 
 @Component({
@@ -14,7 +14,7 @@ import { atLeastOnePermissionValidator } from '../../core/validators/role.valida
 })
 export class RoleFormPage {
   private readonly formBuilder = inject(FormBuilder);
-  private readonly accessControl = inject(AccessControlPreviewService);
+  private readonly accessControl = inject(AccessControlService);
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
 

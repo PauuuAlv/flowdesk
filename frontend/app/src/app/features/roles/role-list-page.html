@@ -8,10 +8,6 @@
     <a class="primary-action" routerLink="/panel/roles/nuevo">Crear rol</a>
   </header>
 
-  <div class="preview-notice" role="note">
-    <strong>Vista de preparación:</strong> estos datos son temporales y todavía no se guardan en el backend.
-  </div>
-
   @if (successMessage()) { <div class="message success" role="status">{{ successMessage() }}</div> }
   @if (errorMessage()) {
     <section class="state-card error-state" role="alert">

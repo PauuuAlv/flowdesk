@@ -25,6 +25,8 @@ export interface UserMeResponse {
   email: string;
   full_name: string | null;
   role: string;
+  role_id?: string | null;
+  role_name?: string | null;
   roles?: string[];
   permissions?: PermissionCode[];
   status: string;

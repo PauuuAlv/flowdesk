@@ -2,7 +2,7 @@ import { Component, inject, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
 
 import { TenantRole } from '../../core/models/access-control.models';
-import { AccessControlPreviewService } from '../../core/services/access-control-preview.service';
+import { AccessControlService } from '../../core/services/access-control.service';
 
 @Component({
   selector: 'app-role-list-page',
@@ -11,7 +11,7 @@ import { AccessControlPreviewService } from '../../core/services/access-control-
   styleUrl: './role-list-page.scss'
 })
 export class RoleListPage {
-  private readonly accessControl = inject(AccessControlPreviewService);
+  private readonly accessControl = inject(AccessControlService);
 
   protected readonly roles = signal<TenantRole[]>([]);
   protected readonly loading = signal(true);
