@@ -119,6 +119,8 @@ def invite_user(
         user_id=str(new_user.id),
         email=new_user.email,
         role=new_user.role,
+        role_id=str(role.id) if role else None,
+        role_name=role.name if role else new_user.role.capitalize(),
         dev_invitation_link=invitation_link,
     )
 
