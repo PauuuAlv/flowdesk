@@ -31,6 +31,11 @@ class Settings(BaseSettings):
     EMAIL_PROVIDER: str = "development"
     EMAIL_FROM_ADDRESS: str = "no-reply@flowdesk.local"
     EMAIL_FROM_NAME: str = "Flowdesk"
+    SMTP_HOST: str = "smtp.gmail.com"
+    SMTP_PORT: int = 587
+    SMTP_USERNAME: str | None = None
+    SMTP_PASSWORD: str | None = None
+    SMTP_USE_TLS: bool = True
 
     class Config:
         env_file = ".env"
