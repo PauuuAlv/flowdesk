@@ -46,3 +46,7 @@ services:
         sync: false
       - key: SMTP_USE_TLS
         value: true
+      - key: RESEND_API_KEY
+        sync: false
+      - key: RESEND_API_URL
+        value: https://api.resend.com/emails

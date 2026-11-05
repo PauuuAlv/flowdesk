@@ -30,6 +30,20 @@ SMTP_USE_TLS=true
 `SMTP_PASSWORD` es un secreto: debe existir solo en `.env` o en las variables
 protegidas del proveedor de despliegue y nunca debe subirse al repositorio.
 
+En servicios que bloquean los puertos SMTP, como el plan gratuito de Render, se
+puede utilizar la API HTTPS de Resend:
+
+```env
+EMAIL_PROVIDER=resend
+EMAIL_FROM_ADDRESS=no-reply@flowdesk.armsystem.com.mx
+EMAIL_FROM_NAME=Flowdesk
+RESEND_API_KEY=<clave-con-permiso-solo-de-envío>
+RESEND_API_URL=https://api.resend.com/emails
+```
+
+El dominio del remitente debe estar verificado en Resend. `RESEND_API_KEY` debe
+guardarse únicamente como secreto local o del proveedor de despliegue.
+
 En modo `development` no se envía ningún correo. Los enlaces de invitación y
 recuperación se escriben en los logs del backend para poder probarlos localmente:
 

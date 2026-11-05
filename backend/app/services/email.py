@@ -1,10 +1,13 @@
 import logging
+import json
 import smtplib
 from email.message import EmailMessage
 from email.utils import formataddr
 from functools import lru_cache
 from html import escape
 from typing import Protocol
+from urllib.error import HTTPError, URLError
+from urllib.request import Request, urlopen
 
 from app.core.config import settings
 
@@ -66,36 +69,11 @@ class DevelopmentEmailService:
         )
 
 
-class SmtpEmailService:
-    """Envía correos transaccionales mediante un servidor SMTP con STARTTLS."""
-
-    def __init__(self) -> None:
-        if not settings.SMTP_USERNAME or not settings.SMTP_PASSWORD:
-            raise RuntimeError(
-                "SMTP_USERNAME and SMTP_PASSWORD are required when EMAIL_PROVIDER=smtp."
-            )
+class TransactionalEmailService:
+    """Construye los mensajes comunes y delega el transporte al proveedor."""
 
     def _send(self, *, recipient: str, subject: str, text: str, html: str) -> None:
-        message = EmailMessage()
-        message["Subject"] = subject
-        message["From"] = formataddr(
-            (settings.EMAIL_FROM_NAME, settings.EMAIL_FROM_ADDRESS)
-        )
-        message["To"] = recipient
-        message.set_content(text)
-        message.add_alternative(html, subtype="html")
-
-        with smtplib.SMTP(
-            settings.SMTP_HOST,
-            settings.SMTP_PORT,
-            timeout=20,
-        ) as smtp:
-            smtp.ehlo()
-            if settings.SMTP_USE_TLS:
-                smtp.starttls()
-                smtp.ehlo()
-            smtp.login(settings.SMTP_USERNAME, settings.SMTP_PASSWORD)
-            smtp.send_message(message)
+        raise NotImplementedError
 
     def send_invitation(
         self,
@@ -152,6 +130,83 @@ class SmtpEmailService:
             ),
         )
 
+
+class SmtpEmailService(TransactionalEmailService):
+    """Envía correos transaccionales mediante un servidor SMTP con STARTTLS."""
+
+    def __init__(self) -> None:
+        if not settings.SMTP_USERNAME or not settings.SMTP_PASSWORD:
+            raise RuntimeError(
+                "SMTP_USERNAME and SMTP_PASSWORD are required when EMAIL_PROVIDER=smtp."
+            )
+
+    def _send(self, *, recipient: str, subject: str, text: str, html: str) -> None:
+        message = EmailMessage()
+        message["Subject"] = subject
+        message["From"] = formataddr(
+            (settings.EMAIL_FROM_NAME, settings.EMAIL_FROM_ADDRESS)
+        )
+        message["To"] = recipient
+        message.set_content(text)
+        message.add_alternative(html, subtype="html")
+
+        with smtplib.SMTP(
+            settings.SMTP_HOST,
+            settings.SMTP_PORT,
+            timeout=20,
+        ) as smtp:
+            smtp.ehlo()
+            if settings.SMTP_USE_TLS:
+                smtp.starttls()
+                smtp.ehlo()
+            smtp.login(settings.SMTP_USERNAME, settings.SMTP_PASSWORD)
+            smtp.send_message(message)
+
+
+class ResendEmailService(TransactionalEmailService):
+    """Envía correos mediante la API HTTPS de Resend."""
+
+    def __init__(self) -> None:
+        if not settings.RESEND_API_KEY:
+            raise RuntimeError(
+                "RESEND_API_KEY is required when EMAIL_PROVIDER=resend."
+            )
+
+    def _send(self, *, recipient: str, subject: str, text: str, html: str) -> None:
+        payload = json.dumps(
+            {
+                "from": formataddr(
+                    (settings.EMAIL_FROM_NAME, settings.EMAIL_FROM_ADDRESS)
+                ),
+                "to": [recipient],
+                "subject": subject,
+                "text": text,
+                "html": html,
+            }
+        ).encode("utf-8")
+        request = Request(
+            settings.RESEND_API_URL,
+            data=payload,
+            headers={
+                "Authorization": f"Bearer {settings.RESEND_API_KEY}",
+                "Content-Type": "application/json",
+                "User-Agent": "Flowdesk/1.0",
+            },
+            method="POST",
+        )
+        try:
+            with urlopen(request, timeout=20) as response:
+                if response.status not in (200, 201):
+                    raise RuntimeError(
+                        f"Resend returned unexpected status {response.status}."
+                    )
+        except HTTPError as error:
+            raise RuntimeError(
+                f"Resend rejected the email request with status {error.code}."
+            ) from error
+        except URLError as error:
+            raise RuntimeError("Could not connect to the Resend API.") from error
+
 @lru_cache
 def get_email_service() -> EmailService:
     provider = settings.EMAIL_PROVIDER.strip().lower()
@@ -159,7 +214,9 @@ def get_email_service() -> EmailService:
         return DevelopmentEmailService()
     if provider == "smtp":
         return SmtpEmailService()
+    if provider == "resend":
+        return ResendEmailService()
     raise RuntimeError(
         f"Unsupported EMAIL_PROVIDER '{settings.EMAIL_PROVIDER}'. "
-        "Use 'development' or 'smtp'."
+        "Use 'development', 'smtp' or 'resend'."
     )

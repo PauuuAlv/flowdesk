@@ -1,9 +1,11 @@
 import unittest
+import json
 from unittest.mock import MagicMock, patch
 
 from app.core.config import settings
 from app.services.email import (
     DevelopmentEmailService,
+    ResendEmailService,
     SmtpEmailService,
     get_email_service,
 )
@@ -11,7 +13,14 @@ from app.services.email import (
 
 class DevelopmentEmailServiceTests(unittest.TestCase):
     def setUp(self):
+        self.previous_provider = settings.EMAIL_PROVIDER
+        settings.EMAIL_PROVIDER = "development"
+        get_email_service.cache_clear()
         self.service = DevelopmentEmailService()
+
+    def tearDown(self):
+        settings.EMAIL_PROVIDER = self.previous_provider
+        get_email_service.cache_clear()
 
     def test_invitation_is_logged_in_development(self):
         with self.assertLogs("flowdesk.email", level="WARNING") as logs:
@@ -85,6 +94,53 @@ class SmtpEmailServiceTests(unittest.TestCase):
         settings.SMTP_PASSWORD = None
         with self.assertRaisesRegex(RuntimeError, "SMTP_USERNAME and SMTP_PASSWORD"):
             SmtpEmailService()
+
+
+class ResendEmailServiceTests(unittest.TestCase):
+    def setUp(self):
+        self.previous_values = {
+            "EMAIL_PROVIDER": settings.EMAIL_PROVIDER,
+            "EMAIL_FROM_ADDRESS": settings.EMAIL_FROM_ADDRESS,
+            "RESEND_API_KEY": settings.RESEND_API_KEY,
+        }
+        settings.EMAIL_PROVIDER = "resend"
+        settings.EMAIL_FROM_ADDRESS = "no-reply@flowdesk.armsystem.com.mx"
+        settings.RESEND_API_KEY = "re_test_key"
+        get_email_service.cache_clear()
+
+    def tearDown(self):
+        for key, value in self.previous_values.items():
+            setattr(settings, key, value)
+        get_email_service.cache_clear()
+
+    def test_factory_returns_resend_service(self):
+        self.assertIsInstance(get_email_service(), ResendEmailService)
+
+    @patch("app.services.email.urlopen")
+    def test_invitation_uses_resend_https_api(self, urlopen_mock):
+        response = MagicMock()
+        response.status = 200
+        urlopen_mock.return_value.__enter__.return_value = response
+
+        ResendEmailService().send_invitation(
+            recipient="user@example.com",
+            recipient_name="Usuario",
+            invitation_url="https://flowdesk.example/accept-invite?token=test",
+            tenant_name="Empresa de prueba",
+        )
+
+        request = urlopen_mock.call_args.args[0]
+        payload = json.loads(request.data.decode("utf-8"))
+        self.assertEqual(request.full_url, "https://api.resend.com/emails")
+        self.assertEqual(request.method, "POST")
+        self.assertEqual(payload["to"], ["user@example.com"])
+        self.assertIn("Empresa de prueba", payload["subject"])
+        self.assertEqual(request.get_header("Authorization"), "Bearer re_test_key")
+
+    def test_missing_resend_api_key_fails_fast(self):
+        settings.RESEND_API_KEY = None
+        with self.assertRaisesRegex(RuntimeError, "RESEND_API_KEY"):
+            ResendEmailService()
 
 
 if __name__ == "__main__":

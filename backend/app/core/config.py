@@ -36,6 +36,8 @@ class Settings(BaseSettings):
     SMTP_USERNAME: str | None = None
     SMTP_PASSWORD: str | None = None
     SMTP_USE_TLS: bool = True
+    RESEND_API_KEY: str | None = None
+    RESEND_API_URL: str = "https://api.resend.com/emails"
 
     class Config:
         env_file = ".env"
