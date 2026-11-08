@@ -1,0 +1,59 @@
+<section class="module-page">
+  <header class="page-heading">
+    <div>
+      <p class="eyebrow">Gestión comercial</p>
+      <h1>{{ clientId ? 'Editar cliente' : 'Nuevo cliente' }}</h1>
+      <p>{{ clientId ? 'Actualiza la información y el estado de la relación.' : 'Registra los datos esenciales para comenzar el seguimiento.' }}</p>
+    </div>
+    <a routerLink="/panel/clientes">Volver a clientes</a>
+  </header>
+
+  @if (errorMessage()) { <p class="message error" role="alert">{{ errorMessage() }}</p> }
+
+  @if (loading()) {
+    <div class="form-card loading-card" aria-label="Cargando cliente"><i></i><i></i><i></i></div>
+  } @else {
+    <form [formGroup]="form" (ngSubmit)="submit()" novalidate>
+      <section class="form-card">
+        <div class="section-heading"><h2>Información del cliente</h2><p>Los campos marcados son obligatorios.</p></div>
+        <div class="form-grid">
+          <label class="field">
+            <span>Empresa *</span>
+            <input formControlName="company_name" placeholder="Ej: Comercializadora del Norte" autocomplete="organization" />
+            @if (form.controls.company_name.touched && form.controls.company_name.invalid) { <small>Ingresa un nombre de al menos 2 caracteres.</small> }
+          </label>
+          <label class="field">
+            <span>Contacto principal *</span>
+            <input formControlName="contact_name" placeholder="Ej: Daniela Ramírez" autocomplete="name" />
+            @if (form.controls.contact_name.touched && form.controls.contact_name.invalid) { <small>Ingresa el nombre del contacto.</small> }
+          </label>
+          <label class="field">
+            <span>Correo electrónico *</span>
+            <input type="email" formControlName="email" placeholder="Ej: contacto@empresa.com" autocomplete="email" />
+            @if (form.controls.email.touched && form.controls.email.invalid) { <small>Ingresa un correo válido.</small> }
+          </label>
+          <label class="field">
+            <span>Teléfono</span>
+            <input type="tel" formControlName="phone" placeholder="Ej: +52 771 123 4567" autocomplete="tel" />
+            @if (form.controls.phone.touched && form.controls.phone.invalid) { <small>Utiliza únicamente números y símbolos telefónicos.</small> }
+          </label>
+          @if (clientId) {
+            <label class="field">
+              <span>Estado</span>
+              <select formControlName="status"><option value="active">Activo</option><option value="inactive">Inactivo</option></select>
+            </label>
+          }
+          <label class="field full-width">
+            <span>Notas</span>
+            <textarea rows="5" formControlName="notes" placeholder="Agrega contexto comercial, necesidades o próximos pasos"></textarea>
+            <span class="field-meta"><small>Opcional</small><small>{{ form.controls.notes.value.length }}/1000</small></span>
+          </label>
+        </div>
+      </section>
+      <div class="form-actions">
+        <a routerLink="/panel/clientes">Cancelar</a>
+        <button type="submit" [disabled]="saving()">{{ saving() ? 'Guardando…' : 'Guardar cliente' }}</button>
+      </div>
+    </form>
+  }
+</section>

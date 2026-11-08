@@ -3,6 +3,7 @@ from app.models.platform_admin import PlatformAdmin
 from app.models.role import Role, RolePermission
 from app.models.tenant import Tenant
 from app.models.user import User
+from app.models.client import Client
 
 __all__ = [
     "PasswordResetToken",
@@ -11,4 +12,5 @@ __all__ = [
     "RolePermission",
     "Tenant",
     "User",
+    "Client",
 ]

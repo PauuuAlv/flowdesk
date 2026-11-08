@@ -46,6 +46,11 @@ export class TenantShell {
     return this.user?.role === 'admin' || permissions.includes(PERMISSIONS.rolesView);
   }
 
+  protected get canViewClients(): boolean {
+    const permissions = this.user?.permissions ?? [];
+    return this.user?.role === 'admin' || permissions.includes(PERMISSIONS.clientsView);
+  }
+
   protected toggleSidebar(): void {
     this.sidebarOpen.update((open) => !open);
     this.profileOpen.set(false);

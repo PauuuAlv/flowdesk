@@ -1,0 +1,86 @@
+<section class="module-page">
+  <header class="page-heading">
+    <div>
+      <p class="eyebrow">Gestión comercial</p>
+      <h1>Clientes</h1>
+      <p>Centraliza los datos de contacto y conserva el estado de cada relación comercial.</p>
+    </div>
+    @if (canCreate) {
+      <a class="primary-action" routerLink="/panel/clientes/nuevo">Nuevo cliente</a>
+    }
+  </header>
+
+  @if (successMessage()) { <p class="message success" role="status">{{ successMessage() }}</p> }
+  @if (errorMessage()) { <p class="message error" role="alert">{{ errorMessage() }}</p> }
+
+  <div class="filters" aria-label="Filtros de clientes">
+    <label>
+      <span>Buscar</span>
+      <input type="search" placeholder="Empresa, contacto o correo" (input)="updateSearch($event)" />
+    </label>
+    <label>
+      <span>Estado</span>
+      <select (change)="updateStatusFilter($event)">
+        <option value="all">Todos</option>
+        <option value="active">Activos</option>
+        <option value="inactive">Inactivos</option>
+      </select>
+    </label>
+  </div>
+
+  @if (loading()) {
+    <div class="state-card skeleton" aria-label="Cargando clientes"><i></i><i></i><i></i></div>
+  } @else if (!clients().length) {
+    <div class="state-card">
+      <span aria-hidden="true">◎</span>
+      <h2>Aún no hay clientes</h2>
+      <p>Registra el primer cliente para comenzar a organizar la operación comercial.</p>
+      @if (canCreate) { <a class="primary-action" routerLink="/panel/clientes/nuevo">Registrar cliente</a> }
+    </div>
+  } @else if (!filteredClients().length) {
+    <div class="state-card"><h2>Sin resultados</h2><p>Prueba con otro término o cambia el filtro.</p></div>
+  } @else {
+    <div class="client-grid">
+      @for (client of filteredClients(); track client.id) {
+        <article class="client-card" [class.inactive]="client.status === 'inactive'">
+          <div class="client-heading">
+            <span class="avatar" aria-hidden="true">{{ initials(client) }}</span>
+            <div><h2>{{ client.company_name }}</h2><p>{{ client.contact_name }}</p></div>
+            <span class="status" [class.inactive]="client.status === 'inactive'">
+              {{ client.status === 'active' ? 'Activo' : 'Inactivo' }}
+            </span>
+          </div>
+          <dl>
+            <div><dt>Correo</dt><dd><a [href]="'mailto:' + client.email">{{ client.email }}</a></dd></div>
+            <div><dt>Teléfono</dt><dd>{{ client.phone || 'Sin registrar' }}</dd></div>
+          </dl>
+          @if (client.notes) { <p class="notes">{{ client.notes }}</p> }
+          <footer>
+            @if (canUpdate) { <a [routerLink]="['/panel/clientes', client.id, 'editar']">Editar</a> }
+            @if (canDelete) {
+              <button type="button" (click)="requestStatusChange(client)">
+                {{ client.status === 'active' ? 'Desactivar' : 'Reactivar' }}
+              </button>
+            }
+          </footer>
+        </article>
+      }
+    </div>
+  }
+</section>
+
+@if (clientToToggle(); as client) {
+  <div class="modal-backdrop" role="presentation">
+    <section class="confirm-dialog" role="dialog" aria-modal="true" aria-labelledby="client-confirm-title">
+      <span class="warning-icon" aria-hidden="true">!</span>
+      <h2 id="client-confirm-title">{{ client.status === 'active' ? 'Desactivar' : 'Reactivar' }} cliente</h2>
+      <p>¿Confirmas el cambio de estado de <strong>{{ client.company_name }}</strong>?</p>
+      <div>
+        <button class="secondary" type="button" (click)="cancelStatusChange()">Cancelar</button>
+        <button class="danger" type="button" [disabled]="processing()" (click)="confirmStatusChange()">
+          {{ processing() ? 'Guardando…' : 'Confirmar' }}
+        </button>
+      </div>
+    </section>
+  </div>
+}

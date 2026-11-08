@@ -2,8 +2,11 @@ import { Routes } from '@angular/router';
 
 import {
   authGuard,
+  createClientsGuard,
   inviteUsersGuard,
   platformAdminGuard,
+  updateClientsGuard,
+  viewClientsGuard,
   viewRolesGuard,
   viewUsersGuard
 } from './core/guards/auth.guard';
@@ -69,6 +72,24 @@ export const routes: Routes = [
         canActivate: [inviteUsersGuard],
         loadComponent: () =>
           import('./features/users/invite-user-page').then((component) => component.InviteUserPage)
+      },
+      {
+        path: 'clientes',
+        canActivate: [viewClientsGuard],
+        loadComponent: () =>
+          import('./features/clients/client-list-page').then((component) => component.ClientListPage)
+      },
+      {
+        path: 'clientes/nuevo',
+        canActivate: [createClientsGuard],
+        loadComponent: () =>
+          import('./features/clients/client-form-page').then((component) => component.ClientFormPage)
+      },
+      {
+        path: 'clientes/:clientId/editar',
+        canActivate: [updateClientsGuard],
+        loadComponent: () =>
+          import('./features/clients/client-form-page').then((component) => component.ClientFormPage)
       },
       {
         path: 'roles',

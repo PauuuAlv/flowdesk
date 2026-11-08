@@ -25,11 +25,12 @@
       }
 
       <p class="nav-label modules-label">Módulos</p>
-      <span class="nav-item pending" title="Se habilitará en una siguiente etapa">
-        <span class="nav-icon" aria-hidden="true">◎</span>
-        Clientes
-        <small>Próximamente</small>
-      </span>
+      @if (canViewClients) {
+        <a routerLink="/panel/clientes" routerLinkActive="active" (click)="closeSidebar()">
+          <span class="nav-icon" aria-hidden="true">◎</span>
+          Clientes
+        </a>
+      }
       @if (canViewRoles) {
         <a routerLink="/panel/roles" routerLinkActive="active" (click)="closeSidebar()">
           <span class="nav-icon" aria-hidden="true">◇</span>
