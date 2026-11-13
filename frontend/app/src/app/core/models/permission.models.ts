@@ -12,12 +12,14 @@ export const PERMISSIONS = {
   clientsCreate: 'clients.create',
   clientsUpdate: 'clients.update',
   clientsDelete: 'clients.delete',
-  opportunitiesView: 'opportunities.view', opportunitiesCreate: 'opportunities.create', opportunitiesUpdate: 'opportunities.update', opportunitiesClose: 'opportunities.close', opportunitiesArchive: 'opportunities.archive'
+  opportunitiesView: 'opportunities.view', opportunitiesCreate: 'opportunities.create', opportunitiesUpdate: 'opportunities.update', opportunitiesClose: 'opportunities.close', opportunitiesArchive: 'opportunities.archive',
+  activitiesView:'activities.view',activitiesCreate:'activities.create',activitiesUpdate:'activities.update',activitiesComplete:'activities.complete'
 } as const;
 
 export type PermissionCode = (typeof PERMISSIONS)[keyof typeof PERMISSIONS];
 
 export const PERMISSION_MODULES = [
+  {key:'activities',label:'Actividades',description:'Llamadas, correos, reuniones y tareas de seguimiento.',permissions:[{code:PERMISSIONS.activitiesView,label:'Ver'},{code:PERMISSIONS.activitiesCreate,label:'Crear'},{code:PERMISSIONS.activitiesUpdate,label:'Editar'},{code:PERMISSIONS.activitiesComplete,label:'Completar'}]},
   {
     key: 'opportunities', label: 'Oportunidades', description: 'Pipeline y seguimiento de negociaciones.', permissions: [
       { code: PERMISSIONS.opportunitiesView, label: 'Ver' }, { code: PERMISSIONS.opportunitiesCreate, label: 'Crear' },

@@ -3,7 +3,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from app.core.config import settings
 from app.middleware.tenant import TenantContextMiddleware
-from app.api.v1 import auth, clients, opportunities, platform_admin, roles, users
+from app.api.v1 import activities, auth, clients, opportunities, platform_admin, roles, users
 
 app = FastAPI(
     title="Flowdesk API",
@@ -27,6 +27,7 @@ app.include_router(users.router, prefix="/api/users", tags=["users"])
 app.include_router(roles.router, prefix="/api/roles", tags=["roles"])
 app.include_router(clients.router, prefix="/api/clients", tags=["clients"])
 app.include_router(opportunities.router, prefix="/api/opportunities", tags=["opportunities"])
+app.include_router(activities.router, prefix="/api/activities", tags=["activities"])
 
 
 @app.get("/health")

@@ -17,6 +17,10 @@ PERMISSION_CODES = (
     "opportunities.update",
     "opportunities.close",
     "opportunities.archive",
+    "activities.view",
+    "activities.create",
+    "activities.update",
+    "activities.complete",
 )
 
 ROLE_TEMPLATES = (
@@ -43,6 +47,10 @@ ROLE_TEMPLATES = (
             "opportunities.update",
             "opportunities.close",
             "opportunities.archive",
+            "activities.view",
+            "activities.create",
+            "activities.update",
+            "activities.complete",
         ),
     },
     {
@@ -50,6 +58,6 @@ ROLE_TEMPLATES = (
         "name": "Miembro",
         "description": "Acceso básico a los módulos operativos asignados.",
         "is_protected": False,
-        "permissions": ("dashboard.view", "clients.view", "opportunities.view"),
+        "permissions": ("dashboard.view", "clients.view", "opportunities.view", "activities.view", "activities.create", "activities.update", "activities.complete"),
     },
 )

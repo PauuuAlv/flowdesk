@@ -10,6 +10,9 @@ import {
   updateOpportunitiesGuard,
   viewClientsGuard,
   viewOpportunitiesGuard,
+  viewActivitiesGuard,
+  createActivitiesGuard,
+  updateActivitiesGuard,
   viewRolesGuard,
   viewUsersGuard
 } from './core/guards/auth.guard';
@@ -103,6 +106,9 @@ export const routes: Routes = [
       {
         path: 'oportunidades/:opportunityId/editar', canActivate: [updateOpportunitiesGuard], loadComponent: () => import('./features/opportunities/opportunity-form-page').then(c => c.OpportunityFormPage)
       },
+      {path:'actividades',canActivate:[viewActivitiesGuard],loadComponent:()=>import('./features/activities/activity-list-page').then(c=>c.ActivityListPage)},
+      {path:'actividades/nueva',canActivate:[createActivitiesGuard],loadComponent:()=>import('./features/activities/activity-form-page').then(c=>c.ActivityFormPage)},
+      {path:'actividades/:activityId/editar',canActivate:[updateActivitiesGuard],loadComponent:()=>import('./features/activities/activity-form-page').then(c=>c.ActivityFormPage)},
       {
         path: 'roles',
         canActivate: [viewRolesGuard],
