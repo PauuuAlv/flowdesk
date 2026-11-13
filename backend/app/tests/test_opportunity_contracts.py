@@ -1,7 +1,7 @@
 import unittest
 from decimal import Decimal
 from pydantic import ValidationError
-from app.schemas.opportunity import SaveOpportunityRequest
+from app.schemas.opportunity import CloseOpportunityRequest, SaveOpportunityRequest
 
 
 class OpportunityContractTests(unittest.TestCase):
@@ -14,6 +14,13 @@ class OpportunityContractTests(unittest.TestCase):
     def test_stage_is_restricted(self):
         with self.assertRaises(ValidationError):
             SaveOpportunityRequest(client_id="a",owner_user_id="b",name="Venta",amount=10,stage="unknown",probability=10)
+    def test_lost_opportunity_requires_reason(self):
+        with self.assertRaises(ValidationError):
+            CloseOpportunityRequest(stage="lost")
+    def test_won_opportunity_discards_loss_data(self):
+        value=CloseOpportunityRequest(stage="won",loss_reason="price",loss_detail="No debe conservarse")
+        self.assertIsNone(value.loss_reason)
+        self.assertIsNone(value.loss_detail)
 
 
 if __name__=="__main__": unittest.main()

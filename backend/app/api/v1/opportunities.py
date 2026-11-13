@@ -9,12 +9,12 @@ from app.models.opportunity import Opportunity
 from app.models.user import User
 from app.schemas.opportunity import (
     OpportunityAssigneeResponse,
+    CloseOpportunityRequest,
     OpportunityResponse,
     SaveOpportunityRequest,
     UpdateOpportunityStageRequest,
 )
 from app.security.permissions import require_permission
-from app.services.access_control import get_user_permission_codes
 
 router = APIRouter()
 
@@ -46,13 +46,17 @@ def _serialize(item: Opportunity) -> OpportunityResponse:
         owner_user_id=str(item.owner_user_id), owner_name=item.owner.full_name or item.owner.email,
         name=item.name, amount=item.amount, stage=item.stage, probability=item.probability,
         expected_close_date=item.expected_close_date, notes=item.notes,
+        loss_reason=item.loss_reason, loss_detail=item.loss_detail, archived=item.archived_at is not None,
         created_at=item.created_at, updated_at=item.updated_at,
     )
 
 
 @router.get("", response_model=list[OpportunityResponse])
-def list_opportunities(db: Session = Depends(get_db), current_user: User = Depends(require_permission("opportunities.view"))):
-    items = db.query(Opportunity).filter(Opportunity.tenant_id == current_user.tenant_id).order_by(Opportunity.updated_at.desc()).all()
+def list_opportunities(include_archived: bool = False, db: Session = Depends(get_db), current_user: User = Depends(require_permission("opportunities.view"))):
+    query = db.query(Opportunity).filter(Opportunity.tenant_id == current_user.tenant_id)
+    if not include_archived:
+        query = query.filter(Opportunity.archived_at.is_(None))
+    items = query.order_by(Opportunity.updated_at.desc()).all()
     return [_serialize(item) for item in items]
 
 
@@ -88,9 +92,39 @@ def update_opportunity(opportunity_id: uuid.UUID, payload: SaveOpportunityReques
 @router.patch("/{opportunity_id}/stage", response_model=OpportunityResponse)
 def update_stage(opportunity_id: uuid.UUID, payload: UpdateOpportunityStageRequest, db: Session = Depends(get_db), current_user: User = Depends(require_permission("opportunities.update"))):
     item = _opportunity_or_404(db, current_user.tenant_id, opportunity_id)
-    if payload.stage in ("won", "lost") and "opportunities.close" not in get_user_permission_codes(current_user):
-        raise HTTPException(status_code=403, detail="Insufficient permissions to close opportunity")
+    if payload.stage in ("won", "lost"):
+        raise HTTPException(status_code=409, detail="Use the close opportunity endpoint")
     item.stage = payload.stage
     item.probability = 100 if payload.stage == "won" else 0 if payload.stage == "lost" else item.probability
+    db.commit(); db.refresh(item)
+    return _serialize(item)
+
+
+@router.post("/{opportunity_id}/close", response_model=OpportunityResponse)
+def close_opportunity(opportunity_id: uuid.UUID, payload: CloseOpportunityRequest, db: Session = Depends(get_db), current_user: User = Depends(require_permission("opportunities.close"))):
+    item = _opportunity_or_404(db, current_user.tenant_id, opportunity_id)
+    if payload.stage == "lost" and not payload.loss_reason:
+        raise HTTPException(status_code=422, detail="Loss reason is required")
+    item.stage = payload.stage
+    item.probability = 100 if payload.stage == "won" else 0
+    item.loss_reason = payload.loss_reason if payload.stage == "lost" else None
+    item.loss_detail = payload.loss_detail.strip() if payload.loss_detail and payload.stage == "lost" else None
+    db.commit(); db.refresh(item)
+    return _serialize(item)
+
+
+@router.post("/{opportunity_id}/archive", response_model=OpportunityResponse)
+def archive_opportunity(opportunity_id: uuid.UUID, db: Session = Depends(get_db), current_user: User = Depends(require_permission("opportunities.archive"))):
+    from datetime import datetime, timezone
+    item = _opportunity_or_404(db, current_user.tenant_id, opportunity_id)
+    item.archived_at = datetime.now(timezone.utc)
+    db.commit(); db.refresh(item)
+    return _serialize(item)
+
+
+@router.post("/{opportunity_id}/restore", response_model=OpportunityResponse)
+def restore_opportunity(opportunity_id: uuid.UUID, db: Session = Depends(get_db), current_user: User = Depends(require_permission("opportunities.archive"))):
+    item = _opportunity_or_404(db, current_user.tenant_id, opportunity_id)
+    item.archived_at = None
     db.commit(); db.refresh(item)
     return _serialize(item)

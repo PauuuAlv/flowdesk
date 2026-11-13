@@ -16,6 +16,7 @@ PERMISSION_CODES = (
     "opportunities.create",
     "opportunities.update",
     "opportunities.close",
+    "opportunities.archive",
 )
 
 ROLE_TEMPLATES = (
@@ -41,6 +42,7 @@ ROLE_TEMPLATES = (
             "opportunities.create",
             "opportunities.update",
             "opportunities.close",
+            "opportunities.archive",
         ),
     },
     {

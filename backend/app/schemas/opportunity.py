@@ -2,7 +2,7 @@ from datetime import date, datetime
 from decimal import Decimal
 from typing import Literal
 
-from pydantic import BaseModel, Field, field_validator
+from pydantic import BaseModel, Field, field_validator, model_validator
 
 OpportunityStage = Literal["prospecting", "contact", "proposal", "negotiation", "won", "lost"]
 
@@ -37,6 +37,23 @@ class UpdateOpportunityStageRequest(BaseModel):
     stage: OpportunityStage
 
 
+class CloseOpportunityRequest(BaseModel):
+    stage: Literal["won", "lost"]
+    loss_reason: Literal["price", "no_response", "competitor", "budget_cancelled", "not_qualified", "other"] | None = None
+    loss_detail: str | None = Field(default=None, max_length=300)
+
+    @model_validator(mode="after")
+    def validate_loss_data(self):
+        if self.stage == "lost" and not self.loss_reason:
+            raise ValueError("Loss reason is required")
+        if self.stage == "won":
+            self.loss_reason = None
+            self.loss_detail = None
+        elif self.loss_detail:
+            self.loss_detail = self.loss_detail.strip() or None
+        return self
+
+
 class OpportunityResponse(BaseModel):
     id: str
     client_id: str
@@ -49,6 +66,9 @@ class OpportunityResponse(BaseModel):
     probability: int
     expected_close_date: date | None
     notes: str | None
+    loss_reason: str | None
+    loss_detail: str | None
+    archived: bool
     created_at: datetime
     updated_at: datetime
 

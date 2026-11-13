@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Date, ForeignKey, Integer, Numeric, String, Text
+from sqlalchemy import Column, Date, DateTime, ForeignKey, Integer, Numeric, String, Text
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
 
@@ -16,6 +16,9 @@ class Opportunity(BaseModel, TenantMixin):
     probability = Column(Integer, nullable=False, default=10)
     expected_close_date = Column(Date, nullable=True)
     notes = Column(Text, nullable=True)
+    loss_reason = Column(String(50), nullable=True)
+    loss_detail = Column(String(300), nullable=True)
+    archived_at = Column(DateTime(timezone=True), nullable=True, index=True)
 
     client = relationship("Client", lazy="joined")
     owner = relationship("User", lazy="joined")
