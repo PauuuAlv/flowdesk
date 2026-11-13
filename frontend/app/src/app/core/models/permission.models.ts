@@ -11,12 +11,19 @@ export const PERMISSIONS = {
   clientsView: 'clients.view',
   clientsCreate: 'clients.create',
   clientsUpdate: 'clients.update',
-  clientsDelete: 'clients.delete'
+  clientsDelete: 'clients.delete',
+  opportunitiesView: 'opportunities.view', opportunitiesCreate: 'opportunities.create', opportunitiesUpdate: 'opportunities.update', opportunitiesClose: 'opportunities.close'
 } as const;
 
 export type PermissionCode = (typeof PERMISSIONS)[keyof typeof PERMISSIONS];
 
 export const PERMISSION_MODULES = [
+  {
+    key: 'opportunities', label: 'Oportunidades', description: 'Pipeline y seguimiento de negociaciones.', permissions: [
+      { code: PERMISSIONS.opportunitiesView, label: 'Ver' }, { code: PERMISSIONS.opportunitiesCreate, label: 'Crear' },
+      { code: PERMISSIONS.opportunitiesUpdate, label: 'Editar' }, { code: PERMISSIONS.opportunitiesClose, label: 'Cerrar' }
+    ]
+  },
   {
     key: 'dashboard',
     label: 'Inicio',

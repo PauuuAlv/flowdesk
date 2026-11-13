@@ -3,10 +3,13 @@ import { Routes } from '@angular/router';
 import {
   authGuard,
   createClientsGuard,
+  createOpportunitiesGuard,
   inviteUsersGuard,
   platformAdminGuard,
   updateClientsGuard,
+  updateOpportunitiesGuard,
   viewClientsGuard,
+  viewOpportunitiesGuard,
   viewRolesGuard,
   viewUsersGuard
 } from './core/guards/auth.guard';
@@ -90,6 +93,15 @@ export const routes: Routes = [
         canActivate: [updateClientsGuard],
         loadComponent: () =>
           import('./features/clients/client-form-page').then((component) => component.ClientFormPage)
+      },
+      {
+        path: 'oportunidades', canActivate: [viewOpportunitiesGuard], loadComponent: () => import('./features/opportunities/opportunity-board-page').then(c => c.OpportunityBoardPage)
+      },
+      {
+        path: 'oportunidades/nueva', canActivate: [createOpportunitiesGuard], loadComponent: () => import('./features/opportunities/opportunity-form-page').then(c => c.OpportunityFormPage)
+      },
+      {
+        path: 'oportunidades/:opportunityId/editar', canActivate: [updateOpportunitiesGuard], loadComponent: () => import('./features/opportunities/opportunity-form-page').then(c => c.OpportunityFormPage)
       },
       {
         path: 'roles',

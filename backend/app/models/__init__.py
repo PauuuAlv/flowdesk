@@ -4,6 +4,7 @@ from app.models.role import Role, RolePermission
 from app.models.tenant import Tenant
 from app.models.user import User
 from app.models.client import Client
+from app.models.opportunity import Opportunity
 
 __all__ = [
     "PasswordResetToken",
@@ -13,4 +14,5 @@ __all__ = [
     "Tenant",
     "User",
     "Client",
+    "Opportunity",
 ]

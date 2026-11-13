@@ -1,0 +1,11 @@
+<section class="module-page">
+  <header><div><p class="eyebrow">Pipeline comercial</p><h1>Oportunidades</h1><p>Visualiza el avance de cada negociación y el valor de tu pipeline.</p></div>@if(canCreate){<a routerLink="/panel/oportunidades/nueva">Nueva oportunidad</a>}</header>
+  @if(error()){<p class="error" role="alert">{{error()}}</p>}
+  <label class="search"><span>Buscar</span><input type="search" placeholder="Oportunidad, cliente o responsable" (input)="updateSearch($event)"></label>
+  @if(loading()){<div class="state">Cargando oportunidades…</div>}@else if(!items().length){<div class="state"><h2>Aún no hay oportunidades</h2><p>Crea la primera negociación vinculada a un cliente.</p>@if(canCreate){<a routerLink="/panel/oportunidades/nueva">Crear oportunidad</a>}</div>}@else{
+    <div class="board">@for(stage of stages;track stage.key){<section class="column"><div class="column-title"><div><h2>{{stage.label}}</h2><small>{{byStage(stage.key).length}} oportunidades</small></div><strong>{{money(total(stage.key))}}</strong></div>
+      <div class="cards">@for(item of byStage(stage.key);track item.id){<article><div class="card-top"><span>{{item.probability}}%</span><strong>{{money(item.amount)}}</strong></div><h3>{{item.name}}</h3><p>{{item.client_name}}</p><dl><div><dt>Responsable</dt><dd>{{item.owner_name}}</dd></div><div><dt>Cierre</dt><dd>{{item.expected_close_date||'Sin fecha'}}</dd></div></dl>
+        @if(canUpdate){<select [value]="item.stage" (change)="changeStage(item,$event)" aria-label="Cambiar etapa">@for(option of stages;track option.key){<option [value]="option.key">{{option.label}}</option>}</select><a [routerLink]="['/panel/oportunidades',item.id,'editar']">Editar</a>}
+      </article>}@empty{<p class="empty">Sin oportunidades</p>}</div></section>}</div>
+  }
+</section>

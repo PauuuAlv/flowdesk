@@ -50,6 +50,7 @@ export class TenantShell {
     const permissions = this.user?.permissions ?? [];
     return this.user?.role === 'admin' || permissions.includes(PERMISSIONS.clientsView);
   }
+  protected get canViewOpportunities(): boolean { const p=this.user?.permissions??[]; return this.user?.role==='admin'||p.includes(PERMISSIONS.opportunitiesView); }
 
   protected toggleSidebar(): void {
     this.sidebarOpen.update((open) => !open);

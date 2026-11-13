@@ -31,6 +31,9 @@
           Clientes
         </a>
       }
+      @if (canViewOpportunities) {
+        <a routerLink="/panel/oportunidades" routerLinkActive="active" (click)="closeSidebar()"><span class="nav-icon" aria-hidden="true">◇</span>Oportunidades</a>
+      }
       @if (canViewRoles) {
         <a routerLink="/panel/roles" routerLinkActive="active" (click)="closeSidebar()">
           <span class="nav-icon" aria-hidden="true">◇</span>

@@ -53,6 +53,9 @@ export const viewRolesGuard: CanActivateFn = () => permissionGuard(PERMISSIONS.r
 export const viewClientsGuard: CanActivateFn = () => permissionGuard(PERMISSIONS.clientsView);
 export const createClientsGuard: CanActivateFn = () => permissionGuard(PERMISSIONS.clientsCreate);
 export const updateClientsGuard: CanActivateFn = () => permissionGuard(PERMISSIONS.clientsUpdate);
+export const viewOpportunitiesGuard: CanActivateFn = () => permissionGuard(PERMISSIONS.opportunitiesView);
+export const createOpportunitiesGuard: CanActivateFn = () => permissionGuard(PERMISSIONS.opportunitiesCreate);
+export const updateOpportunitiesGuard: CanActivateFn = () => permissionGuard(PERMISSIONS.opportunitiesUpdate);
 
 function permissionGuard(permission: (typeof PERMISSIONS)[keyof typeof PERMISSIONS]) {
   const sessionService = inject(SessionService);
