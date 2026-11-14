@@ -1,17 +1,38 @@
-<main class="dashboard-page">
-  <section class="welcome-card" aria-labelledby="dashboard-title">
-    <p class="eyebrow">Sesión protegida</p>
-    <h1 id="dashboard-title">Bienvenido{{ user?.full_name ? ', ' + user?.full_name : '' }}</h1>
-    <p>Este es el inicio de tu espacio de trabajo en Flowdesk.</p>
-
-    <dl>
-      <div><dt>Correo</dt><dd>{{ user?.email }}</dd></div>
-      <div><dt>Empresa</dt><dd>{{ user?.tenant_name || 'Mi empresa' }}</dd></div>
-      <div><dt>Rol</dt><dd>{{ user?.role }}</dd></div>
-    </dl>
-
-    @if (user?.role === 'admin') {
-      <a class="primary-link" routerLink="/panel/usuarios/invitar">Invitar usuarios de mi empresa</a>
-    }
-  </section>
+<main class="dashboard-page" aria-labelledby="dashboard-title">
+  <header class="page-header">
+    <div><p class="eyebrow">Resumen comercial</p><h1 id="dashboard-title">Hola{{ user?.full_name ? ', ' + user?.full_name : '' }}</h1><p>Consulta el avance de {{ user?.tenant_name || 'tu empresa' }} desde un solo lugar.</p></div>
+    <div class="quick-actions" aria-label="Acciones rápidas">
+      @if(canCreateClient){<a routerLink="/panel/clientes/nuevo">+ Cliente</a>}
+      @if(canCreateOpportunity){<a routerLink="/panel/oportunidades/nueva">+ Oportunidad</a>}
+      @if(canCreateActivity){<a routerLink="/panel/actividades/nueva">+ Actividad</a>}
+      @if(canCreateQuote){<a class="primary" routerLink="/panel/cotizaciones/nueva">+ Cotización</a>}
+    </div>
+  </header>
+  @if(loading()){
+    <section class="state-card" aria-live="polite"><span class="spinner" aria-hidden="true"></span><p>Preparando el resumen de tu empresa...</p></section>
+  }@else if(error()){
+    <section class="state-card error" role="alert"><h2>No pudimos cargar el dashboard</h2><p>{{error()}}</p><button type="button" (click)="load()">Intentar nuevamente</button></section>
+  }@else if(summary();as data){
+    <section class="metrics-grid" aria-label="Indicadores principales">
+      <article class="metric-card clients"><span class="metric-icon" aria-hidden="true">C</span><div><p>Clientes activos</p><strong>{{data.metrics.active_clients}}</strong></div><a routerLink="/panel/clientes">Ver clientes</a></article>
+      <article class="metric-card opportunities"><span class="metric-icon" aria-hidden="true">O</span><div><p>Oportunidades abiertas</p><strong>{{data.metrics.open_opportunities}}</strong></div><small>{{money(data.metrics.pipeline_value)}} en proceso</small></article>
+      <article class="metric-card activities" [class.has-alert]="data.metrics.overdue_activities>0"><span class="metric-icon" aria-hidden="true">A</span><div><p>Actividades pendientes</p><strong>{{data.metrics.pending_activities}}</strong></div><small>{{data.metrics.overdue_activities}} vencidas</small></article>
+      <article class="metric-card sales"><span class="metric-icon" aria-hidden="true">$</span><div><p>Cotizaciones aceptadas</p><strong>{{money(data.metrics.accepted_quotes_value)}}</strong></div><small>{{data.metrics.pending_quotes}} pendientes</small></article>
+    </section>
+    <section class="dashboard-grid">
+      <article class="panel pipeline-panel">
+        <div class="panel-heading"><div><p class="section-label">Embudo comercial</p><h2>Oportunidades por etapa</h2></div><a routerLink="/panel/oportunidades">Ver tablero</a></div>
+        <div class="pipeline-summary"><div><span>Valor total</span><strong>{{money(data.metrics.pipeline_value)}}</strong></div><div><span>Valor ponderado</span><strong>{{money(data.metrics.weighted_pipeline_value)}}</strong></div></div>
+        <div class="pipeline-list">@for(item of data.pipeline;track item.stage){<div class="pipeline-row"><div class="pipeline-meta"><strong>{{stageLabel(item.stage)}}</strong><span>{{item.count}} oportunidades</span></div><div class="pipeline-bar" aria-hidden="true"><span [style.width.%]="pipelineWidth(item)"></span></div><span class="pipeline-value">{{money(item.value)}}</span></div>}</div>
+      </article>
+      <article class="panel activities-panel">
+        <div class="panel-heading"><div><p class="section-label">Seguimiento</p><h2>Próximas actividades</h2></div><a routerLink="/panel/actividades">Ver todas</a></div>
+        @if(data.upcoming_activities.length){<ul class="activity-list">@for(activity of data.upcoming_activities;track activity.id){<li [class.overdue]="activity.is_overdue"><span class="activity-dot" aria-hidden="true"></span><div><strong>{{activity.title}}</strong><span>{{activity.client_name}} · {{activityType(activity.activity_type)}}</span></div><time [attr.datetime]="activity.scheduled_at">{{date(activity.scheduled_at)}}</time></li>}</ul>}@else{<div class="empty-state"><strong>Todo al día</strong><p>No hay actividades pendientes.</p></div>}
+      </article>
+    </section>
+    <section class="panel quotes-panel">
+      <div class="panel-heading"><div><p class="section-label">Cotizaciones</p><h2>Movimiento reciente</h2></div><a routerLink="/panel/cotizaciones">Ver cotizaciones</a></div>
+      @if(data.recent_quotes.length){<div class="table-wrap"><table><thead><tr><th>Folio</th><th>Cliente</th><th>Estado</th><th class="amount">Total</th><th></th></tr></thead><tbody>@for(quote of data.recent_quotes;track quote.id){<tr><td><strong>{{quote.folio}}</strong></td><td>{{quote.client_name}}</td><td><span [class]="'status '+quote.status">{{quoteStatus(quote.status)}}</span></td><td class="amount">{{money(quote.total)}}</td><td><a [routerLink]="['/panel/cotizaciones',quote.id]">Ver</a></td></tr>}</tbody></table></div>}@else{<div class="empty-state"><strong>Aún no hay cotizaciones</strong><p>Las cotizaciones recientes aparecerán aquí.</p></div>}
+    </section>
+  }
 </main>
