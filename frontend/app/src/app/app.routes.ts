@@ -14,6 +14,7 @@ import {
   createActivitiesGuard,
   updateActivitiesGuard,
   viewQuotesGuard,createQuotesGuard,updateQuotesGuard,
+  viewProductsGuard,createProductsGuard,updateProductsGuard,
   viewRolesGuard,
   viewUsersGuard
 } from './core/guards/auth.guard';
@@ -114,6 +115,9 @@ export const routes: Routes = [
       {path:'cotizaciones/nueva',canActivate:[createQuotesGuard],loadComponent:()=>import('./features/quotes/quote-form-page').then(c=>c.QuoteFormPage)},
       {path:'cotizaciones/:quoteId/editar',canActivate:[updateQuotesGuard],loadComponent:()=>import('./features/quotes/quote-form-page').then(c=>c.QuoteFormPage)},
       {path:'cotizaciones/:quoteId',canActivate:[viewQuotesGuard],loadComponent:()=>import('./features/quotes/quote-detail-page').then(c=>c.QuoteDetailPage)},
+      {path:'productos',canActivate:[viewProductsGuard],loadComponent:()=>import('./features/products/product-list-page').then(c=>c.ProductListPage)},
+      {path:'productos/nuevo',canActivate:[createProductsGuard],loadComponent:()=>import('./features/products/product-form-page').then(c=>c.ProductFormPage)},
+      {path:'productos/:productId/editar',canActivate:[updateProductsGuard],loadComponent:()=>import('./features/products/product-form-page').then(c=>c.ProductFormPage)},
       {
         path: 'roles',
         canActivate: [viewRolesGuard],

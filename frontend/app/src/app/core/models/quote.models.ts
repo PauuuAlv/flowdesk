@@ -1,6 +1,7 @@
 export type QuoteStatus = 'draft' | 'sent' | 'accepted' | 'rejected' | 'expired';
 export interface QuoteItem {
   id: string;
+  product_id: string | null;
   position: number;
   description: string;
   quantity: number;
@@ -42,5 +43,5 @@ export interface SaveQuoteRequest {
   discount: number;
   tax_rate: number;
   notes: string | null;
-  items: Array<{ description: string; quantity: number; unit_price: number }>;
+  items: Array<{ product_id: string | null; description: string; quantity: number; unit_price: number }>;
 }

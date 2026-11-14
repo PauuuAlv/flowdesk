@@ -7,6 +7,7 @@ from app.models.client import Client
 from app.models.opportunity import Opportunity
 from app.models.activity import Activity
 from app.models.quote import Quote, QuoteItem
+from app.models.product import Product
 
 __all__ = [
     "PasswordResetToken",

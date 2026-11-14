@@ -4,9 +4,11 @@ import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { Client } from '../../core/models/client.models';
 import { Opportunity, OpportunityAssignee } from '../../core/models/opportunity.models';
 import { SaveQuoteRequest } from '../../core/models/quote.models';
+import { Product } from '../../core/models/product.models';
 import { ClientService } from '../../core/services/client.service';
 import { OpportunityService } from '../../core/services/opportunity.service';
 import { QuoteService } from '../../core/services/quote.service';
+import { ProductService } from '../../core/services/product.service';
 @Component({
   selector: 'app-quote-form-page',
   imports: [ReactiveFormsModule, RouterLink],
@@ -18,12 +20,14 @@ export class QuoteFormPage {
   private service = inject(QuoteService);
   private cs = inject(ClientService);
   private os = inject(OpportunityService);
+  private ps = inject(ProductService);
   private route = inject(ActivatedRoute);
   private router = inject(Router);
   id = this.route.snapshot.paramMap.get('quoteId');
   clients = signal<Client[]>([]);
   opportunities = signal<Opportunity[]>([]);
   users = signal<OpportunityAssignee[]>([]);
+  products = signal<Product[]>([]);
   selectedClient = signal('');
   loading = signal(true);
   saving = signal(false);
@@ -68,7 +72,7 @@ export class QuoteFormPage {
     return Number(this.form.controls.discount.value || 0);
   }
   constructor() {
-    let n = 3;
+    let n = 4;
     const done = () => {
       if (!--n) this.id ? this.load(this.id) : this.loading.set(false);
     };
@@ -94,6 +98,7 @@ export class QuoteFormPage {
       },
       error: () => this.fail(),
     });
+    this.ps.list().subscribe({next:x=>{this.products.set(x.filter(p=>p.status==='active'));done()},error:()=>this.fail()});
     this.form.controls.client_id.valueChanges.subscribe((v) => {
       this.selectedClient.set(v);
       this.form.controls.opportunity_id.setValue('');
@@ -101,6 +106,7 @@ export class QuoteFormPage {
   }
   item() {
     return this.fb.nonNullable.group({
+      product_id: [''],
       description: ['', [Validators.required, Validators.minLength(2), Validators.maxLength(240)]],
       quantity: [1, [Validators.required, Validators.min(0.01)]],
       unit_price: [0, [Validators.required, Validators.min(0)]],
@@ -112,6 +118,7 @@ export class QuoteFormPage {
   remove(i: number) {
     if (this.items.length > 1) this.items.removeAt(i);
   }
+  selectProduct(i:number,event:Event){const id=(event.target as HTMLSelectElement).value;const product=this.products().find(x=>x.id===id);if(product)this.items.at(i).patchValue({product_id:product.id,description:product.name,unit_price:product.base_price})}
   submit() {
     if (
       this.form.invalid ||
@@ -127,7 +134,7 @@ export class QuoteFormPage {
       ...v,
       opportunity_id: v.opportunity_id || null,
       notes: v.notes.trim() || null,
-      items: v.items.map((x) => ({ ...x, description: x.description.trim() })),
+      items: v.items.map((x) => ({ ...x, product_id:x.product_id||null, description: x.description.trim() })),
     };
     this.saving.set(true);
     this.service.save(body, this.id ?? undefined).subscribe({
@@ -148,6 +155,7 @@ export class QuoteFormPage {
         q.items.forEach((x) =>
           this.items.push(
             this.fb.nonNullable.group({
+              product_id: [x.product_id??''],
               description: [x.description, Validators.required],
               quantity: [x.quantity, [Validators.required, Validators.min(0.01)]],
               unit_price: [x.unit_price, [Validators.required, Validators.min(0)]],

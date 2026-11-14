@@ -7,6 +7,7 @@ QuoteStatus=Literal["draft","sent","accepted","rejected","expired"]
 
 
 class QuoteItemRequest(BaseModel):
+    product_id:str|None=None
     description:str=Field(min_length=2,max_length=240)
     quantity:Decimal=Field(gt=0,max_digits=12,decimal_places=2)
     unit_price:Decimal=Field(ge=0,max_digits=14,decimal_places=2)
@@ -41,7 +42,7 @@ class UpdateQuoteStatusRequest(BaseModel):status:Literal["sent","accepted","reje
 
 
 class QuoteItemResponse(BaseModel):
-    id:str;position:int;description:str;quantity:Decimal;unit_price:Decimal;amount:Decimal
+    id:str;product_id:str|None;position:int;description:str;quantity:Decimal;unit_price:Decimal;amount:Decimal
 
 
 class QuoteResponse(BaseModel):

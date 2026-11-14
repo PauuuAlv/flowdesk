@@ -1,0 +1,2 @@
+import{HttpClient}from'@angular/common/http';import{TestBed}from'@angular/core/testing';import{ProductService}from'./product.service';
+describe('ProductService',()=>{it('consulta el catálogo del tenant',()=>{const http=jasmine.createSpyObj<HttpClient>('HttpClient',['get']);TestBed.configureTestingModule({providers:[ProductService,{provide:HttpClient,useValue:http}]});TestBed.inject(ProductService).list();expect(http.get).toHaveBeenCalledWith('/api/products')})});

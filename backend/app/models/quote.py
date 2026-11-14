@@ -30,8 +30,10 @@ class Quote(BaseModel, TenantMixin):
 class QuoteItem(BaseModel):
     __tablename__="quote_items"
     quote_id=Column(UUID(as_uuid=True),ForeignKey("quotes.id",ondelete="CASCADE"),nullable=False,index=True)
+    product_id=Column(UUID(as_uuid=True),ForeignKey("products.id"),nullable=True,index=True)
     position=Column(Integer,nullable=False)
     description=Column(String(240),nullable=False)
     quantity=Column(Numeric(12,2),nullable=False)
     unit_price=Column(Numeric(14,2),nullable=False)
     amount=Column(Numeric(14,2),nullable=False)
+    product=relationship("Product",lazy="joined")
