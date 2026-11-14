@@ -1,5 +1,6 @@
 # Archivos temporales de revisión local
 /tmp/
+/backend/output/
 
 # Variables y secretos locales
 .env

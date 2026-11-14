@@ -1,0 +1,59 @@
+<section class="module">
+  <header>
+    <div>
+      <p class="eyebrow">Propuestas comerciales</p>
+      <h1>Cotizaciones</h1>
+      <p>Controla importes, vigencia y respuesta de cada propuesta.</p>
+    </div>
+    @if (canCreate) {
+      <a routerLink="/panel/cotizaciones/nueva">Nueva cotización</a>
+    }
+  </header>
+  @if (error()) {
+    <p class="error">{{ error() }}</p>
+  }
+  <div class="filters">
+    <input type="search" placeholder="Folio o cliente" (input)="setSearch($event)" /><select
+      (change)="setFilter($event)"
+    >
+      <option value="all">Todos los estados</option>
+      <option value="draft">Borradores</option>
+      <option value="sent">Enviadas</option>
+      <option value="accepted">Aceptadas</option>
+      <option value="rejected">Rechazadas</option>
+      <option value="expired">Vencidas</option>
+    </select>
+  </div>
+  @if (loading()) {
+    <div class="state">Cargando…</div>
+  } @else {
+    <div class="table">
+      @for (q of visible(); track q.id) {
+        <article>
+          <div>
+            <strong>{{ q.folio }}</strong
+            ><span>{{ q.client_name }}</span>
+          </div>
+          <span>{{ q.issue_date }} — {{ q.valid_until }}</span
+          ><b>{{ money(q.total) }}</b
+          ><span class="badge" [attr.data-status]="q.status">{{ label(q.status) }}</span>
+          <div class="actions">
+            <a [routerLink]="['/panel/cotizaciones', q.id]">Ver</a>
+            @if (canUpdate && q.status === 'draft') {
+              <a [routerLink]="['/panel/cotizaciones', q.id, 'editar']">Editar</a>
+            }
+            @if (canStatus && q.status === 'draft') {
+              <button (click)="change(q, 'sent')">Marcar enviada</button>
+            }
+            @if (canStatus && q.status === 'sent') {
+              <button (click)="change(q, 'accepted')">Aceptar</button
+              ><button (click)="change(q, 'rejected')">Rechazar</button>
+            }
+          </div>
+        </article>
+      } @empty {
+        <div class="state">No hay cotizaciones con estos filtros.</div>
+      }
+    </div>
+  }
+</section>

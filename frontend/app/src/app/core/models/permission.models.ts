@@ -13,12 +13,13 @@ export const PERMISSIONS = {
   clientsUpdate: 'clients.update',
   clientsDelete: 'clients.delete',
   opportunitiesView: 'opportunities.view', opportunitiesCreate: 'opportunities.create', opportunitiesUpdate: 'opportunities.update', opportunitiesClose: 'opportunities.close', opportunitiesArchive: 'opportunities.archive',
-  activitiesView:'activities.view',activitiesCreate:'activities.create',activitiesUpdate:'activities.update',activitiesComplete:'activities.complete'
+  activitiesView:'activities.view',activitiesCreate:'activities.create',activitiesUpdate:'activities.update',activitiesComplete:'activities.complete',quotesView:'quotes.view',quotesCreate:'quotes.create',quotesUpdate:'quotes.update',quotesStatus:'quotes.status'
 } as const;
 
 export type PermissionCode = (typeof PERMISSIONS)[keyof typeof PERMISSIONS];
 
 export const PERMISSION_MODULES = [
+  {key:'quotes',label:'Cotizaciones',description:'Propuestas económicas y seguimiento de aceptación.',permissions:[{code:PERMISSIONS.quotesView,label:'Ver'},{code:PERMISSIONS.quotesCreate,label:'Crear'},{code:PERMISSIONS.quotesUpdate,label:'Editar'},{code:PERMISSIONS.quotesStatus,label:'Cambiar estado'}]},
   {key:'activities',label:'Actividades',description:'Llamadas, correos, reuniones y tareas de seguimiento.',permissions:[{code:PERMISSIONS.activitiesView,label:'Ver'},{code:PERMISSIONS.activitiesCreate,label:'Crear'},{code:PERMISSIONS.activitiesUpdate,label:'Editar'},{code:PERMISSIONS.activitiesComplete,label:'Completar'}]},
   {
     key: 'opportunities', label: 'Oportunidades', description: 'Pipeline y seguimiento de negociaciones.', permissions: [

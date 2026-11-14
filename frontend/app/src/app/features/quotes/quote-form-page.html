@@ -1,0 +1,90 @@
+<section class="module">
+  <header>
+    <div>
+      <p class="eyebrow">Propuesta comercial</p>
+      <h1>{{ id ? 'Editar cotización' : 'Nueva cotización' }}</h1>
+      <p>Captura los conceptos y Flowdesk calculará los importes.</p>
+    </div>
+    <a routerLink="/panel/cotizaciones">Volver</a>
+  </header>
+  @if (error()) {
+    <p class="error">{{ error() }}</p>
+  }
+  @if (loading()) {
+    <div class="card">Cargando…</div>
+  } @else {
+    <form [formGroup]="form" (ngSubmit)="submit()">
+      <div class="card grid">
+        <label
+          >Cliente *<select formControlName="client_id">
+            <option value="">Selecciona</option>
+            @for (c of clients(); track c.id) {
+              <option [value]="c.id">{{ c.company_name }}</option>
+            }
+          </select></label
+        ><label
+          >Oportunidad<select formControlName="opportunity_id">
+            <option value="">Sin oportunidad</option>
+            @for (o of available(); track o.id) {
+              <option [value]="o.id">{{ o.name }}</option>
+            }
+          </select></label
+        ><label
+          >Responsable *<select formControlName="owner_user_id">
+            @for (u of users(); track u.id) {
+              <option [value]="u.id">{{ u.name }}</option>
+            }
+          </select></label
+        ><label>Emisión *<input type="date" formControlName="issue_date" /></label
+        ><label>Válida hasta *<input type="date" formControlName="valid_until" /></label
+        ><label
+          >Descuento $<input type="number" min="0" step=".01" formControlName="discount" /></label
+        ><label
+          >IVA %<input type="number" min="0" max="100" step=".01" formControlName="tax_rate"
+        /></label>
+      </div>
+      <section class="card concepts">
+        <div class="title">
+          <h2>Conceptos</h2>
+          <button type="button" (click)="add()">Agregar concepto</button>
+        </div>
+        <div formArrayName="items">
+          @for (row of items.controls; track $index; let i = $index) {
+            <div class="row" [formGroupName]="i">
+              <input formControlName="description" placeholder="Descripción" /><input
+                type="number"
+                min=".01"
+                step=".01"
+                formControlName="quantity"
+                aria-label="Cantidad"
+              /><input
+                type="number"
+                min="0"
+                step=".01"
+                formControlName="unit_price"
+                aria-label="Precio unitario"
+              /><strong>{{
+                money(rowAmount(row))
+              }}</strong
+              ><button type="button" (click)="remove(i)" [disabled]="items.length === 1">×</button>
+            </div>
+          }
+        </div>
+        <label>Notas<textarea rows="4" maxlength="1000" formControlName="notes"></textarea></label>
+        <div class="totals">
+          <span
+            >Subtotal <b>{{ money(subtotal) }}</b></span
+          ><span
+            >Descuento <b>- {{ money(discountValue) }}</b></span
+          ><span
+            >IVA <b>{{ money(tax) }}</b></span
+          ><strong>Total {{ money(total) }}</strong>
+        </div>
+      </section>
+      <div class="actions">
+        <a routerLink="/panel/cotizaciones">Cancelar</a
+        ><button [disabled]="saving()">{{ saving() ? 'Guardando…' : 'Guardar borrador' }}</button>
+      </div>
+    </form>
+  }
+</section>

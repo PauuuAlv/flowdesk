@@ -13,6 +13,7 @@ import {
   viewActivitiesGuard,
   createActivitiesGuard,
   updateActivitiesGuard,
+  viewQuotesGuard,createQuotesGuard,updateQuotesGuard,
   viewRolesGuard,
   viewUsersGuard
 } from './core/guards/auth.guard';
@@ -109,6 +110,10 @@ export const routes: Routes = [
       {path:'actividades',canActivate:[viewActivitiesGuard],loadComponent:()=>import('./features/activities/activity-list-page').then(c=>c.ActivityListPage)},
       {path:'actividades/nueva',canActivate:[createActivitiesGuard],loadComponent:()=>import('./features/activities/activity-form-page').then(c=>c.ActivityFormPage)},
       {path:'actividades/:activityId/editar',canActivate:[updateActivitiesGuard],loadComponent:()=>import('./features/activities/activity-form-page').then(c=>c.ActivityFormPage)},
+      {path:'cotizaciones',canActivate:[viewQuotesGuard],loadComponent:()=>import('./features/quotes/quote-list-page').then(c=>c.QuoteListPage)},
+      {path:'cotizaciones/nueva',canActivate:[createQuotesGuard],loadComponent:()=>import('./features/quotes/quote-form-page').then(c=>c.QuoteFormPage)},
+      {path:'cotizaciones/:quoteId/editar',canActivate:[updateQuotesGuard],loadComponent:()=>import('./features/quotes/quote-form-page').then(c=>c.QuoteFormPage)},
+      {path:'cotizaciones/:quoteId',canActivate:[viewQuotesGuard],loadComponent:()=>import('./features/quotes/quote-detail-page').then(c=>c.QuoteDetailPage)},
       {
         path: 'roles',
         canActivate: [viewRolesGuard],

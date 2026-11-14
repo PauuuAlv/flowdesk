@@ -52,6 +52,7 @@ export class TenantShell {
   }
   protected get canViewOpportunities(): boolean { const p=this.user?.permissions??[]; return this.user?.role==='admin'||p.includes(PERMISSIONS.opportunitiesView); }
   protected get canViewActivities():boolean{const p=this.user?.permissions??[];return this.user?.role==='admin'||p.includes(PERMISSIONS.activitiesView)}
+  protected get canViewQuotes():boolean{const p=this.user?.permissions??[];return this.user?.role==='admin'||p.includes(PERMISSIONS.quotesView)}
 
   protected toggleSidebar(): void {
     this.sidebarOpen.update((open) => !open);

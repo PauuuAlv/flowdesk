@@ -37,6 +37,7 @@
       @if (canViewActivities) {
         <a routerLink="/panel/actividades" routerLinkActive="active" (click)="closeSidebar()"><span class="nav-icon" aria-hidden="true">✓</span>Actividades</a>
       }
+      @if (canViewQuotes) {<a routerLink="/panel/cotizaciones" routerLinkActive="active" (click)="closeSidebar()"><span class="nav-icon" aria-hidden="true">▤</span>Cotizaciones</a>}
       @if (canViewRoles) {
         <a routerLink="/panel/roles" routerLinkActive="active" (click)="closeSidebar()">
           <span class="nav-icon" aria-hidden="true">◇</span>
