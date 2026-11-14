@@ -95,7 +95,7 @@ def get_dashboard(
     recent_quotes = [
         DashboardQuote(
             id=str(item.id),
-            folio=f"COT-{item.issue_date.year}-{item.sequence:04d}",
+            folio=f"{item.prefix or 'COT'}-{item.issue_date.year}-{item.sequence:04d}",
             client_name=item.client.company_name,
             total=_money(item.total),
             status="expired" if item.status == "sent" and item.valid_until < date.today() else item.status,

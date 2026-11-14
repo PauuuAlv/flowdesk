@@ -1,0 +1,2 @@
+import{HttpClient}from'@angular/common/http';import{inject,Injectable}from'@angular/core';import{Observable}from'rxjs';import{CompanySettings,SaveCompanySettings}from'../models/company-settings.models';
+@Injectable({providedIn:'root'})export class CompanySettingsService{private readonly http=inject(HttpClient);get():Observable<CompanySettings>{return this.http.get<CompanySettings>('/api/company-settings')}update(body:SaveCompanySettings):Observable<CompanySettings>{return this.http.patch<CompanySettings>('/api/company-settings',body)}}

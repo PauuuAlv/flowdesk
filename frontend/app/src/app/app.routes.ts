@@ -15,7 +15,7 @@ import {
   updateActivitiesGuard,
   viewQuotesGuard,createQuotesGuard,updateQuotesGuard,
   viewProductsGuard,createProductsGuard,updateProductsGuard,
-  viewRolesGuard,
+  viewRolesGuard, viewCompanySettingsGuard,
   viewUsersGuard
 } from './core/guards/auth.guard';
 
@@ -118,6 +118,7 @@ export const routes: Routes = [
       {path:'productos',canActivate:[viewProductsGuard],loadComponent:()=>import('./features/products/product-list-page').then(c=>c.ProductListPage)},
       {path:'productos/nuevo',canActivate:[createProductsGuard],loadComponent:()=>import('./features/products/product-form-page').then(c=>c.ProductFormPage)},
       {path:'productos/:productId/editar',canActivate:[updateProductsGuard],loadComponent:()=>import('./features/products/product-form-page').then(c=>c.ProductFormPage)},
+      {path:'configuracion/empresa',canActivate:[viewCompanySettingsGuard],loadComponent:()=>import('./features/company-settings/company-settings-page').then(c=>c.CompanySettingsPage)},
       {
         path: 'roles',
         canActivate: [viewRolesGuard],

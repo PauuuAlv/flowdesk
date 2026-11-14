@@ -43,8 +43,9 @@ def _relations(payload:SaveQuoteRequest,tenant_id,db:Session):
 
 
 def _effective_status(item:Quote):return "expired" if item.status=="sent" and item.valid_until<date.today() else item.status
-def _serialize(item:Quote,tenant_name:str):
-    return QuoteResponse(id=str(item.id),folio=f"COT-{item.issue_date.year}-{item.sequence:04d}",tenant_name=tenant_name,client_id=str(item.client_id),client_name=item.client.company_name,client_contact=item.client.contact_name,client_email=item.client.email,opportunity_id=str(item.opportunity_id) if item.opportunity_id else None,opportunity_name=item.opportunity.name if item.opportunity else None,owner_user_id=str(item.owner_user_id),owner_name=item.owner.full_name or item.owner.email,issue_date=item.issue_date,valid_until=item.valid_until,currency=item.currency,discount=item.discount,tax_rate=item.tax_rate,subtotal=item.subtotal,tax=item.tax,total=item.total,status=_effective_status(item),notes=item.notes,items=[QuoteItemResponse(id=str(x.id),product_id=str(x.product_id) if x.product_id else None,position=x.position,description=x.description,quantity=x.quantity,unit_price=x.unit_price,amount=x.amount) for x in item.items],created_at=item.created_at,updated_at=item.updated_at)
+def _serialize(item:Quote,tenant:Tenant|None):
+    tenant_name=tenant.name if tenant else "Empresa";prefix=item.prefix or "COT"
+    return QuoteResponse(id=str(item.id),folio=f"{prefix}-{item.issue_date.year}-{item.sequence:04d}",tenant_name=tenant_name,client_id=str(item.client_id),client_name=item.client.company_name,client_contact=item.client.contact_name,client_email=item.client.email,opportunity_id=str(item.opportunity_id) if item.opportunity_id else None,opportunity_name=item.opportunity.name if item.opportunity else None,owner_user_id=str(item.owner_user_id),owner_name=item.owner.full_name or item.owner.email,issue_date=item.issue_date,valid_until=item.valid_until,currency=item.currency,discount=item.discount,tax_rate=item.tax_rate,subtotal=item.subtotal,tax=item.tax,total=item.total,status=_effective_status(item),notes=item.notes,items=[QuoteItemResponse(id=str(x.id),product_id=str(x.product_id) if x.product_id else None,position=x.position,description=x.description,quantity=x.quantity,unit_price=x.unit_price,amount=x.amount) for x in item.items],created_at=item.created_at,updated_at=item.updated_at)
 
 def _quote_items(payload:SaveQuoteRequest,tenant_id,db:Session):
     items=[]
@@ -57,27 +58,27 @@ def _quote_items(payload:SaveQuoteRequest,tenant_id,db:Session):
         items.append(QuoteItem(product_id=product_id,position=position,description=x.description,quantity=x.quantity,unit_price=x.unit_price,amount=x.quantity*x.unit_price))
     return items
 
-def _tenant_name(tenant_id,db:Session):
-    tenant=db.query(Tenant).filter(Tenant.id==tenant_id).first();return tenant.name if tenant else "Empresa"
+def _tenant(tenant_id,db:Session):return db.query(Tenant).filter(Tenant.id==tenant_id).first()
 
 
 @router.get("",response_model=list[QuoteResponse])
-def list_quotes(db:Session=Depends(get_db),user:User=Depends(require_permission("quotes.view"))):return [_serialize(x,_tenant_name(user.tenant_id,db)) for x in db.query(Quote).filter(Quote.tenant_id==user.tenant_id).order_by(Quote.created_at.desc()).all()]
+def list_quotes(db:Session=Depends(get_db),user:User=Depends(require_permission("quotes.view"))):
+    tenant=_tenant(user.tenant_id,db);return [_serialize(x,tenant) for x in db.query(Quote).filter(Quote.tenant_id==user.tenant_id).order_by(Quote.created_at.desc()).all()]
 
 
 @router.post("",response_model=QuoteResponse,status_code=status.HTTP_201_CREATED)
 def create_quote(payload:SaveQuoteRequest,db:Session=Depends(get_db),user:User=Depends(require_permission("quotes.create"))):
-    client,owner,opportunity=_relations(payload,user.tenant_id,db);subtotal,tax,total=calculate_totals(payload);sequence=(db.query(func.max(Quote.sequence)).filter(Quote.tenant_id==user.tenant_id).scalar() or 0)+1
-    item=Quote(tenant_id=user.tenant_id,sequence=sequence,client_id=client.id,owner_user_id=owner.id,opportunity_id=opportunity.id if opportunity else None,issue_date=payload.issue_date,valid_until=payload.valid_until,discount=payload.discount,tax_rate=payload.tax_rate,subtotal=subtotal,tax=tax,total=total,notes=payload.notes,status="draft")
-    item.items=_quote_items(payload,user.tenant_id,db);db.add(item);db.commit();db.refresh(item);return _serialize(item,_tenant_name(user.tenant_id,db))
+    client,owner,opportunity=_relations(payload,user.tenant_id,db);subtotal,tax,total=calculate_totals(payload);sequence=(db.query(func.max(Quote.sequence)).filter(Quote.tenant_id==user.tenant_id).scalar() or 0)+1;tenant=_tenant(user.tenant_id,db)
+    item=Quote(tenant_id=user.tenant_id,sequence=sequence,prefix=tenant.quote_prefix if tenant else "COT",client_id=client.id,owner_user_id=owner.id,opportunity_id=opportunity.id if opportunity else None,issue_date=payload.issue_date,valid_until=payload.valid_until,currency=tenant.currency if tenant else "MXN",discount=payload.discount,tax_rate=payload.tax_rate,subtotal=subtotal,tax=tax,total=total,notes=payload.notes,status="draft")
+    item.items=_quote_items(payload,user.tenant_id,db);db.add(item);db.commit();db.refresh(item);return _serialize(item,tenant)
 
 
 @router.get("/{quote_id}",response_model=QuoteResponse)
-def get_quote(quote_id:uuid.UUID,db:Session=Depends(get_db),user:User=Depends(require_permission("quotes.view"))):return _serialize(_get(quote_id,user.tenant_id,db),_tenant_name(user.tenant_id,db))
+def get_quote(quote_id:uuid.UUID,db:Session=Depends(get_db),user:User=Depends(require_permission("quotes.view"))):return _serialize(_get(quote_id,user.tenant_id,db),_tenant(user.tenant_id,db))
 
 @router.get("/{quote_id}/pdf")
 def quote_pdf(quote_id:uuid.UUID,db:Session=Depends(get_db),user:User=Depends(require_permission("quotes.view"))):
-    data=_serialize(_get(quote_id,user.tenant_id,db),_tenant_name(user.tenant_id,db))
+    data=_serialize(_get(quote_id,user.tenant_id,db),_tenant(user.tenant_id,db))
     buffer=io.BytesIO()
     navy=colors.HexColor("#123040")
     blue=colors.HexColor("#275d78")
@@ -161,11 +162,11 @@ def update_quote(quote_id:uuid.UUID,payload:SaveQuoteRequest,db:Session=Depends(
     if item.status!="draft":raise HTTPException(409,"Only draft quotes can be edited")
     client,owner,opportunity=_relations(payload,user.tenant_id,db);subtotal,tax,total=calculate_totals(payload)
     for key,value in {"client_id":client.id,"owner_user_id":owner.id,"opportunity_id":opportunity.id if opportunity else None,"issue_date":payload.issue_date,"valid_until":payload.valid_until,"discount":payload.discount,"tax_rate":payload.tax_rate,"subtotal":subtotal,"tax":tax,"total":total,"notes":payload.notes}.items():setattr(item,key,value)
-    item.items=_quote_items(payload,user.tenant_id,db);db.commit();db.refresh(item);return _serialize(item,_tenant_name(user.tenant_id,db))
+    item.items=_quote_items(payload,user.tenant_id,db);db.commit();db.refresh(item);return _serialize(item,_tenant(user.tenant_id,db))
 
 
 @router.patch("/{quote_id}/status",response_model=QuoteResponse)
 def update_status(quote_id:uuid.UUID,payload:UpdateQuoteStatusRequest,db:Session=Depends(get_db),user:User=Depends(require_permission("quotes.status"))):
     item=_get(quote_id,user.tenant_id,db);allowed={"draft":{"sent"},"sent":{"accepted","rejected"}}
     if payload.status not in allowed.get(item.status,set()):raise HTTPException(409,"Invalid quote status transition")
-    item.status=payload.status;db.commit();db.refresh(item);return _serialize(item,_tenant_name(user.tenant_id,db))
+    item.status=payload.status;db.commit();db.refresh(item);return _serialize(item,_tenant(user.tenant_id,db))

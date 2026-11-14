@@ -9,6 +9,7 @@ import { ClientService } from '../../core/services/client.service';
 import { OpportunityService } from '../../core/services/opportunity.service';
 import { QuoteService } from '../../core/services/quote.service';
 import { ProductService } from '../../core/services/product.service';
+import { CompanySettingsService } from '../../core/services/company-settings.service';
 @Component({
   selector: 'app-quote-form-page',
   imports: [ReactiveFormsModule, RouterLink],
@@ -21,6 +22,7 @@ export class QuoteFormPage {
   private cs = inject(ClientService);
   private os = inject(OpportunityService);
   private ps = inject(ProductService);
+  private settingsService = inject(CompanySettingsService);
   private route = inject(ActivatedRoute);
   private router = inject(Router);
   id = this.route.snapshot.paramMap.get('quoteId');
@@ -28,6 +30,7 @@ export class QuoteFormPage {
   opportunities = signal<Opportunity[]>([]);
   users = signal<OpportunityAssignee[]>([]);
   products = signal<Product[]>([]);
+  currency = signal('MXN');
   selectedClient = signal('');
   loading = signal(true);
   saving = signal(false);
@@ -72,7 +75,7 @@ export class QuoteFormPage {
     return Number(this.form.controls.discount.value || 0);
   }
   constructor() {
-    let n = 4;
+    let n = 5;
     const done = () => {
       if (!--n) this.id ? this.load(this.id) : this.loading.set(false);
     };
@@ -99,6 +102,7 @@ export class QuoteFormPage {
       error: () => this.fail(),
     });
     this.ps.list().subscribe({next:x=>{this.products.set(x.filter(p=>p.status==='active'));done()},error:()=>this.fail()});
+    this.settingsService.get().subscribe({next:x=>{this.currency.set(x.currency);if(!this.id){const issue=new Date(`${this.form.controls.issue_date.value}T12:00:00`);issue.setDate(issue.getDate()+x.quote_validity_days);this.form.patchValue({tax_rate:Number(x.default_tax_rate),valid_until:issue.toISOString().slice(0,10)})}done()},error:()=>this.fail()});
     this.form.controls.client_id.valueChanges.subscribe((v) => {
       this.selectedClient.set(v);
       this.form.controls.opportunity_id.setValue('');
@@ -146,7 +150,7 @@ export class QuoteFormPage {
     });
   }
   money(v: number) {
-    return new Intl.NumberFormat('es-MX', { style: 'currency', currency: 'MXN' }).format(v);
+    return new Intl.NumberFormat('es-MX', { style: 'currency', currency: this.currency() }).format(v);
   }
   private load(id: string) {
     this.service.get(id).subscribe({

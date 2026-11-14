@@ -8,6 +8,7 @@ class Quote(BaseModel, TenantMixin):
     __tablename__="quotes"
     __table_args__=(UniqueConstraint("tenant_id","sequence",name="uq_quote_tenant_sequence"),)
     sequence=Column(Integer,nullable=False)
+    prefix=Column(String(12),nullable=False,default="COT")
     client_id=Column(UUID(as_uuid=True),ForeignKey("clients.id"),nullable=False,index=True)
     opportunity_id=Column(UUID(as_uuid=True),ForeignKey("opportunities.id"),nullable=True,index=True)
     owner_user_id=Column(UUID(as_uuid=True),ForeignKey("users.id"),nullable=False,index=True)

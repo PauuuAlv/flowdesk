@@ -26,6 +26,7 @@ class InviteUserResponse(BaseModel):
 class UserMeResponse(BaseModel):
     id: str
     tenant_id: str
+    tenant_name: str
     email: str
     full_name: str | None
     role: str

@@ -29,6 +29,8 @@ PERMISSION_CODES = (
     "products.create",
     "products.update",
     "products.delete",
+    "settings.view",
+    "settings.update",
 )
 
 ROLE_TEMPLATES = (
@@ -67,6 +69,7 @@ ROLE_TEMPLATES = (
             "products.create",
             "products.update",
             "products.delete",
+            "settings.view",
         ),
     },
     {

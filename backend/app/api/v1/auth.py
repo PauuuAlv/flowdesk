@@ -9,6 +9,7 @@ from sqlalchemy.orm import Session
 from app.core.config import settings
 from app.core.database import get_db
 from app.models.user import User
+from app.models.tenant import Tenant
 from app.repositories.user_repository import UserRepository
 from app.repositories.password_reset_repository import PasswordResetRepository
 from app.schemas.auth import (
@@ -116,12 +117,14 @@ def register(payload: RegisterRequest, db: Session = Depends(get_db)):
     return TokenResponse(access_token=access_token, refresh_token=refresh_token)
 
 @router.get("/me", response_model=UserMeResponse)
-def get_me(current_user: User = Depends(get_current_user)):
+def get_me(db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
     """Devuelve la identidad de quien está haciendo la request, a partir
     únicamente del token — nunca de un parámetro que mande el cliente."""
+    tenant = db.query(Tenant).filter(Tenant.id == current_user.tenant_id).first()
     return UserMeResponse(
         id=str(current_user.id),
         tenant_id=str(current_user.tenant_id),
+        tenant_name=tenant.name if tenant else "Empresa",
         email=current_user.email,
         full_name=current_user.full_name,
         role=current_user.role,

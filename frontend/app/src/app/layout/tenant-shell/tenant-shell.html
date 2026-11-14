@@ -45,6 +45,7 @@
           Roles y permisos
         </a>
       }
+      @if (canViewSettings) {<a routerLink="/panel/configuracion/empresa" routerLinkActive="active" (click)="closeSidebar()"><span class="nav-icon" aria-hidden="true">⚙</span>Configuración</a>}
     </nav>
 
     <div class="sidebar-footer">

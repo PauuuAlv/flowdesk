@@ -13,12 +13,13 @@ export const PERMISSIONS = {
   clientsUpdate: 'clients.update',
   clientsDelete: 'clients.delete',
   opportunitiesView: 'opportunities.view', opportunitiesCreate: 'opportunities.create', opportunitiesUpdate: 'opportunities.update', opportunitiesClose: 'opportunities.close', opportunitiesArchive: 'opportunities.archive',
-  activitiesView:'activities.view',activitiesCreate:'activities.create',activitiesUpdate:'activities.update',activitiesComplete:'activities.complete',quotesView:'quotes.view',quotesCreate:'quotes.create',quotesUpdate:'quotes.update',quotesStatus:'quotes.status',productsView:'products.view',productsCreate:'products.create',productsUpdate:'products.update',productsDelete:'products.delete'
+  activitiesView:'activities.view',activitiesCreate:'activities.create',activitiesUpdate:'activities.update',activitiesComplete:'activities.complete',quotesView:'quotes.view',quotesCreate:'quotes.create',quotesUpdate:'quotes.update',quotesStatus:'quotes.status',productsView:'products.view',productsCreate:'products.create',productsUpdate:'products.update',productsDelete:'products.delete',settingsView:'settings.view',settingsUpdate:'settings.update'
 } as const;
 
 export type PermissionCode = (typeof PERMISSIONS)[keyof typeof PERMISSIONS];
 
 export const PERMISSION_MODULES = [
+  {key:'settings',label:'Configuración de empresa',description:'Identidad fiscal y preferencias comerciales del tenant.',permissions:[{code:PERMISSIONS.settingsView,label:'Ver'},{code:PERMISSIONS.settingsUpdate,label:'Editar'}]},
   {key:'products',label:'Productos y servicios',description:'Catálogo comercial utilizado en cotizaciones.',permissions:[{code:PERMISSIONS.productsView,label:'Ver'},{code:PERMISSIONS.productsCreate,label:'Crear'},{code:PERMISSIONS.productsUpdate,label:'Editar'},{code:PERMISSIONS.productsDelete,label:'Desactivar'}]},
   {key:'quotes',label:'Cotizaciones',description:'Propuestas económicas y seguimiento de aceptación.',permissions:[{code:PERMISSIONS.quotesView,label:'Ver'},{code:PERMISSIONS.quotesCreate,label:'Crear'},{code:PERMISSIONS.quotesUpdate,label:'Editar'},{code:PERMISSIONS.quotesStatus,label:'Cambiar estado'}]},
   {key:'activities',label:'Actividades',description:'Llamadas, correos, reuniones y tareas de seguimiento.',permissions:[{code:PERMISSIONS.activitiesView,label:'Ver'},{code:PERMISSIONS.activitiesCreate,label:'Crear'},{code:PERMISSIONS.activitiesUpdate,label:'Editar'},{code:PERMISSIONS.activitiesComplete,label:'Completar'}]},
