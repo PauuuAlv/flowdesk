@@ -18,6 +18,7 @@ from app.schemas.access_control import (
 from app.schemas.user import InviteUserRequest, InviteUserResponse
 from app.security.permissions import require_permission
 from app.services.email import EmailService, get_email_service
+from app.services.saas_limits import ensure_tenant_capacity
 from app.security.tokens import generate_raw_token, hash_token
 
 router = APIRouter()
@@ -70,6 +71,7 @@ def invite_user(
     """Solo un admin puede invitar, y SIEMPRE dentro de su propio tenant
     (admin.tenant_id viene del token, nunca del body — así un admin de un
     tenant jamás puede crear usuarios en el tenant de otra empresa)."""
+    ensure_tenant_capacity(db, admin.tenant_id, "users")
     existing = (
         db.query(User)
         .filter(User.tenant_id == admin.tenant_id, User.email == payload.email)

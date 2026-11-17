@@ -45,7 +45,8 @@ def login(payload: LoginRequest, db: Session = Depends(get_db)):
         detail="Invalid email or password",
     )
 
-    if not user or user.status != "active" or not user.hashed_password:
+    tenant = db.query(Tenant).filter(Tenant.id == user.tenant_id).first() if user else None
+    if not user or user.status != "active" or not user.hashed_password or not tenant or not tenant.is_active:
             # Cubre: usuario no existe, todavía está 'invited' (sin password), o 'disabled'.
             raise invalid_credentials
     
@@ -70,7 +71,8 @@ def refresh(payload: RefreshRequest, db: Session = Depends(get_db)):
 
     user_repo = UserRepository(db)
     user = user_repo.get(tenant_id=uuid.UUID(data["tenant_id"]), id=uuid.UUID(data["sub"]))
-    if not user or not user.is_active:
+    tenant = db.query(Tenant).filter(Tenant.id == user.tenant_id).first() if user else None
+    if not user or not user.is_active or not tenant or not tenant.is_active:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="User not found or inactive")
 
     # NOTA: como el refresh token no rota (ver security/jwt.py), aquí solo
@@ -95,7 +97,8 @@ def register(payload: RegisterRequest, db: Session = Depends(get_db)):
         detail="Invalid or expired invitation token",
     )
 
-    if not user or user.status != "invited":
+    tenant = db.query(Tenant).filter(Tenant.id == user.tenant_id).first() if user else None
+    if not user or user.status != "invited" or not tenant or not tenant.is_active:
         raise invalid_token
 
     if user.invitation_expires_at is None or user.invitation_expires_at < datetime.now(timezone.utc):

@@ -10,6 +10,7 @@ from app.models.product import Product
 from app.models.user import User
 from app.schemas.product import CreateProductRequest, ProductResponse, UpdateProductRequest, UpdateProductStatusRequest
 from app.security.permissions import require_permission
+from app.services.saas_limits import ensure_tenant_capacity
 
 router = APIRouter()
 
@@ -40,6 +41,7 @@ def list_products(search: str | None = Query(default=None, max_length=140), prod
 
 @router.post("", response_model=ProductResponse, status_code=status.HTTP_201_CREATED)
 def create_product(payload: CreateProductRequest, db: Session = Depends(get_db), current_user: User = Depends(require_permission("products.create"))):
+    ensure_tenant_capacity(db, current_user.tenant_id, "products")
     item = Product(tenant_id=current_user.tenant_id, status="active", **payload.model_dump())
     db.add(item)
     try: db.commit()

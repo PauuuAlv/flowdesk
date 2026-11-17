@@ -18,6 +18,7 @@ import {
   ResetPasswordResponse,
   TokenResponse,
   UserMeResponse
+  ,TenantSaaS,UpdateTenantSubscriptionRequest
 } from '../models/auth.models';
 
 @Injectable({ providedIn: 'root' })
@@ -47,6 +48,14 @@ export class AuthService {
 
   createTenant(request: CreateTenantRequest): Observable<CreateTenantResponse> {
     return this.http.post<CreateTenantResponse>('/api/platform-admin/tenants', request);
+  }
+
+  listTenants(): Observable<TenantSaaS[]> {
+    return this.http.get<TenantSaaS[]>('/api/platform-admin/tenants');
+  }
+
+  updateTenantSubscription(id:string, request:UpdateTenantSubscriptionRequest):Observable<TenantSaaS>{
+    return this.http.patch<TenantSaaS>(`/api/platform-admin/tenants/${id}/subscription`,request);
   }
 
   inviteUser(request: InviteUserRequest): Observable<InviteUserResponse> {

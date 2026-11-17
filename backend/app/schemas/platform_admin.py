@@ -1,4 +1,10 @@
-from pydantic import BaseModel, EmailStr
+from datetime import datetime
+from typing import Literal
+
+from pydantic import BaseModel, EmailStr, Field
+
+PlanKey = Literal["basic", "professional", "enterprise"]
+SubscriptionStatus = Literal["trial", "active", "suspended", "cancelled"]
 
 
 class PlatformAdminLoginRequest(BaseModel):
@@ -19,6 +25,7 @@ class CreateTenantRequest(BaseModel):
     slug: str
     admin_email: EmailStr
     admin_full_name: str | None = None
+    plan_key: PlanKey = "basic"
 
 
 class CreateTenantResponse(BaseModel):
@@ -32,3 +39,32 @@ class CreateTenantResponse(BaseModel):
     # flujo manualmente. ANTES DE PRODUCCIÓN esto debe quitarse y mandarse
     # únicamente por correo — nunca en la respuesta del API.
     dev_invitation_link: str
+
+
+class TenantUsageResponse(BaseModel):
+    users: int
+    clients: int
+    products: int
+
+
+class TenantSaaSResponse(BaseModel):
+    id: str
+    name: str
+    slug: str
+    plan_key: PlanKey
+    plan_name: str
+    subscription_status: SubscriptionStatus
+    is_active: bool
+    max_users: int
+    max_clients: int
+    max_products: int
+    usage: TenantUsageResponse
+    subscription_started_at: datetime
+    subscription_renews_at: datetime | None
+    created_at: datetime
+
+
+class UpdateTenantSubscriptionRequest(BaseModel):
+    plan_key: PlanKey
+    subscription_status: SubscriptionStatus
+    subscription_renews_at: datetime | None = None

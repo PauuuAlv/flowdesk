@@ -15,6 +15,7 @@ from app.schemas.client import (
     UpdateClientStatusRequest,
 )
 from app.security.permissions import require_permission
+from app.services.saas_limits import ensure_tenant_capacity
 
 router = APIRouter()
 
@@ -47,6 +48,7 @@ def list_clients(
     db: Session = Depends(get_db),
     current_user: User = Depends(require_permission("clients.view")),
 ):
+    ensure_tenant_capacity(db, current_user.tenant_id, "clients")
     repository = ClientRepository(db)
     return [
         _serialize(client)

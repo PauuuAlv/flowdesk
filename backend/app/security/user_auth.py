@@ -6,6 +6,7 @@ from sqlalchemy.orm import Session
 
 from app.core.database import get_db
 from app.models.user import User
+from app.models.tenant import Tenant
 
 # Igual que en platform_admin_auth.py: esto NO vuelve a validar el token
 # (eso ya lo hizo TenantContextMiddleware antes de llegar aquí). Solo existe
@@ -35,6 +36,9 @@ def get_current_user(
     )
     if not user or user.status != "active":
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="User not found or inactive")
+    tenant = db.query(Tenant).filter(Tenant.id == user.tenant_id).first()
+    if not tenant or not tenant.is_active:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Tenant subscription inactive")
 
     return user
 

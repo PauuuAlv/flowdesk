@@ -122,7 +122,8 @@ describe('AuthService', () => {
       name: 'Empresa de prueba',
       slug: 'empresa-prueba',
       admin_email: 'admin@example.com',
-      admin_full_name: 'Admin de prueba'
+      admin_full_name: 'Admin de prueba',
+      plan_key: 'basic' as const
     };
 
     service.createTenant(requestBody).subscribe((response) => {

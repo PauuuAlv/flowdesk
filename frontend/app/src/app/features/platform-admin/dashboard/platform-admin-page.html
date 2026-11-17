@@ -1,67 +1,26 @@
 <main class="admin-shell">
-  <header>
-    <strong>Flowdesk</strong>
-    <span>Administración de plataforma</span>
-    <button class="secondary-button" type="button" (click)="logout()">Cerrar sesión</button>
-  </header>
-
+  <header><strong>Flowdesk</strong><span>Administración de plataforma</span><button class="secondary-button" type="button" (click)="logout()">Cerrar sesión</button></header>
   <div class="content">
-    <section class="intro" aria-labelledby="admin-title">
-      <p class="eyebrow">Empresas clientes</p>
-      <h1 id="admin-title">Crear nueva empresa</h1>
-      <p>Registra un tenant y genera la invitación para su primer administrador.</p>
+    <section class="intro"><p class="eyebrow">Control SaaS</p><h1>Empresas y suscripciones</h1><p>Consulta el consumo, administra los planes y controla el acceso de cada tenant.</p></section>
+    @if(errorMessage()){<div class="message error" role="alert">{{errorMessage()}}</div>}
+    <section class="metrics" aria-label="Resumen de empresas"><article><span>Empresas</span><strong>{{metrics().total}}</strong></article><article><span>Con acceso</span><strong>{{metrics().active}}</strong></article><article><span>En prueba</span><strong>{{metrics().trial}}</strong></article><article><span>Suspendidas</span><strong>{{metrics().suspended}}</strong></article></section>
+    <section class="tenant-section"><div class="section-heading"><div><h2>Empresas registradas</h2><p>Los límites se aplican automáticamente al crear usuarios, clientes y productos.</p></div><a href="#crear-empresa">Nueva empresa</a></div>
+      <div class="filters"><label>Buscar<input type="search" placeholder="Nombre, identificador o plan" (input)="setSearch($event)"></label><label>Estado<select (change)="setStatusFilter($event)"><option value="all">Todos</option><option value="trial">En prueba</option><option value="active">Activos</option><option value="suspended">Suspendidos</option><option value="cancelled">Cancelados</option></select></label></div>
+      @if(loadingTenants()){<div class="empty">Cargando empresas…</div>}@else if(!visibleTenants().length){<div class="empty">No hay empresas que coincidan con los filtros.</div>}@else{<div class="tenant-grid">@for(tenant of visibleTenants();track tenant.id){<article class="tenant-card" [class.disabled]="!tenant.is_active"><div class="tenant-top"><div><span [class]="'status '+tenant.subscription_status">{{statusLabel(tenant.subscription_status)}}</span><h3>{{tenant.name}}</h3><p>{{tenant.slug}}</p></div><strong>{{tenant.plan_name}}</strong></div>
+        <div class="usage"><div><span>Usuarios <b>{{tenant.usage.users}}/{{tenant.max_users}}</b></span><i><em [style.width.%]="percent(tenant.usage.users,tenant.max_users)"></em></i></div><div><span>Clientes <b>{{tenant.usage.clients}}/{{tenant.max_clients}}</b></span><i><em [style.width.%]="percent(tenant.usage.clients,tenant.max_clients)"></em></i></div><div><span>Productos <b>{{tenant.usage.products}}/{{tenant.max_products}}</b></span><i><em [style.width.%]="percent(tenant.usage.products,tenant.max_products)"></em></i></div></div>
+        <div class="subscription-data"><span>Creada {{date(tenant.created_at)}}</span><span>Renovación: {{date(tenant.subscription_renews_at)}}</span></div><div class="tenant-actions"><label>Plan<select [value]="tenant.plan_key" [disabled]="updatingTenant()===tenant.id" (change)="changePlan(tenant,$event)"><option value="basic">Básico</option><option value="professional">Profesional</option><option value="enterprise">Empresarial</option></select></label><label>Estado<select [value]="tenant.subscription_status" [disabled]="updatingTenant()===tenant.id" (change)="changeStatus(tenant,$event)"><option value="trial">Prueba</option><option value="active">Activo</option><option value="suspended">Suspendido</option><option value="cancelled">Cancelado</option></select></label></div>@if(updatingTenant()===tenant.id){<small class="saving">Actualizando suscripción…</small>}</article>}</div>}
     </section>
 
-    <section class="form-card" aria-labelledby="tenant-form-title">
-      <form [formGroup]="tenantForm" (ngSubmit)="submit()" novalidate>
-        <div class="form-heading">
-          <h2 id="tenant-form-title">Datos de la empresa</h2>
-          <p>Todos los campos son obligatorios.</p>
-        </div>
-
-        @if (errorMessage()) { <div class="message error" role="alert">{{ errorMessage() }}</div> }
-
-        <div class="field-grid">
-          <div class="field">
-            <label for="tenant-name">Nombre de la empresa</label>
-            <input id="tenant-name" type="text" formControlName="name" placeholder="Ej: Comercializadora del Norte" autocomplete="organization" (blur)="generateSlug()" />
-            @if (tenantForm.controls.name.touched && tenantForm.controls.name.invalid) { <small>Ingresa el nombre de la empresa.</small> }
-          </div>
-          <div class="field">
-            <label for="tenant-slug">Identificador</label>
-            <input id="tenant-slug" type="text" formControlName="slug" placeholder="Ej: comercializadora-norte" autocapitalize="none" />
-            @if (tenantForm.controls.slug.touched && tenantForm.controls.slug.invalid) { <small>Usa letras minúsculas, números y guiones.</small> }
-          </div>
-          <div class="field">
-            <label for="admin-name">Nombre del administrador</label>
-            <input id="admin-name" type="text" formControlName="admin_full_name" placeholder="Ej: Paulina Alvarado" autocomplete="name" />
-            @if (tenantForm.controls.admin_full_name.touched && tenantForm.controls.admin_full_name.invalid) { <small>Ingresa el nombre del administrador.</small> }
-          </div>
-          <div class="field">
-            <label for="admin-email">Correo del administrador</label>
-            <input id="admin-email" type="email" formControlName="admin_email" placeholder="Ej: admin@empresa.com" autocomplete="email" />
-            @if (tenantForm.controls.admin_email.touched && tenantForm.controls.admin_email.invalid) { <small>Ingresa un correo electrónico válido.</small> }
-          </div>
-        </div>
-
-        <button class="primary-button" type="submit" [disabled]="submitting()">
-          {{ submitting() ? 'Creando empresa…' : 'Crear empresa y generar invitación' }}
-        </button>
-      </form>
-
-      @if (createdTenant(); as tenant) {
-        <div class="result" role="status">
-          <p class="result-label">Empresa creada correctamente</p>
-          <h3>{{ tenant.tenant_name }}</h3>
-          <p>Invitación para <strong>{{ tenant.admin_email }}</strong></p>
-          <label for="invitation-link">Enlace de invitación de desarrollo</label>
-          <div class="invitation-row">
-            <input id="invitation-link" type="text" readonly [value]="tenant.dev_invitation_link" />
-            <button class="copy-button" type="button" (click)="copyInvitation()">{{ copied() ? 'Copiado' : 'Copiar' }}</button>
-          </div>
-          <small class="dev-note">Este enlace contiene un token personal. Compártelo únicamente con el administrador invitado.</small>
-        </div>
-      }
+    <section class="create-section" id="crear-empresa"><div class="section-heading"><div><p class="eyebrow">Alta de tenant</p><h2>Crear nueva empresa</h2><p>Registra la empresa y genera la invitación para su primer administrador.</p></div></div>
+      <section class="form-card"><form [formGroup]="tenantForm" (ngSubmit)="submit()" novalidate><div class="form-heading"><h2>Datos de la empresa</h2><p>Todos los campos son obligatorios.</p></div><div class="field-grid">
+        <div class="field"><label for="tenant-name">Nombre de la empresa</label><input id="tenant-name" formControlName="name" placeholder="Ej: Comercializadora del Norte" (blur)="generateSlug()">@if(tenantForm.controls.name.touched&&tenantForm.controls.name.invalid){<small>Ingresa el nombre de la empresa.</small>}</div>
+        <div class="field"><label for="tenant-slug">Identificador</label><input id="tenant-slug" formControlName="slug" placeholder="Ej: comercializadora-norte">@if(tenantForm.controls.slug.touched&&tenantForm.controls.slug.invalid){<small>Usa letras minúsculas, números y guiones.</small>}</div>
+        <div class="field"><label for="admin-name">Nombre del administrador</label><input id="admin-name" formControlName="admin_full_name" placeholder="Ej: Paulina Alvarado">@if(tenantForm.controls.admin_full_name.touched&&tenantForm.controls.admin_full_name.invalid){<small>Ingresa el nombre del administrador.</small>}</div>
+        <div class="field"><label for="admin-email">Correo del administrador</label><input id="admin-email" type="email" formControlName="admin_email" placeholder="Ej: admin@empresa.com">@if(tenantForm.controls.admin_email.touched&&tenantForm.controls.admin_email.invalid){<small>Ingresa un correo válido.</small>}</div>
+        <div class="field full"><label for="tenant-plan">Plan inicial</label><select id="tenant-plan" formControlName="plan_key"><option value="basic">Básico — 5 usuarios</option><option value="professional">Profesional — 20 usuarios</option><option value="enterprise">Empresarial — 500 usuarios</option></select></div>
+      </div><button class="primary-button" type="submit" [disabled]="submitting()">{{submitting()?'Creando empresa…':'Crear empresa y generar invitación'}}</button></form>
+      @if(createdTenant();as tenant){<div class="result" role="status"><p class="result-label">Empresa creada correctamente</p><h3>{{tenant.tenant_name}}</h3><p>Invitación para <strong>{{tenant.admin_email}}</strong></p><label for="invitation-link">Enlace de invitación de desarrollo</label><div class="invitation-row"><input id="invitation-link" readonly [value]="tenant.dev_invitation_link"><button class="copy-button" type="button" (click)="copyInvitation()">{{copied()?'Copiado':'Copiar'}}</button></div><small class="dev-note">Este enlace contiene un token personal y también fue enviado por correo.</small></div>}
+      </section>
     </section>
   </div>
 </main>

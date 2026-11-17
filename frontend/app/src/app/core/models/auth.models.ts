@@ -47,6 +47,20 @@ export interface CreateTenantRequest {
   slug: string;
   admin_email: string;
   admin_full_name: string;
+  plan_key: SaaSPlanKey;
+}
+
+export type SaaSPlanKey = 'basic' | 'professional' | 'enterprise';
+export type SubscriptionStatus = 'trial' | 'active' | 'suspended' | 'cancelled';
+export interface TenantUsage { users:number; clients:number; products:number; }
+export interface TenantSaaS {
+  id:string; name:string; slug:string; plan_key:SaaSPlanKey; plan_name:string;
+  subscription_status:SubscriptionStatus; is_active:boolean;
+  max_users:number; max_clients:number; max_products:number; usage:TenantUsage;
+  subscription_started_at:string; subscription_renews_at:string|null; created_at:string;
+}
+export interface UpdateTenantSubscriptionRequest {
+  plan_key:SaaSPlanKey; subscription_status:SubscriptionStatus; subscription_renews_at:string|null;
 }
 
 export interface CreateTenantResponse {
