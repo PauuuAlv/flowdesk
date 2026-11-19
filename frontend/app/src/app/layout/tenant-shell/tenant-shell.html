@@ -2,12 +2,19 @@
   <aside class="sidebar" [class.is-open]="sidebarOpen()" aria-label="Navegación principal">
     <div class="sidebar-heading">
       <a class="brand" routerLink="/panel" (click)="closeSidebar()">Flowdesk</a>
-      <button class="sidebar-close" type="button" (click)="closeSidebar()" aria-label="Cerrar menú">×</button>
+      <button class="sidebar-close" type="button" (click)="closeSidebar()" aria-label="Cerrar menú">
+        ×
+      </button>
     </div>
 
     <nav>
       <p class="nav-label">Espacio de trabajo</p>
-      <a routerLink="/panel" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }" (click)="closeSidebar()">
+      <a
+        routerLink="/panel"
+        routerLinkActive="active"
+        [routerLinkActiveOptions]="{ exact: true }"
+        (click)="closeSidebar()"
+      >
         <span class="nav-icon" aria-hidden="true">⌂</span>
         Inicio
       </a>
@@ -32,20 +39,39 @@
         </a>
       }
       @if (canViewOpportunities) {
-        <a routerLink="/panel/oportunidades" routerLinkActive="active" (click)="closeSidebar()"><span class="nav-icon" aria-hidden="true">◇</span>Oportunidades</a>
+        <a routerLink="/panel/oportunidades" routerLinkActive="active" (click)="closeSidebar()"
+          ><span class="nav-icon" aria-hidden="true">◇</span>Oportunidades</a
+        >
       }
       @if (canViewActivities) {
-        <a routerLink="/panel/actividades" routerLinkActive="active" (click)="closeSidebar()"><span class="nav-icon" aria-hidden="true">✓</span>Actividades</a>
+        <a routerLink="/panel/actividades" routerLinkActive="active" (click)="closeSidebar()"
+          ><span class="nav-icon" aria-hidden="true">✓</span>Actividades</a
+        >
       }
-      @if (canViewQuotes) {<a routerLink="/panel/cotizaciones" routerLinkActive="active" (click)="closeSidebar()"><span class="nav-icon" aria-hidden="true">▤</span>Cotizaciones</a>}
-      @if (canViewProducts) {<a routerLink="/panel/productos" routerLinkActive="active" (click)="closeSidebar()"><span class="nav-icon" aria-hidden="true">□</span>Productos y servicios</a>}
+      @if (canViewQuotes) {
+        <a routerLink="/panel/cotizaciones" routerLinkActive="active" (click)="closeSidebar()"
+          ><span class="nav-icon" aria-hidden="true">▤</span>Cotizaciones</a
+        >
+      }
+      @if (canViewProducts) {
+        <a routerLink="/panel/productos" routerLinkActive="active" (click)="closeSidebar()"
+          ><span class="nav-icon" aria-hidden="true">□</span>Productos y servicios</a
+        >
+      }
       @if (canViewRoles) {
         <a routerLink="/panel/roles" routerLinkActive="active" (click)="closeSidebar()">
           <span class="nav-icon" aria-hidden="true">◇</span>
           Roles y permisos
         </a>
       }
-      @if (canViewSettings) {<a routerLink="/panel/configuracion/empresa" routerLinkActive="active" (click)="closeSidebar()"><span class="nav-icon" aria-hidden="true">⚙</span>Configuración</a>}
+      @if (canViewSettings) {
+        <a
+          routerLink="/panel/configuracion/empresa"
+          routerLinkActive="active"
+          (click)="closeSidebar()"
+          ><span class="nav-icon" aria-hidden="true">⚙</span>Configuración</a
+        >
+      }
     </nav>
 
     <div class="sidebar-footer">
@@ -55,13 +81,26 @@
   </aside>
 
   @if (sidebarOpen()) {
-    <button class="backdrop" type="button" (click)="closeSidebar()" aria-label="Cerrar menú"></button>
+    <button
+      class="backdrop"
+      type="button"
+      (click)="closeSidebar()"
+      aria-label="Cerrar menú"
+    ></button>
   }
 
   <section class="workspace">
     <header class="topbar">
       <div class="topbar-company">
-        <button class="menu-button" type="button" (click)="toggleSidebar()" aria-label="Abrir menú" [attr.aria-expanded]="sidebarOpen()">☰</button>
+        <button
+          class="menu-button"
+          type="button"
+          (click)="toggleSidebar()"
+          aria-label="Abrir menú"
+          [attr.aria-expanded]="sidebarOpen()"
+        >
+          ☰
+        </button>
         <div>
           <span>Empresa</span>
           <strong>{{ companyName }}</strong>
@@ -69,7 +108,13 @@
       </div>
 
       <div class="profile-area">
-        <button class="profile-trigger" type="button" (click)="toggleProfile()" [attr.aria-expanded]="profileOpen()" aria-haspopup="menu">
+        <button
+          class="profile-trigger"
+          type="button"
+          (click)="toggleProfile()"
+          [attr.aria-expanded]="profileOpen()"
+          aria-haspopup="menu"
+        >
           <span class="avatar" aria-hidden="true">{{ initials }}</span>
           <span class="profile-copy">
             <strong>{{ user?.full_name || 'Usuario' }}</strong>
@@ -85,7 +130,13 @@
               <span>{{ user?.email }}</span>
             </div>
             <a role="menuitem" routerLink="/panel/perfil" (click)="closeProfile()">Mi perfil</a>
-            <a role="menuitem" routerLink="/panel/perfil" fragment="seguridad" (click)="closeProfile()">Cambiar contraseña</a>
+            <a
+              role="menuitem"
+              routerLink="/panel/perfil"
+              fragment="seguridad"
+              (click)="closeProfile()"
+              >Cambiar contraseña</a
+            >
             <button role="menuitem" type="button" (click)="logout()">Cerrar sesión</button>
           </div>
         }

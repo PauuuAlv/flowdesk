@@ -12,28 +12,89 @@ export const PERMISSIONS = {
   clientsCreate: 'clients.create',
   clientsUpdate: 'clients.update',
   clientsDelete: 'clients.delete',
-  opportunitiesView: 'opportunities.view', opportunitiesCreate: 'opportunities.create', opportunitiesUpdate: 'opportunities.update', opportunitiesClose: 'opportunities.close', opportunitiesArchive: 'opportunities.archive',
-  activitiesView:'activities.view',activitiesCreate:'activities.create',activitiesUpdate:'activities.update',activitiesComplete:'activities.complete',quotesView:'quotes.view',quotesCreate:'quotes.create',quotesUpdate:'quotes.update',quotesStatus:'quotes.status',productsView:'products.view',productsCreate:'products.create',productsUpdate:'products.update',productsDelete:'products.delete',settingsView:'settings.view',settingsUpdate:'settings.update'
+  opportunitiesView: 'opportunities.view',
+  opportunitiesCreate: 'opportunities.create',
+  opportunitiesUpdate: 'opportunities.update',
+  opportunitiesClose: 'opportunities.close',
+  opportunitiesArchive: 'opportunities.archive',
+  activitiesView: 'activities.view',
+  activitiesCreate: 'activities.create',
+  activitiesUpdate: 'activities.update',
+  activitiesComplete: 'activities.complete',
+  quotesView: 'quotes.view',
+  quotesCreate: 'quotes.create',
+  quotesUpdate: 'quotes.update',
+  quotesStatus: 'quotes.status',
+  productsView: 'products.view',
+  productsCreate: 'products.create',
+  productsUpdate: 'products.update',
+  productsDelete: 'products.delete',
+  settingsView: 'settings.view',
+  settingsUpdate: 'settings.update',
 } as const;
 
 export type PermissionCode = (typeof PERMISSIONS)[keyof typeof PERMISSIONS];
 
 export const PERMISSION_MODULES = [
-  {key:'settings',label:'Configuración de empresa',description:'Identidad fiscal y preferencias comerciales del tenant.',permissions:[{code:PERMISSIONS.settingsView,label:'Ver'},{code:PERMISSIONS.settingsUpdate,label:'Editar'}]},
-  {key:'products',label:'Productos y servicios',description:'Catálogo comercial utilizado en cotizaciones.',permissions:[{code:PERMISSIONS.productsView,label:'Ver'},{code:PERMISSIONS.productsCreate,label:'Crear'},{code:PERMISSIONS.productsUpdate,label:'Editar'},{code:PERMISSIONS.productsDelete,label:'Desactivar'}]},
-  {key:'quotes',label:'Cotizaciones',description:'Propuestas económicas y seguimiento de aceptación.',permissions:[{code:PERMISSIONS.quotesView,label:'Ver'},{code:PERMISSIONS.quotesCreate,label:'Crear'},{code:PERMISSIONS.quotesUpdate,label:'Editar'},{code:PERMISSIONS.quotesStatus,label:'Cambiar estado'}]},
-  {key:'activities',label:'Actividades',description:'Llamadas, correos, reuniones y tareas de seguimiento.',permissions:[{code:PERMISSIONS.activitiesView,label:'Ver'},{code:PERMISSIONS.activitiesCreate,label:'Crear'},{code:PERMISSIONS.activitiesUpdate,label:'Editar'},{code:PERMISSIONS.activitiesComplete,label:'Completar'}]},
   {
-    key: 'opportunities', label: 'Oportunidades', description: 'Pipeline y seguimiento de negociaciones.', permissions: [
-      { code: PERMISSIONS.opportunitiesView, label: 'Ver' }, { code: PERMISSIONS.opportunitiesCreate, label: 'Crear' },
-      { code: PERMISSIONS.opportunitiesUpdate, label: 'Editar' }, { code: PERMISSIONS.opportunitiesClose, label: 'Cerrar' }, { code: PERMISSIONS.opportunitiesArchive, label: 'Archivar' }
-    ]
+    key: 'settings',
+    label: 'Configuración de empresa',
+    description: 'Identidad fiscal y preferencias comerciales del tenant.',
+    permissions: [
+      { code: PERMISSIONS.settingsView, label: 'Ver' },
+      { code: PERMISSIONS.settingsUpdate, label: 'Editar' },
+    ],
+  },
+  {
+    key: 'products',
+    label: 'Productos y servicios',
+    description: 'Catálogo comercial utilizado en cotizaciones.',
+    permissions: [
+      { code: PERMISSIONS.productsView, label: 'Ver' },
+      { code: PERMISSIONS.productsCreate, label: 'Crear' },
+      { code: PERMISSIONS.productsUpdate, label: 'Editar' },
+      { code: PERMISSIONS.productsDelete, label: 'Desactivar' },
+    ],
+  },
+  {
+    key: 'quotes',
+    label: 'Cotizaciones',
+    description: 'Propuestas económicas y seguimiento de aceptación.',
+    permissions: [
+      { code: PERMISSIONS.quotesView, label: 'Ver' },
+      { code: PERMISSIONS.quotesCreate, label: 'Crear' },
+      { code: PERMISSIONS.quotesUpdate, label: 'Editar' },
+      { code: PERMISSIONS.quotesStatus, label: 'Cambiar estado' },
+    ],
+  },
+  {
+    key: 'activities',
+    label: 'Actividades',
+    description: 'Llamadas, correos, reuniones y tareas de seguimiento.',
+    permissions: [
+      { code: PERMISSIONS.activitiesView, label: 'Ver' },
+      { code: PERMISSIONS.activitiesCreate, label: 'Crear' },
+      { code: PERMISSIONS.activitiesUpdate, label: 'Editar' },
+      { code: PERMISSIONS.activitiesComplete, label: 'Completar' },
+    ],
+  },
+  {
+    key: 'opportunities',
+    label: 'Oportunidades',
+    description: 'Pipeline y seguimiento de negociaciones.',
+    permissions: [
+      { code: PERMISSIONS.opportunitiesView, label: 'Ver' },
+      { code: PERMISSIONS.opportunitiesCreate, label: 'Crear' },
+      { code: PERMISSIONS.opportunitiesUpdate, label: 'Editar' },
+      { code: PERMISSIONS.opportunitiesClose, label: 'Cerrar' },
+      { code: PERMISSIONS.opportunitiesArchive, label: 'Archivar' },
+    ],
   },
   {
     key: 'dashboard',
     label: 'Inicio',
     description: 'Resumen general del espacio de trabajo.',
-    permissions: [{ code: PERMISSIONS.dashboardView, label: 'Ver' }]
+    permissions: [{ code: PERMISSIONS.dashboardView, label: 'Ver' }],
   },
   {
     key: 'users',
@@ -43,8 +104,8 @@ export const PERMISSION_MODULES = [
       { code: PERMISSIONS.usersView, label: 'Ver' },
       { code: PERMISSIONS.usersInvite, label: 'Invitar' },
       { code: PERMISSIONS.usersUpdate, label: 'Editar' },
-      { code: PERMISSIONS.usersDelete, label: 'Desactivar' }
-    ]
+      { code: PERMISSIONS.usersDelete, label: 'Desactivar' },
+    ],
   },
   {
     key: 'roles',
@@ -54,8 +115,8 @@ export const PERMISSION_MODULES = [
       { code: PERMISSIONS.rolesView, label: 'Ver' },
       { code: PERMISSIONS.rolesCreate, label: 'Crear' },
       { code: PERMISSIONS.rolesUpdate, label: 'Editar' },
-      { code: PERMISSIONS.rolesDelete, label: 'Eliminar' }
-    ]
+      { code: PERMISSIONS.rolesDelete, label: 'Eliminar' },
+    ],
   },
   {
     key: 'clients',
@@ -65,7 +126,7 @@ export const PERMISSION_MODULES = [
       { code: PERMISSIONS.clientsView, label: 'Ver' },
       { code: PERMISSIONS.clientsCreate, label: 'Crear' },
       { code: PERMISSIONS.clientsUpdate, label: 'Editar' },
-      { code: PERMISSIONS.clientsDelete, label: 'Eliminar' }
-    ]
-  }
+      { code: PERMISSIONS.clientsDelete, label: 'Eliminar' },
+    ],
+  },
 ] as const;

@@ -126,7 +126,7 @@ def create_tenant(
         tenant_slug=tenant.slug,
         admin_user_id=str(admin_user.id),
         admin_email=admin_user.email,
-        dev_invitation_link=invitation_link,
+        invitation_link=invitation_link,
     )
 
 

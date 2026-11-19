@@ -101,8 +101,28 @@ export class QuoteFormPage {
       },
       error: () => this.fail(),
     });
-    this.ps.list().subscribe({next:x=>{this.products.set(x.filter(p=>p.status==='active'));done()},error:()=>this.fail()});
-    this.settingsService.get().subscribe({next:x=>{this.currency.set(x.currency);if(!this.id){const issue=new Date(`${this.form.controls.issue_date.value}T12:00:00`);issue.setDate(issue.getDate()+x.quote_validity_days);this.form.patchValue({tax_rate:Number(x.default_tax_rate),valid_until:issue.toISOString().slice(0,10)})}done()},error:()=>this.fail()});
+    this.ps.list().subscribe({
+      next: (x) => {
+        this.products.set(x.filter((p) => p.status === 'active'));
+        done();
+      },
+      error: () => this.fail(),
+    });
+    this.settingsService.get().subscribe({
+      next: (x) => {
+        this.currency.set(x.currency);
+        if (!this.id) {
+          const issue = new Date(`${this.form.controls.issue_date.value}T12:00:00`);
+          issue.setDate(issue.getDate() + x.quote_validity_days);
+          this.form.patchValue({
+            tax_rate: Number(x.default_tax_rate),
+            valid_until: issue.toISOString().slice(0, 10),
+          });
+        }
+        done();
+      },
+      error: () => this.fail(),
+    });
     this.form.controls.client_id.valueChanges.subscribe((v) => {
       this.selectedClient.set(v);
       this.form.controls.opportunity_id.setValue('');
@@ -122,7 +142,18 @@ export class QuoteFormPage {
   remove(i: number) {
     if (this.items.length > 1) this.items.removeAt(i);
   }
-  selectProduct(i:number,event:Event){const id=(event.target as HTMLSelectElement).value;const product=this.products().find(x=>x.id===id);if(product)this.items.at(i).patchValue({product_id:product.id,description:product.name,unit_price:product.base_price})}
+  selectProduct(i: number, event: Event) {
+    const id = (event.target as HTMLSelectElement).value;
+    const product = this.products().find((x) => x.id === id);
+    if (product)
+      this.items
+        .at(i)
+        .patchValue({
+          product_id: product.id,
+          description: product.name,
+          unit_price: product.base_price,
+        });
+  }
   submit() {
     if (
       this.form.invalid ||
@@ -138,7 +169,11 @@ export class QuoteFormPage {
       ...v,
       opportunity_id: v.opportunity_id || null,
       notes: v.notes.trim() || null,
-      items: v.items.map((x) => ({ ...x, product_id:x.product_id||null, description: x.description.trim() })),
+      items: v.items.map((x) => ({
+        ...x,
+        product_id: x.product_id || null,
+        description: x.description.trim(),
+      })),
     };
     this.saving.set(true);
     this.service.save(body, this.id ?? undefined).subscribe({
@@ -150,7 +185,9 @@ export class QuoteFormPage {
     });
   }
   money(v: number) {
-    return new Intl.NumberFormat('es-MX', { style: 'currency', currency: this.currency() }).format(v);
+    return new Intl.NumberFormat('es-MX', { style: 'currency', currency: this.currency() }).format(
+      v,
+    );
   }
   private load(id: string) {
     this.service.get(id).subscribe({
@@ -159,7 +196,7 @@ export class QuoteFormPage {
         q.items.forEach((x) =>
           this.items.push(
             this.fb.nonNullable.group({
-              product_id: [x.product_id??''],
+              product_id: [x.product_id ?? ''],
               description: [x.description, Validators.required],
               quantity: [x.quantity, [Validators.required, Validators.min(0.01)]],
               unit_price: [x.unit_price, [Validators.required, Validators.min(0)]],

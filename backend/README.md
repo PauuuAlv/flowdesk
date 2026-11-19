@@ -1,5 +1,31 @@
-# flowdesk_backend
-Backend de Flowdesk, un CRM desarollado para ARMsystem con FastAPI y postgreSQL
+# Backend de Flowdesk
+
+API REST del CRM Flowdesk, desarrollada con FastAPI, SQLAlchemy, Alembic y
+PostgreSQL. La aplicación aplica aislamiento por empresa y autorización basada
+en roles y permisos.
+
+## Organización
+
+- `api/v1`: endpoints organizados por dominio.
+- `models`: entidades de SQLAlchemy.
+- `schemas`: contratos de entrada y salida con Pydantic.
+- `repositories`: consultas reutilizables de acceso a datos.
+- `services`: reglas de negocio y servicios externos.
+- `security`: contraseñas, JWT, tokens y autorización.
+- `alembic`: migraciones de la base de datos.
+- `tests`: pruebas unitarias y de contratos.
+
+## Migraciones
+
+```powershell
+alembic upgrade head
+```
+
+## Pruebas
+
+```powershell
+pytest -q
+```
 
 ## Correo transaccional
 

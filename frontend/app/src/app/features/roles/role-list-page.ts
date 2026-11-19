@@ -8,7 +8,7 @@ import { AccessControlService } from '../../core/services/access-control.service
   selector: 'app-role-list-page',
   imports: [RouterLink],
   templateUrl: './role-list-page.html',
-  styleUrl: './role-list-page.scss'
+  styleUrl: './role-list-page.scss',
 })
 export class RoleListPage {
   private readonly accessControl = inject(AccessControlService);
@@ -35,7 +35,7 @@ export class RoleListPage {
       error: () => {
         this.loading.set(false);
         this.errorMessage.set('No fue posible consultar los roles. Intenta nuevamente.');
-      }
+      },
     });
   }
 
@@ -63,7 +63,7 @@ export class RoleListPage {
         this.deleting.set(false);
         this.roleToDelete.set(null);
         this.errorMessage.set('No se puede eliminar un rol protegido o asignado a usuarios.');
-      }
+      },
     });
   }
 }

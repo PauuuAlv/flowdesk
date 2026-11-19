@@ -11,7 +11,7 @@ import { AuthService } from '../../core/services/auth.service';
   selector: 'app-invite-user-page',
   imports: [ReactiveFormsModule],
   templateUrl: './invite-user-page.html',
-  styleUrl: './invite-user-page.scss'
+  styleUrl: './invite-user-page.scss',
 })
 export class InviteUserPage {
   private readonly formBuilder = inject(FormBuilder);
@@ -27,7 +27,7 @@ export class InviteUserPage {
   protected readonly inviteForm = this.formBuilder.nonNullable.group({
     full_name: ['', [Validators.required, Validators.minLength(3)]],
     email: ['', [Validators.required, Validators.email]],
-    role_id: ['', Validators.required]
+    role_id: ['', Validators.required],
   });
 
   constructor() {
@@ -41,7 +41,7 @@ export class InviteUserPage {
       error: () => {
         this.loadingRoles.set(false);
         this.errorMessage.set('No fue posible consultar los roles disponibles.');
-      }
+      },
     });
   }
 
@@ -56,9 +56,7 @@ export class InviteUserPage {
     }
 
     this.submitting.set(true);
-    this.authService
-      .inviteUser({ ...this.inviteForm.getRawValue(), role: 'member' })
-      .subscribe({
+    this.authService.inviteUser({ ...this.inviteForm.getRawValue(), role: 'member' }).subscribe({
       next: (user) => {
         this.submitting.set(false);
         this.invitedUser.set(user);
@@ -68,12 +66,12 @@ export class InviteUserPage {
       error: (error: HttpErrorResponse) => {
         this.submitting.set(false);
         this.errorMessage.set(this.getErrorMessage(error));
-      }
+      },
     });
   }
 
   protected async copyInvitation(): Promise<void> {
-    const invitationLink = this.invitedUser()?.dev_invitation_link;
+    const invitationLink = this.invitedUser()?.invitation_link;
     if (!invitationLink) return;
 
     try {

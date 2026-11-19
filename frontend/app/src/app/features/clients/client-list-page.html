@@ -10,13 +10,21 @@
     }
   </header>
 
-  @if (successMessage()) { <p class="message success" role="status">{{ successMessage() }}</p> }
-  @if (errorMessage()) { <p class="message error" role="alert">{{ errorMessage() }}</p> }
+  @if (successMessage()) {
+    <p class="message success" role="status">{{ successMessage() }}</p>
+  }
+  @if (errorMessage()) {
+    <p class="message error" role="alert">{{ errorMessage() }}</p>
+  }
 
   <div class="filters" aria-label="Filtros de clientes">
     <label>
       <span>Buscar</span>
-      <input type="search" placeholder="Empresa, contacto o correo" (input)="updateSearch($event)" />
+      <input
+        type="search"
+        placeholder="Empresa, contacto o correo"
+        (input)="updateSearch($event)"
+      />
     </label>
     <label>
       <span>Estado</span>
@@ -35,28 +43,48 @@
       <span aria-hidden="true">◎</span>
       <h2>Aún no hay clientes</h2>
       <p>Registra el primer cliente para comenzar a organizar la operación comercial.</p>
-      @if (canCreate) { <a class="primary-action" routerLink="/panel/clientes/nuevo">Registrar cliente</a> }
+      @if (canCreate) {
+        <a class="primary-action" routerLink="/panel/clientes/nuevo">Registrar cliente</a>
+      }
     </div>
   } @else if (!filteredClients().length) {
-    <div class="state-card"><h2>Sin resultados</h2><p>Prueba con otro término o cambia el filtro.</p></div>
+    <div class="state-card">
+      <h2>Sin resultados</h2>
+      <p>Prueba con otro término o cambia el filtro.</p>
+    </div>
   } @else {
     <div class="client-grid">
       @for (client of filteredClients(); track client.id) {
         <article class="client-card" [class.inactive]="client.status === 'inactive'">
           <div class="client-heading">
             <span class="avatar" aria-hidden="true">{{ initials(client) }}</span>
-            <div><h2>{{ client.company_name }}</h2><p>{{ client.contact_name }}</p></div>
+            <div>
+              <h2>{{ client.company_name }}</h2>
+              <p>{{ client.contact_name }}</p>
+            </div>
             <span class="status" [class.inactive]="client.status === 'inactive'">
               {{ client.status === 'active' ? 'Activo' : 'Inactivo' }}
             </span>
           </div>
           <dl>
-            <div><dt>Correo</dt><dd><a [href]="'mailto:' + client.email">{{ client.email }}</a></dd></div>
-            <div><dt>Teléfono</dt><dd>{{ client.phone || 'Sin registrar' }}</dd></div>
+            <div>
+              <dt>Correo</dt>
+              <dd>
+                <a [href]="'mailto:' + client.email">{{ client.email }}</a>
+              </dd>
+            </div>
+            <div>
+              <dt>Teléfono</dt>
+              <dd>{{ client.phone || 'Sin registrar' }}</dd>
+            </div>
           </dl>
-          @if (client.notes) { <p class="notes">{{ client.notes }}</p> }
+          @if (client.notes) {
+            <p class="notes">{{ client.notes }}</p>
+          }
           <footer>
-            @if (canUpdate) { <a [routerLink]="['/panel/clientes', client.id, 'editar']">Editar</a> }
+            @if (canUpdate) {
+              <a [routerLink]="['/panel/clientes', client.id, 'editar']">Editar</a>
+            }
             @if (canDelete) {
               <button type="button" (click)="requestStatusChange(client)">
                 {{ client.status === 'active' ? 'Desactivar' : 'Reactivar' }}
@@ -71,13 +99,28 @@
 
 @if (clientToToggle(); as client) {
   <div class="modal-backdrop" role="presentation">
-    <section class="confirm-dialog" role="dialog" aria-modal="true" aria-labelledby="client-confirm-title">
+    <section
+      class="confirm-dialog"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="client-confirm-title"
+    >
       <span class="warning-icon" aria-hidden="true">!</span>
-      <h2 id="client-confirm-title">{{ client.status === 'active' ? 'Desactivar' : 'Reactivar' }} cliente</h2>
-      <p>¿Confirmas el cambio de estado de <strong>{{ client.company_name }}</strong>?</p>
+      <h2 id="client-confirm-title">
+        {{ client.status === 'active' ? 'Desactivar' : 'Reactivar' }} cliente
+      </h2>
+      <p>
+        ¿Confirmas el cambio de estado de <strong>{{ client.company_name }}</strong
+        >?
+      </p>
       <div>
         <button class="secondary" type="button" (click)="cancelStatusChange()">Cancelar</button>
-        <button class="danger" type="button" [disabled]="processing()" (click)="confirmStatusChange()">
+        <button
+          class="danger"
+          type="button"
+          [disabled]="processing()"
+          (click)="confirmStatusChange()"
+        >
           {{ processing() ? 'Guardando…' : 'Confirmar' }}
         </button>
       </div>

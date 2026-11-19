@@ -1,30 +1,94 @@
 # Flowdesk
 
-CRM SaaS multiempresa para centralizar el ciclo comercial, operativo y financiero de ArmSystem.
+Flowdesk es un CRM SaaS multiempresa para administrar clientes, oportunidades,
+actividades, productos, cotizaciones, usuarios, roles y configuración comercial
+desde una sola plataforma.
+
+## Tecnologías
+
+- Angular 20 para la aplicación web.
+- FastAPI 0.115 para la API REST.
+- PostgreSQL 16 para persistencia.
+- Nginx como puerta de entrada en el entorno Docker.
+- Docker Compose para el ambiente local.
+- Vercel y Render para la vista previa publicada.
 
 ## Estructura
 
-- `frontend/`: aplicación Angular.
-- `backend/`: API FastAPI.
-- `nginx/`: proxy inverso para unificar frontend y API.
-- `compose.yml`: PostgreSQL 16 Alpine, backend, frontend y Nginx.
+```text
+flowdesk/
+├── backend/       API, modelos, migraciones y pruebas
+├── frontend/      aplicación Angular
+├── nginx/         configuración del proxy inverso
+├── docs/          contratos y documentación técnica
+├── compose.yml   servicios del entorno local
+└── render.yaml   infraestructura de vista previa
+```
 
-## Desarrollo local con Docker
+## Módulos disponibles
 
-1. Copiar `.env.example` como `.env` y usar valores únicamente locales.
-2. Iniciar Docker Desktop.
-3. Ejecutar `docker compose up --build` desde la raíz.
+- Autenticación, recuperación de contraseña e invitaciones.
+- Administración SaaS de empresas, planes y suscripciones.
+- Usuarios, roles y permisos por empresa.
+- Dashboard comercial.
+- Clientes y oportunidades.
+- Actividades de seguimiento.
+- Productos y servicios.
+- Cotizaciones con exportación a PDF.
+- Configuración de empresa y perfil.
 
-Servicios expuestos mediante Nginx:
+## Desarrollo local
 
-- Aplicación a través de Nginx: `http://localhost`
-- Estado del backend: `http://localhost/api/health`
-- Swagger: `http://localhost/docs`
+### Requisitos
 
-El frontend, backend y PostgreSQL permanecen dentro de la red Docker y no publican sus puertos directamente en Windows.
+- Docker Desktop.
+- Git.
 
-No se deben subir archivos `.env`, credenciales, `node_modules`, cachés de Python ni datos locales de PostgreSQL.
+### Configuración
 
+1. Copiar `.env.example` como `.env`.
+2. Sustituir los valores de ejemplo por credenciales exclusivamente locales.
+3. Iniciar el ambiente desde la raíz:
 
-## Documentacion
-- [Endpoints de Auth](docs/api/auth-endpoints.md)
+```powershell
+docker compose up --build
+```
+
+La aplicación queda disponible en `http://localhost`.
+
+| Recurso | Dirección |
+| --- | --- |
+| Aplicación | `http://localhost` |
+| Estado de la API | `http://localhost/health` |
+| Swagger | `http://localhost/docs` |
+
+## Pruebas
+
+Backend:
+
+```powershell
+docker compose exec -T backend pytest -q
+```
+
+Frontend:
+
+```powershell
+cd frontend/app
+npm test -- --watch=false
+npm run build
+```
+
+## Seguridad
+
+- Las cuentas se activan mediante invitaciones personales y de un solo uso.
+- El aislamiento de información se realiza por `tenant_id` obtenido del token.
+- Los permisos se validan tanto en el frontend como en la API.
+- Los secretos se configuran mediante variables de entorno.
+- Los archivos `.env`, datos locales y dependencias no se versionan.
+
+## Documentación
+
+- [Contrato de autenticación](docs/api/auth-endpoints.md)
+- [Configuración de despliegue](DEPLOYMENT.md)
+- [Backend](backend/README.md)
+- [Frontend](frontend/app/README.md)

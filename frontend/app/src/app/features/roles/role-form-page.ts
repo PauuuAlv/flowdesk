@@ -10,7 +10,7 @@ import { atLeastOnePermissionValidator } from '../../core/validators/role.valida
   selector: 'app-role-form-page',
   imports: [ReactiveFormsModule, RouterLink],
   templateUrl: './role-form-page.html',
-  styleUrl: './role-form-page.scss'
+  styleUrl: './role-form-page.scss',
 })
 export class RoleFormPage {
   private readonly formBuilder = inject(FormBuilder);
@@ -27,19 +27,29 @@ export class RoleFormPage {
   protected readonly protectedRole = signal(false);
   private readonly allPermissionCodes = PERMISSION_MODULES.reduce<PermissionCode[]>(
     (codes, module) => [...codes, ...module.permissions.map((permission) => permission.code)],
-    []
+    [],
   );
   protected readonly permissionControls = Object.fromEntries(
     this.allPermissionCodes.map((permission) => [
       permission,
-      new FormControl(false, { nonNullable: true })
-    ])
+      new FormControl(false, { nonNullable: true }),
+    ]),
   ) as Record<PermissionCode, FormControl<boolean>>;
 
   protected readonly roleForm = this.formBuilder.nonNullable.group({
-    name: ['', [Validators.required, Validators.minLength(3), Validators.maxLength(50), Validators.pattern(/^[A-Za-zÁÉÍÓÚÜÑáéíóúüñ0-9 ]+$/)]],
+    name: [
+      '',
+      [
+        Validators.required,
+        Validators.minLength(3),
+        Validators.maxLength(50),
+        Validators.pattern(/^[A-Za-zÁÉÍÓÚÜÑáéíóúüñ0-9 ]+$/),
+      ],
+    ],
     description: ['', [Validators.required, Validators.minLength(10), Validators.maxLength(160)]],
-    permissions: this.formBuilder.group(this.permissionControls, { validators: atLeastOnePermissionValidator })
+    permissions: this.formBuilder.group(this.permissionControls, {
+      validators: atLeastOnePermissionValidator,
+    }),
   });
 
   constructor() {
@@ -48,14 +58,18 @@ export class RoleFormPage {
 
   protected toggleModule(moduleIndex: number): void {
     const module = this.permissionModules[moduleIndex];
-    const selectAll = !module.permissions.every((permission) => this.permissionControls[permission.code].value);
-    module.permissions.forEach((permission) => this.permissionControls[permission.code].setValue(selectAll));
+    const selectAll = !module.permissions.every(
+      (permission) => this.permissionControls[permission.code].value,
+    );
+    module.permissions.forEach((permission) =>
+      this.permissionControls[permission.code].setValue(selectAll),
+    );
     this.roleForm.controls.permissions.markAsTouched();
   }
 
   protected moduleSelected(moduleIndex: number): boolean {
     return this.permissionModules[moduleIndex].permissions.every(
-      (permission) => this.permissionControls[permission.code].value
+      (permission) => this.permissionControls[permission.code].value,
     );
   }
 
@@ -75,7 +89,7 @@ export class RoleFormPage {
     this.accessControl
       .saveRole(
         { name: raw.name.trim(), description: raw.description.trim(), permissions },
-        this.roleId ?? undefined
+        this.roleId ?? undefined,
       )
       .subscribe({
         next: () => {
@@ -87,9 +101,9 @@ export class RoleFormPage {
           this.errorMessage.set(
             error.message === 'DUPLICATE_ROLE'
               ? 'Ya existe un rol con ese nombre en tu empresa.'
-              : 'No fue posible guardar el rol. Intenta nuevamente.'
+              : 'No fue posible guardar el rol. Intenta nuevamente.',
           );
-        }
+        },
       });
   }
 
@@ -97,7 +111,9 @@ export class RoleFormPage {
     this.accessControl.getRole(roleId).subscribe({
       next: (role) => {
         this.roleForm.patchValue({ name: role.name, description: role.description });
-        role.permissions.forEach((permission) => this.permissionControls[permission].setValue(true));
+        role.permissions.forEach((permission) =>
+          this.permissionControls[permission].setValue(true),
+        );
         if (role.is_protected) {
           this.protectedRole.set(true);
           this.roleForm.controls.name.disable();
@@ -107,7 +123,7 @@ export class RoleFormPage {
       error: () => {
         this.loading.set(false);
         this.errorMessage.set('El rol solicitado no existe o no está disponible.');
-      }
+      },
     });
   }
 }

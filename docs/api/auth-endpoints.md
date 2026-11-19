@@ -43,7 +43,7 @@
   "admin_full_name": "Nombre del admin"
 }
 ```
-3. Ejecutar. La respuesta trae `dev_invitation_link` — cópialo, ahí viene el token que usa el siguiente endpoint.
+3. Ejecutar. La respuesta incluye `invitation_link`; el token de activación se encuentra en esa URL.
 4. Nota: `slug` debe ser único; si lo repites, da `409 Conflict`.
 
 ---
@@ -53,7 +53,7 @@
 **Para qué sirve:** el usuario invitado (el admin del tenant, o cualquiera invitado después) usa el link que recibió para definir su contraseña por primera vez. Al terminar, ya queda logueado (regresa tokens).
 
 **Pasos:**
-1. Del `dev_invitation_link` (algo como `http://localhost/accept-invite?token=XXXXX`), copia **solo** el valor después de `token=` — no la URL completa.
+1. De `invitation_link` (por ejemplo, `http://localhost/accept-invite?token=XXXXX`), copia **solo** el valor después de `token=`.
 2. Body:
 ```json
 { "token": "XXXXX", "password": "unaPasswordDe8CaracteresOMas" }
@@ -104,7 +104,7 @@
 ```json
 { "email": "nuevo@laempresa.com", "full_name": "Nombre", "role": "member" }
 ```
-3. Ejecutar. Recibes `dev_invitation_link` para esa persona — con eso puede usar `/api/auth/register` igual que el primer admin.
+3. Ejecutar. La respuesta incluye `invitation_link`; el usuario utiliza ese enlace para activar su cuenta mediante `/api/auth/register`.
 4. Si el email ya existe en ese tenant, da `409 Conflict`. Si quien llama no es admin, da `403 Forbidden`.
 
 ---

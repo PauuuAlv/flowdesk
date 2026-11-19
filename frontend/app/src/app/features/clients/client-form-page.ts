@@ -9,7 +9,7 @@ import { ClientService } from '../../core/services/client.service';
   selector: 'app-client-form-page',
   imports: [ReactiveFormsModule, RouterLink],
   templateUrl: './client-form-page.html',
-  styleUrl: './client-form-page.scss'
+  styleUrl: './client-form-page.scss',
 })
 export class ClientFormPage {
   private readonly formBuilder = inject(FormBuilder);
@@ -28,7 +28,7 @@ export class ClientFormPage {
     email: ['', [Validators.required, Validators.email, Validators.maxLength(255)]],
     phone: ['', [Validators.maxLength(30), Validators.pattern(/^[0-9+()\-\s.]*$/)]],
     notes: ['', [Validators.maxLength(1000)]],
-    status: ['active' as ClientStatus, Validators.required]
+    status: ['active' as ClientStatus, Validators.required],
   });
 
   constructor() {
@@ -47,7 +47,7 @@ export class ClientFormPage {
       email: value.email.trim().toLowerCase(),
       phone: value.phone.trim() || null,
       notes: value.notes.trim() || null,
-      ...(this.clientId ? { status: value.status } : {})
+      ...(this.clientId ? { status: value.status } : {}),
     };
     this.saving.set(true);
     this.errorMessage.set('');
@@ -58,9 +58,9 @@ export class ClientFormPage {
         this.errorMessage.set(
           error.message === 'DUPLICATE_EMAIL'
             ? 'Ya existe un cliente con ese correo en tu empresa.'
-            : 'No fue posible guardar el cliente. Intenta nuevamente.'
+            : 'No fue posible guardar el cliente. Intenta nuevamente.',
         );
-      }
+      },
     });
   }
 
@@ -73,14 +73,14 @@ export class ClientFormPage {
           email: client.email,
           phone: client.phone ?? '',
           notes: client.notes ?? '',
-          status: client.status
+          status: client.status,
         });
         this.loading.set(false);
       },
       error: () => {
         this.loading.set(false);
         this.errorMessage.set('No fue posible cargar la información del cliente.');
-      }
+      },
     });
   }
 }

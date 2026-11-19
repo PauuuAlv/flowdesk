@@ -51,7 +51,16 @@
         <div formArrayName="items">
           @for (row of items.controls; track $index; let i = $index) {
             <div class="row" [formGroupName]="i">
-              <select formControlName="product_id" aria-label="Producto o servicio del catálogo" (change)="selectProduct(i,$event)"><option value="">Concepto manual</option>@for(product of products();track product.id){<option [value]="product.id">{{product.sku}} · {{product.name}}</option>}</select><input formControlName="description" placeholder="Descripción" /><input
+              <select
+                formControlName="product_id"
+                aria-label="Producto o servicio del catálogo"
+                (change)="selectProduct(i, $event)"
+              >
+                <option value="">Concepto manual</option>
+                @for (product of products(); track product.id) {
+                  <option [value]="product.id">{{ product.sku }} · {{ product.name }}</option>
+                }</select
+              ><input formControlName="description" placeholder="Descripción" /><input
                 type="number"
                 min=".01"
                 step=".01"
@@ -63,9 +72,7 @@
                 step=".01"
                 formControlName="unit_price"
                 aria-label="Precio unitario"
-              /><strong>{{
-                money(rowAmount(row))
-              }}</strong
+              /><strong>{{ money(rowAmount(row)) }}</strong
               ><button type="button" (click)="remove(i)" [disabled]="items.length === 1">×</button>
             </div>
           }

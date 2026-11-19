@@ -22,10 +22,10 @@ export const authGuard: CanActivateFn = (_route, state) => {
       sessionService.clear();
       return of(
         router.createUrlTree(['/iniciar-sesion'], {
-          queryParams: { returnUrl: state.url, sesion: 'expirada' }
-        })
+          queryParams: { returnUrl: state.url, sesion: 'expirada' },
+        }),
       );
-    })
+    }),
   );
 };
 
@@ -53,15 +53,25 @@ export const viewRolesGuard: CanActivateFn = () => permissionGuard(PERMISSIONS.r
 export const viewClientsGuard: CanActivateFn = () => permissionGuard(PERMISSIONS.clientsView);
 export const createClientsGuard: CanActivateFn = () => permissionGuard(PERMISSIONS.clientsCreate);
 export const updateClientsGuard: CanActivateFn = () => permissionGuard(PERMISSIONS.clientsUpdate);
-export const viewOpportunitiesGuard: CanActivateFn = () => permissionGuard(PERMISSIONS.opportunitiesView);
-export const createOpportunitiesGuard: CanActivateFn = () => permissionGuard(PERMISSIONS.opportunitiesCreate);
-export const updateOpportunitiesGuard: CanActivateFn = () => permissionGuard(PERMISSIONS.opportunitiesUpdate);
+export const viewOpportunitiesGuard: CanActivateFn = () =>
+  permissionGuard(PERMISSIONS.opportunitiesView);
+export const createOpportunitiesGuard: CanActivateFn = () =>
+  permissionGuard(PERMISSIONS.opportunitiesCreate);
+export const updateOpportunitiesGuard: CanActivateFn = () =>
+  permissionGuard(PERMISSIONS.opportunitiesUpdate);
 export const viewActivitiesGuard: CanActivateFn = () => permissionGuard(PERMISSIONS.activitiesView);
-export const createActivitiesGuard: CanActivateFn = () => permissionGuard(PERMISSIONS.activitiesCreate);
-export const updateActivitiesGuard: CanActivateFn = () => permissionGuard(PERMISSIONS.activitiesUpdate);
-export const viewQuotesGuard:CanActivateFn=()=>permissionGuard(PERMISSIONS.quotesView);export const createQuotesGuard:CanActivateFn=()=>permissionGuard(PERMISSIONS.quotesCreate);export const updateQuotesGuard:CanActivateFn=()=>permissionGuard(PERMISSIONS.quotesUpdate);
-export const viewProductsGuard:CanActivateFn=()=>permissionGuard(PERMISSIONS.productsView);export const createProductsGuard:CanActivateFn=()=>permissionGuard(PERMISSIONS.productsCreate);export const updateProductsGuard:CanActivateFn=()=>permissionGuard(PERMISSIONS.productsUpdate);
-export const viewCompanySettingsGuard:CanActivateFn=()=>permissionGuard(PERMISSIONS.settingsView);
+export const createActivitiesGuard: CanActivateFn = () =>
+  permissionGuard(PERMISSIONS.activitiesCreate);
+export const updateActivitiesGuard: CanActivateFn = () =>
+  permissionGuard(PERMISSIONS.activitiesUpdate);
+export const viewQuotesGuard: CanActivateFn = () => permissionGuard(PERMISSIONS.quotesView);
+export const createQuotesGuard: CanActivateFn = () => permissionGuard(PERMISSIONS.quotesCreate);
+export const updateQuotesGuard: CanActivateFn = () => permissionGuard(PERMISSIONS.quotesUpdate);
+export const viewProductsGuard: CanActivateFn = () => permissionGuard(PERMISSIONS.productsView);
+export const createProductsGuard: CanActivateFn = () => permissionGuard(PERMISSIONS.productsCreate);
+export const updateProductsGuard: CanActivateFn = () => permissionGuard(PERMISSIONS.productsUpdate);
+export const viewCompanySettingsGuard: CanActivateFn = () =>
+  permissionGuard(PERMISSIONS.settingsView);
 
 function permissionGuard(permission: (typeof PERMISSIONS)[keyof typeof PERMISSIONS]) {
   const sessionService = inject(SessionService);

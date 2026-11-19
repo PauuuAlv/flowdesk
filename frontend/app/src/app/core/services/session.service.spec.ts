@@ -17,7 +17,7 @@ describe('SessionService', () => {
     service.saveTokens({
       access_token: 'access-token',
       refresh_token: 'refresh-token',
-      token_type: 'bearer'
+      token_type: 'bearer',
     });
     service.saveUser({
       id: 'user-id',
@@ -25,7 +25,7 @@ describe('SessionService', () => {
       email: 'user@example.com',
       full_name: 'Test User',
       role: 'admin',
-      status: 'active'
+      status: 'active',
     });
 
     expect(service.getAccessToken()).toBe('access-token');
@@ -41,7 +41,7 @@ describe('SessionService', () => {
   it('should keep the platform administrator token separate', () => {
     service.savePlatformAdminToken({
       access_token: 'platform-token',
-      token_type: 'bearer'
+      token_type: 'bearer',
     });
 
     expect(service.getPlatformAdminToken()).toBe('platform-token');

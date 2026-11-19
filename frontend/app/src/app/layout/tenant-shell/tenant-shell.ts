@@ -8,7 +8,7 @@ import { SessionService } from '../../core/services/session.service';
   selector: 'app-tenant-shell',
   imports: [RouterLink, RouterLinkActive, RouterOutlet],
   templateUrl: './tenant-shell.html',
-  styleUrls: ['./tenant-shell.scss', './tenant-shell.mobile.scss']
+  styleUrls: ['./tenant-shell.scss', './tenant-shell.mobile.scss'],
 })
 export class TenantShell {
   private readonly sessionService = inject(SessionService);
@@ -50,11 +50,26 @@ export class TenantShell {
     const permissions = this.user?.permissions ?? [];
     return this.user?.role === 'admin' || permissions.includes(PERMISSIONS.clientsView);
   }
-  protected get canViewOpportunities(): boolean { const p=this.user?.permissions??[]; return this.user?.role==='admin'||p.includes(PERMISSIONS.opportunitiesView); }
-  protected get canViewActivities():boolean{const p=this.user?.permissions??[];return this.user?.role==='admin'||p.includes(PERMISSIONS.activitiesView)}
-  protected get canViewQuotes():boolean{const p=this.user?.permissions??[];return this.user?.role==='admin'||p.includes(PERMISSIONS.quotesView)}
-  protected get canViewSettings():boolean{const p=this.user?.permissions??[];return this.user?.role==='admin'||p.includes(PERMISSIONS.settingsView)}
-  protected get canViewProducts():boolean{const p=this.user?.permissions??[];return this.user?.role==='admin'||p.includes(PERMISSIONS.productsView)}
+  protected get canViewOpportunities(): boolean {
+    const p = this.user?.permissions ?? [];
+    return this.user?.role === 'admin' || p.includes(PERMISSIONS.opportunitiesView);
+  }
+  protected get canViewActivities(): boolean {
+    const p = this.user?.permissions ?? [];
+    return this.user?.role === 'admin' || p.includes(PERMISSIONS.activitiesView);
+  }
+  protected get canViewQuotes(): boolean {
+    const p = this.user?.permissions ?? [];
+    return this.user?.role === 'admin' || p.includes(PERMISSIONS.quotesView);
+  }
+  protected get canViewSettings(): boolean {
+    const p = this.user?.permissions ?? [];
+    return this.user?.role === 'admin' || p.includes(PERMISSIONS.settingsView);
+  }
+  protected get canViewProducts(): boolean {
+    const p = this.user?.permissions ?? [];
+    return this.user?.role === 'admin' || p.includes(PERMISSIONS.productsView);
+  }
 
   protected toggleSidebar(): void {
     this.sidebarOpen.update((open) => !open);

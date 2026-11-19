@@ -6,14 +6,14 @@ import { ActivatedRoute, RouterLink } from '@angular/router';
 import { AuthService } from '../../../core/services/auth.service';
 import {
   getPasswordChecks,
-  strongPasswordValidator
+  strongPasswordValidator,
 } from '../../../core/validators/password.validator';
 
 @Component({
   selector: 'app-reset-password-page',
   imports: [ReactiveFormsModule, RouterLink],
   templateUrl: './reset-password-page.html',
-  styleUrl: './reset-password-page.scss'
+  styleUrl: './reset-password-page.scss',
 })
 export class ResetPasswordPage {
   private readonly formBuilder = inject(FormBuilder);
@@ -27,7 +27,7 @@ export class ResetPasswordPage {
   protected readonly token = this.route.snapshot.queryParamMap.get('token') ?? '';
   protected readonly resetPasswordForm = this.formBuilder.nonNullable.group({
     new_password: ['', [Validators.required, strongPasswordValidator]],
-    password_confirmation: ['', Validators.required]
+    password_confirmation: ['', Validators.required],
   });
 
   protected passwordsDoNotMatch(): boolean {
@@ -75,12 +75,13 @@ export class ResetPasswordPage {
       error: (error: HttpErrorResponse) => {
         this.submitting.set(false);
         this.errorMessage.set(this.getErrorMessage(error));
-      }
+      },
     });
   }
 
   private getErrorMessage(error: HttpErrorResponse): string {
-    if (error.status === 0) return 'No fue posible conectar con el servidor. Intenta nuevamente más tarde.';
+    if (error.status === 0)
+      return 'No fue posible conectar con el servidor. Intenta nuevamente más tarde.';
     return 'El enlace es inválido o venció. Solicita uno nuevo e intenta nuevamente.';
   }
 }

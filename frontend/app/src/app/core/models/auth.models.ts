@@ -52,15 +52,31 @@ export interface CreateTenantRequest {
 
 export type SaaSPlanKey = 'basic' | 'professional' | 'enterprise';
 export type SubscriptionStatus = 'trial' | 'active' | 'suspended' | 'cancelled';
-export interface TenantUsage { users:number; clients:number; products:number; }
+export interface TenantUsage {
+  users: number;
+  clients: number;
+  products: number;
+}
 export interface TenantSaaS {
-  id:string; name:string; slug:string; plan_key:SaaSPlanKey; plan_name:string;
-  subscription_status:SubscriptionStatus; is_active:boolean;
-  max_users:number; max_clients:number; max_products:number; usage:TenantUsage;
-  subscription_started_at:string; subscription_renews_at:string|null; created_at:string;
+  id: string;
+  name: string;
+  slug: string;
+  plan_key: SaaSPlanKey;
+  plan_name: string;
+  subscription_status: SubscriptionStatus;
+  is_active: boolean;
+  max_users: number;
+  max_clients: number;
+  max_products: number;
+  usage: TenantUsage;
+  subscription_started_at: string;
+  subscription_renews_at: string | null;
+  created_at: string;
 }
 export interface UpdateTenantSubscriptionRequest {
-  plan_key:SaaSPlanKey; subscription_status:SubscriptionStatus; subscription_renews_at:string|null;
+  plan_key: SaaSPlanKey;
+  subscription_status: SubscriptionStatus;
+  subscription_renews_at: string | null;
 }
 
 export interface CreateTenantResponse {
@@ -69,7 +85,7 @@ export interface CreateTenantResponse {
   tenant_slug: string;
   admin_user_id: string;
   admin_email: string;
-  dev_invitation_link: string;
+  invitation_link: string;
 }
 
 export type TenantUserRole = 'admin' | 'member';
@@ -87,7 +103,7 @@ export interface InviteUserResponse {
   role: TenantUserRole;
   role_id?: string | null;
   role_name?: string | null;
-  dev_invitation_link: string;
+  invitation_link: string;
 }
 
 export interface ForgotPasswordRequest {

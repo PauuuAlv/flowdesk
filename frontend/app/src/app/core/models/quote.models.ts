@@ -43,5 +43,10 @@ export interface SaveQuoteRequest {
   discount: number;
   tax_rate: number;
   notes: string | null;
-  items: Array<{ product_id: string | null; description: string; quantity: number; unit_price: number }>;
+  items: Array<{
+    product_id: string | null;
+    description: string;
+    quantity: number;
+    unit_price: number;
+  }>;
 }

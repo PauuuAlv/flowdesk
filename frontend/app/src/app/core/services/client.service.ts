@@ -22,8 +22,8 @@ export class ClientService {
       : this.http.post<Client>('/api/clients', request);
     return response.pipe(
       catchError((error: HttpErrorResponse) =>
-        throwError(() => new Error(error.status === 409 ? 'DUPLICATE_EMAIL' : 'SAVE_FAILED'))
-      )
+        throwError(() => new Error(error.status === 409 ? 'DUPLICATE_EMAIL' : 'SAVE_FAILED')),
+      ),
     );
   }
 

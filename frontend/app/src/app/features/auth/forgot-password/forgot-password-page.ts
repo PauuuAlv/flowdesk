@@ -9,7 +9,7 @@ import { AuthService } from '../../../core/services/auth.service';
   selector: 'app-forgot-password-page',
   imports: [ReactiveFormsModule, RouterLink],
   templateUrl: './forgot-password-page.html',
-  styleUrl: './forgot-password-page.scss'
+  styleUrl: './forgot-password-page.scss',
 })
 export class ForgotPasswordPage {
   private readonly formBuilder = inject(FormBuilder);
@@ -18,7 +18,7 @@ export class ForgotPasswordPage {
   protected readonly errorMessage = signal('');
   protected readonly successMessage = signal('');
   protected readonly forgotPasswordForm = this.formBuilder.nonNullable.group({
-    email: ['', [Validators.required, Validators.email]]
+    email: ['', [Validators.required, Validators.email]],
   });
 
   protected submit(): void {
@@ -34,18 +34,19 @@ export class ForgotPasswordPage {
       next: () => {
         this.submitting.set(false);
         this.successMessage.set(
-          'Si el correo está registrado, recibirás instrucciones para continuar.'
+          'Si el correo está registrado, recibirás instrucciones para continuar.',
         );
       },
       error: (error: HttpErrorResponse) => {
         this.submitting.set(false);
         this.errorMessage.set(this.getErrorMessage(error));
-      }
+      },
     });
   }
 
   private getErrorMessage(error: HttpErrorResponse): string {
-    if (error.status === 0) return 'No fue posible conectar con el servidor. Intenta nuevamente más tarde.';
+    if (error.status === 0)
+      return 'No fue posible conectar con el servidor. Intenta nuevamente más tarde.';
     return 'No fue posible procesar la solicitud. Intenta nuevamente.';
   }
 }

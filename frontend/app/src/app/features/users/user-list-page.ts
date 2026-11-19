@@ -11,7 +11,7 @@ import { SessionService } from '../../core/services/session.service';
   selector: 'app-user-list-page',
   imports: [RouterLink],
   templateUrl: './user-list-page.html',
-  styleUrls: ['./user-list-page.scss', './user-list-page.states.scss']
+  styleUrls: ['./user-list-page.scss', './user-list-page.states.scss'],
 })
 export class UserListPage {
   private readonly accessControl = inject(AccessControlService);
@@ -50,7 +50,10 @@ export class UserListPage {
   protected loadData(): void {
     this.loading.set(true);
     this.errorMessage.set('');
-    forkJoin({ users: this.accessControl.listMembers(), roles: this.accessControl.listRoles() }).subscribe({
+    forkJoin({
+      users: this.accessControl.listMembers(),
+      roles: this.accessControl.listRoles(),
+    }).subscribe({
       next: ({ users, roles }) => {
         this.users.set(users);
         this.roles.set(roles);
@@ -59,7 +62,7 @@ export class UserListPage {
       error: () => {
         this.loading.set(false);
         this.errorMessage.set('No fue posible consultar los usuarios. Intenta nuevamente.');
-      }
+      },
     });
   }
 
@@ -80,10 +83,12 @@ export class UserListPage {
     this.successMessage.set('');
     this.accessControl.updateMemberRole(user.id, roleId).subscribe({
       next: (updated) => {
-        this.users.update((users) => users.map((item) => (item.id === updated.id ? updated : item)));
+        this.users.update((users) =>
+          users.map((item) => (item.id === updated.id ? updated : item)),
+        );
         this.successMessage.set(`El rol de ${updated.full_name} se actualizó correctamente.`);
       },
-      error: () => this.errorMessage.set('No fue posible actualizar el rol del usuario.')
+      error: () => this.errorMessage.set('No fue posible actualizar el rol del usuario.'),
     });
   }
 
@@ -91,7 +96,7 @@ export class UserListPage {
     this.successMessage.set('');
     this.accessControl.resendInvitation(user.id).subscribe({
       next: () => this.successMessage.set(`La invitación para ${user.email} se generó nuevamente.`),
-      error: () => this.errorMessage.set('No fue posible reenviar la invitación.')
+      error: () => this.errorMessage.set('No fue posible reenviar la invitación.'),
     });
   }
 
@@ -111,14 +116,16 @@ export class UserListPage {
       next: (updated) => {
         this.processing.set(false);
         this.userToDeactivate.set(null);
-        this.users.update((users) => users.map((item) => (item.id === updated.id ? updated : item)));
+        this.users.update((users) =>
+          users.map((item) => (item.id === updated.id ? updated : item)),
+        );
         this.successMessage.set(`${updated.full_name} quedó inactivo.`);
       },
       error: () => {
         this.processing.set(false);
         this.userToDeactivate.set(null);
         this.errorMessage.set('No fue posible desactivar al usuario.');
-      }
+      },
     });
   }
 
@@ -128,13 +135,15 @@ export class UserListPage {
     this.accessControl.activateMember(user.id).subscribe({
       next: (updated) => {
         this.processing.set(false);
-        this.users.update((users) => users.map((item) => (item.id === updated.id ? updated : item)));
+        this.users.update((users) =>
+          users.map((item) => (item.id === updated.id ? updated : item)),
+        );
         this.successMessage.set(`${updated.full_name} puede ingresar nuevamente.`);
       },
       error: () => {
         this.processing.set(false);
         this.errorMessage.set('No fue posible reactivar al usuario.');
-      }
+      },
     });
   }
 
@@ -143,6 +152,9 @@ export class UserListPage {
   }
 
   private hasPermission(permission: (typeof PERMISSIONS)[keyof typeof PERMISSIONS]): boolean {
-    return this.currentUser?.role === 'admin' || Boolean(this.currentUser?.permissions?.includes(permission));
+    return (
+      this.currentUser?.role === 'admin' ||
+      Boolean(this.currentUser?.permissions?.includes(permission))
+    );
   }
 }

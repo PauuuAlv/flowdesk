@@ -75,10 +75,7 @@ def refresh(payload: RefreshRequest, db: Session = Depends(get_db)):
     if not user or not user.is_active or not tenant or not tenant.is_active:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="User not found or inactive")
 
-    # NOTA: como el refresh token no rota (ver security/jwt.py), aquí solo
-    # emitimos un access_token nuevo y reusamos el mismo refresh_token.
-    # Si más adelante implementan rotación, aquí es donde se generaría
-    # un refresh_token nuevo y se invalidaría el anterior.
+    # La versión actual reutiliza el refresh token hasta que expire.
     access_token = create_access_token(user_id=user.id, tenant_id=user.tenant_id, role=user.role)
 
     return TokenResponse(access_token=access_token, refresh_token=payload.refresh_token)
