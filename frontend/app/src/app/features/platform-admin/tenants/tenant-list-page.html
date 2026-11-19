@@ -2,14 +2,18 @@
   <header class="page-heading">
     <div>
       <p class="eyebrow">Administración de plataforma</p>
-      <h1>Empresas</h1>
-      <p>
-        {{ tenants().length }} {{ tenants().length === 1 ? 'empresa registrada' : 'empresas registradas' }}
-        · {{ activeCount() }} habilitadas
-      </p>
+      <h1>Empresas y suscripciones</h1>
+      <p>Consulta el consumo, administra los planes y controla el acceso de cada empresa.</p>
     </div>
     <a class="primary-action" routerLink="/administracion-flowdesk/empresas/nueva">Nueva empresa</a>
   </header>
+
+  <section class="metrics" aria-label="Resumen de empresas">
+    <article><span>Empresas</span><strong>{{ metrics().total }}</strong></article>
+    <article><span>Con acceso</span><strong>{{ metrics().active }}</strong></article>
+    <article><span>En prueba</span><strong>{{ metrics().trial }}</strong></article>
+    <article><span>Suspendidas o canceladas</span><strong>{{ metrics().blocked }}</strong></article>
+  </section>
 
   @if (successMessage()) { <p class="message success" role="status">{{ successMessage() }}</p> }
   @if (errorMessage()) { <p class="message error" role="alert">{{ errorMessage() }}</p> }
@@ -17,14 +21,16 @@
   <div class="filters" aria-label="Filtros de empresas">
     <label>
       <span>Buscar</span>
-      <input type="search" placeholder="Nombre, identificador o correo del administrador" (input)="updateSearch($event)" />
+      <input type="search" placeholder="Nombre, identificador, plan o correo del administrador" (input)="updateSearch($event)" />
     </label>
     <label>
-      <span>Estado</span>
+      <span>Suscripción</span>
       <select (change)="updateStatusFilter($event)">
         <option value="all">Todas</option>
-        <option value="active">Habilitadas</option>
-        <option value="inactive">Inhabilitadas</option>
+        <option value="trial">En prueba</option>
+        <option value="active">Activas</option>
+        <option value="suspended">Suspendidas</option>
+        <option value="cancelled">Canceladas</option>
       </select>
     </label>
   </div>
@@ -47,9 +53,7 @@
           <div class="tenant-heading">
             <span class="avatar" aria-hidden="true">{{ initials(tenant) }}</span>
             <div><h2>{{ tenant.name }}</h2><p>{{ tenant.slug }}</p></div>
-            <span class="status" [class.inactive]="!tenant.is_active">
-              {{ tenant.is_active ? 'Habilitada' : 'Inhabilitada' }}
-            </span>
+            <span [class]="'status ' + tenant.subscription_status">{{ statusLabel(tenant.subscription_status) }}</span>
           </div>
           <dl>
             <div>
@@ -64,7 +68,34 @@
               <div><dt>Usuarios</dt><dd>{{ tenant.active_users_count }} activos de {{ tenant.users_count }}</dd></div>
               <div><dt>Alta</dt><dd>{{ tenant.created_at ? (tenant.created_at | date: 'dd/MM/yyyy') : '—' }}</dd></div>
             </div>
+            <div class="inline-stats">
+              <div><dt>Plan</dt><dd>{{ tenant.plan_name }}</dd></div>
+              <div><dt>Renovación</dt><dd>{{ tenant.subscription_renews_at ? (tenant.subscription_renews_at | date: 'dd/MM/yyyy') : 'Sin renovación' }}</dd></div>
+            </div>
           </dl>
+          <div class="usage" aria-label="Consumo del plan">
+            <div><span>Usuarios <b>{{ tenant.usage.users }}/{{ tenant.max_users }}</b></span><i><em [style.width.%]="percent(tenant.usage.users, tenant.max_users)"></em></i></div>
+            <div><span>Clientes <b>{{ tenant.usage.clients }}/{{ tenant.max_clients }}</b></span><i><em [style.width.%]="percent(tenant.usage.clients, tenant.max_clients)"></em></i></div>
+            <div><span>Productos <b>{{ tenant.usage.products }}/{{ tenant.max_products }}</b></span><i><em [style.width.%]="percent(tenant.usage.products, tenant.max_products)"></em></i></div>
+          </div>
+          <div class="tenant-actions">
+            <label>Plan
+              <select [value]="tenant.plan_key" [disabled]="updatingTenant() === tenant.id" (change)="changePlan(tenant, $event)">
+                <option value="basic" [selected]="tenant.plan_key === 'basic'">Básico</option>
+                <option value="professional" [selected]="tenant.plan_key === 'professional'">Profesional</option>
+                <option value="enterprise" [selected]="tenant.plan_key === 'enterprise'">Empresarial</option>
+              </select>
+            </label>
+            <label>Suscripción
+              <select [value]="tenant.subscription_status" [disabled]="updatingTenant() === tenant.id" (change)="changeSubscriptionStatus(tenant, $event)">
+                <option value="trial" [selected]="tenant.subscription_status === 'trial'">Prueba</option>
+                <option value="active" [selected]="tenant.subscription_status === 'active'">Activa</option>
+                <option value="suspended" [selected]="tenant.subscription_status === 'suspended'">Suspendida</option>
+                <option value="cancelled" [selected]="tenant.subscription_status === 'cancelled'">Cancelada</option>
+              </select>
+            </label>
+          </div>
+          @if (updatingTenant() === tenant.id) { <small class="saving">Actualizando suscripción…</small> }
           <footer>
             <button class="link" type="button" (click)="openEdit(tenant)">Editar</button>
             <button class="link warn" type="button" (click)="openToggle(tenant)">

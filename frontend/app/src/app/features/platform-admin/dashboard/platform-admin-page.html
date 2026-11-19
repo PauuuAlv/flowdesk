@@ -35,6 +35,15 @@
             <input id="admin-email" type="email" formControlName="admin_email" placeholder="Ej: admin@empresa.com" autocomplete="email" />
             @if (tenantForm.controls.admin_email.touched && tenantForm.controls.admin_email.invalid) { <small>Ingresa un correo electrónico válido.</small> }
           </div>
+          <div class="field full">
+            <label for="tenant-plan">Plan inicial</label>
+            <select id="tenant-plan" formControlName="plan_key">
+              <option value="basic">Básico — 5 usuarios, 100 clientes, 100 productos</option>
+              <option value="professional">Profesional — 20 usuarios, 1,000 clientes, 1,000 productos</option>
+              <option value="enterprise">Empresarial — 500 usuarios, 50,000 clientes, 50,000 productos</option>
+            </select>
+            <small class="help">La empresa inicia en periodo de prueba de 30 días.</small>
+          </div>
         </div>
 
         <button class="primary-button" type="submit" [disabled]="submitting()">

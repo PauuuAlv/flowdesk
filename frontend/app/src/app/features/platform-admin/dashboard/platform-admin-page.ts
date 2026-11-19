@@ -3,7 +3,7 @@ import { Component, inject, signal } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 
-import { CreateTenantResponse } from '../../../core/models/auth.models';
+import { CreateTenantResponse, SaaSPlanKey } from '../../../core/models/auth.models';
 import { AuthService } from '../../../core/services/auth.service';
 
 @Component({
@@ -24,7 +24,8 @@ export class PlatformAdminPage {
     name: ['', [Validators.required, Validators.minLength(2)]],
     slug: ['', [Validators.required, Validators.pattern(/^[a-z0-9]+(?:-[a-z0-9]+)*$/)]],
     admin_full_name: ['', [Validators.required, Validators.minLength(3)]],
-    admin_email: ['', [Validators.required, Validators.email]]
+    admin_email: ['', [Validators.required, Validators.email]],
+    plan_key: ['basic' as SaaSPlanKey, Validators.required]
   });
 
   protected generateSlug(): void {
@@ -55,7 +56,7 @@ export class PlatformAdminPage {
       next: (tenant) => {
         this.submitting.set(false);
         this.createdTenant.set(tenant);
-        this.tenantForm.reset();
+        this.tenantForm.reset({ plan_key: 'basic' });
       },
       error: (error: HttpErrorResponse) => {
         this.submitting.set(false);

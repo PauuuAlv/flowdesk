@@ -6,6 +6,8 @@ from sqlalchemy.orm import Session
 
 from app.core.config import settings
 from app.core.database import get_db
+from app.core.permissions import ADMIN_ROLE_KEY
+from app.core.plans import get_plan
 from app.models.user import User
 from app.repositories.platform_admin_repository import PlatformAdminRepository
 from app.repositories.tenant_repository import TenantRepository
@@ -15,18 +17,22 @@ from app.schemas.platform_admin import (
     CreateTenantRequest,
     CreateTenantResponse,
     TenantSummary,
+    TenantUsageResponse,
     UpdateTenantRequest,
     UpdateTenantStatusRequest,
+    UpdateTenantSubscriptionRequest,
 )
 from app.security.jwt import create_platform_admin_token
 from app.security.password import verify_password
 from app.security.platform_admin_auth import get_current_platform_admin
 from app.security.tokens import generate_raw_token, hash_token
-from app.core.permissions import ADMIN_ROLE_KEY
 from app.services.access_control import create_default_roles
 from app.services.email import EmailService, get_email_service
 
 router = APIRouter()
+
+# Estados de suscripción con los que la empresa puede operar.
+ACTIVE_SUBSCRIPTION_STATUSES = ("trial", "active")
 
 
 @router.post("/auth/login", response_model=PlatformAdminTokenResponse)
@@ -61,7 +67,18 @@ def create_tenant(
     if tenant_repo.find_by_slug(db, payload.slug):
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Slug already in use")
 
-    tenant = tenant_repo.create(db, name=payload.name, slug=payload.slug)
+    plan = get_plan(payload.plan_key)
+    tenant = tenant_repo.create(
+        db,
+        name=payload.name,
+        slug=payload.slug,
+        plan_key=payload.plan_key,
+        subscription_status="trial",
+        max_users=plan["max_users"],
+        max_clients=plan["max_clients"],
+        max_products=plan["max_products"],
+        subscription_renews_at=datetime.now(timezone.utc) + timedelta(days=30),
+    )
     # Cada empresa nueva recibe SUS PROPIOS roles por defecto: Administrador, Miembro y Visor.
     default_roles = create_default_roles(db, tenant.id)
 
@@ -129,6 +146,19 @@ def _to_summary(row: dict) -> TenantSummary:
         admin_full_name=admin.full_name if admin else None,
         users_count=row["users_count"],
         active_users_count=row["active_users_count"],
+        plan_key=tenant.plan_key,
+        plan_name=get_plan(tenant.plan_key)["name"],
+        subscription_status=tenant.subscription_status,
+        max_users=tenant.max_users,
+        max_clients=tenant.max_clients,
+        max_products=tenant.max_products,
+        usage=TenantUsageResponse(
+            users=row["users_count"],
+            clients=row["clients_count"],
+            products=row["products_count"],
+        ),
+        subscription_started_at=tenant.subscription_started_at,
+        subscription_renews_at=tenant.subscription_renews_at,
     )
 
 
@@ -137,6 +167,7 @@ def list_tenants(
     db: Session = Depends(get_db),
     _admin=Depends(get_current_platform_admin),
 ):
+    """Empresas registradas con su administrador, plan, suscripción y consumo."""
     return [_to_summary(row) for row in TenantRepository().list_with_stats(db)]
 
 
@@ -174,10 +205,37 @@ def update_tenant_status(
     db: Session = Depends(get_db),
     _admin=Depends(get_current_platform_admin),
 ):
-    """Inhabilitar una empresa bloquea el acceso de todos sus usuarios
-    (login, refresh y cualquier request con un token ya emitido) sin borrar datos."""
+    """Atajo para habilitar/inhabilitar: inhabilitar equivale a suspender la
+    suscripción y bloquea el acceso de todos sus usuarios (login, refresh y
+    tokens ya emitidos) sin borrar datos."""
     tenant = _tenant_or_404(db, tenant_id)
     tenant.is_active = payload.is_active
+    if payload.is_active and tenant.subscription_status not in ACTIVE_SUBSCRIPTION_STATUSES:
+        tenant.subscription_status = "active"
+    elif not payload.is_active:
+        tenant.subscription_status = "suspended"
+    db.commit()
+    return _summary_for(db, tenant_id)
+
+
+@router.patch("/tenants/{tenant_id}/subscription", response_model=TenantSummary)
+def update_tenant_subscription(
+    tenant_id: uuid.UUID,
+    payload: UpdateTenantSubscriptionRequest,
+    db: Session = Depends(get_db),
+    _admin=Depends(get_current_platform_admin),
+):
+    """Cambia el plan (y sus límites) y el estado de la suscripción. Si queda
+    suspendida o cancelada, la empresa queda inhabilitada."""
+    tenant = _tenant_or_404(db, tenant_id)
+    plan = get_plan(payload.plan_key)
+    tenant.plan_key = payload.plan_key
+    tenant.subscription_status = payload.subscription_status
+    tenant.is_active = payload.subscription_status in ACTIVE_SUBSCRIPTION_STATUSES
+    tenant.max_users = plan["max_users"]
+    tenant.max_clients = plan["max_clients"]
+    tenant.max_products = plan["max_products"]
+    tenant.subscription_renews_at = payload.subscription_renews_at
     db.commit()
     return _summary_for(db, tenant_id)
 

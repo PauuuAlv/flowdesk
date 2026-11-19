@@ -53,7 +53,8 @@ def login(payload: LoginRequest, db: Session = Depends(get_db)):
     if not user or not verify_password(payload.password, user.hashed_password):
         raise invalid_credentials
 
-    # Solo se revela que la empresa está inhabilitada después de validar la contraseña.
+    # Solo se revela que la empresa está inhabilitada (suscripción suspendida o
+    # cancelada) después de validar la contraseña.
     if not TenantRepository().is_active(db, user.tenant_id):
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Company disabled")
 

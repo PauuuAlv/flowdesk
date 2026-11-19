@@ -47,7 +47,13 @@ export interface CreateTenantRequest {
   slug: string;
   admin_email: string;
   admin_full_name: string;
+  plan_key: SaaSPlanKey;
 }
+
+export type SaaSPlanKey = 'basic' | 'professional' | 'enterprise';
+export type SubscriptionStatus = 'trial' | 'active' | 'suspended' | 'cancelled';
+export interface TenantUsage { users:number; clients:number; products:number; }
+// El listado de empresas con su plan y consumo vive en tenant.models.ts (TenantSummary).
 
 export interface CreateTenantResponse {
   tenant_id: string;

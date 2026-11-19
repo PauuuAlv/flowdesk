@@ -1,4 +1,4 @@
-from sqlalchemy import Boolean, Column, Integer, Numeric, String, Text
+from sqlalchemy import Boolean, Column, DateTime, Integer, Numeric, String, Text, func
 
 from app.models.base import BaseModel
 
@@ -28,3 +28,10 @@ class Tenant(BaseModel):
     quote_validity_days = Column(Integer, nullable=False, default=15)
     quote_prefix = Column(String(12), nullable=False, default="COT")
     payment_instructions = Column(Text, nullable=True)
+    plan_key = Column(String(30), nullable=False, default="basic", index=True)
+    subscription_status = Column(String(30), nullable=False, default="trial", index=True)
+    max_users = Column(Integer, nullable=False, default=5)
+    max_clients = Column(Integer, nullable=False, default=100)
+    max_products = Column(Integer, nullable=False, default=100)
+    subscription_started_at = Column(DateTime(timezone=True), nullable=False, server_default=func.now())
+    subscription_renews_at = Column(DateTime(timezone=True), nullable=True)

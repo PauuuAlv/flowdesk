@@ -17,7 +17,7 @@ import {
   ResetPasswordRequest,
   ResetPasswordResponse,
   TokenResponse,
-  UserMeResponse
+  UserMeResponse
 } from '../models/auth.models';
 
 @Injectable({ providedIn: 'root' })

@@ -25,8 +25,8 @@ class TenantRepository:
         active = db.query(Tenant.is_active).filter(Tenant.id == tenant_id).scalar()
         return bool(active)
 
-    def create(self, db: Session, name: str, slug: str) -> Tenant:
-        tenant = Tenant(name=name, slug=slug, is_active=True)
+    def create(self, db: Session, name: str, slug: str, **values) -> Tenant:
+        tenant = Tenant(name=name, slug=slug, is_active=True, **values)
         db.add(tenant)
         db.flush()  # asigna el id sin hacer commit todavía (útil si el
         # caller quiere crear el tenant + el admin en la misma transacción)
@@ -48,6 +48,13 @@ class TenantRepository:
             )
         }
 
+        clients = dict(
+            db.execute(select(Client.tenant_id, func.count(Client.id)).group_by(Client.tenant_id)).all()
+        )
+        products = dict(
+            db.execute(select(Product.tenant_id, func.count(Product.id)).group_by(Product.tenant_id)).all()
+        )
+
         admins: dict[uuid.UUID, User] = {}
         for admin in (
             db.query(User)
@@ -67,6 +74,8 @@ class TenantRepository:
                     "tenant": tenant,
                     "users_count": int(total or 0),
                     "active_users_count": int(active or 0),
+                    "clients_count": int(clients.get(tenant.id, 0)),
+                    "products_count": int(products.get(tenant.id, 0)),
                     "admin": admin,
                 }
             )

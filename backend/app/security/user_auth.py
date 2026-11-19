@@ -36,8 +36,8 @@ def get_current_user(
     )
     if not user or user.status != "active":
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="User not found or inactive")
-
-    # Si la empresa fue inhabilitada, los tokens ya emitidos dejan de servir.
+    # Si la empresa fue inhabilitada (o su suscripción está suspendida o
+    # cancelada), los tokens ya emitidos dejan de servir.
     if not TenantRepository().is_active(db, user.tenant_id):
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Company disabled")
 

@@ -2,7 +2,11 @@ import { HttpClient, HttpParams } from '@angular/common/http';
 import { inject, Injectable } from '@angular/core';
 import { Observable } from 'rxjs';
 
-import { TenantSummary, UpdateTenantRequest } from '../models/tenant.models';
+import {
+  TenantSummary,
+  UpdateTenantRequest,
+  UpdateTenantSubscriptionRequest
+} from '../models/tenant.models';
 
 /** Gestión de empresas desde la administración de plataforma (superadmin). */
 @Injectable({ providedIn: 'root' })
@@ -20,6 +24,10 @@ export class TenantAdminService {
 
   updateStatus(id: string, isActive: boolean): Observable<TenantSummary> {
     return this.http.patch<TenantSummary>(`${this.baseUrl}/${id}/status`, { is_active: isActive });
+  }
+
+  updateSubscription(id: string, request: UpdateTenantSubscriptionRequest): Observable<TenantSummary> {
+    return this.http.patch<TenantSummary>(`${this.baseUrl}/${id}/subscription`, request);
   }
 
   delete(id: string, confirmSlug: string): Observable<void> {
