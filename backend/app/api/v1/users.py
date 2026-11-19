@@ -19,6 +19,8 @@ from app.schemas.user import InviteUserRequest, InviteUserResponse
 from app.security.permissions import require_permission
 from app.services.email import EmailService, get_email_service
 from app.security.tokens import generate_raw_token, hash_token
+from app.core.permissions import ADMIN_ROLE_KEY, MEMBER_ROLE_KEY
+from app.services.access_control import count_active_admins, get_template_role
 
 router = APIRouter()
 
@@ -41,7 +43,7 @@ def _serialize_member(user: User) -> TenantMemberResponse:
         full_name=user.full_name or user.email,
         email=user.email,
         role_id=str(role.id) if role else "",
-        role_name=role.name if role else user.role.capitalize(),
+        role_name=role.name if role else "Sin rol",
         status=_member_status(user.status),
     )
 
@@ -81,29 +83,23 @@ def invite_user(
             detail="A user with this email already exists in your tenant",
         )
 
-    role = None
     if payload.role_id:
         role = (
             db.query(Role)
             .filter(Role.id == payload.role_id, Role.tenant_id == admin.tenant_id)
             .first()
         )
-        if not role:
-            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Role not found")
     else:
-        role = (
-            db.query(Role)
-            .filter(Role.tenant_id == admin.tenant_id, Role.template_key == payload.role)
-            .first()
-        )
+        role = get_template_role(db, admin.tenant_id, MEMBER_ROLE_KEY)
+    if not role:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Role not found")
 
     raw_token = generate_raw_token()
     new_user = User(
         tenant_id=admin.tenant_id,
         email=payload.email,
         full_name=payload.full_name,
-        role=payload.role,
-        role_id=role.id if role else None,
+        role_id=role.id,
         status="invited",
         hashed_password=None,
         invited_by_user_id=admin.id,
@@ -127,9 +123,9 @@ def invite_user(
     return InviteUserResponse(
         user_id=str(new_user.id),
         email=new_user.email,
-        role=new_user.role,
-        role_id=str(role.id) if role else None,
-        role_name=role.name if role else new_user.role.capitalize(),
+        role=role.template_key or "custom",
+        role_id=str(role.id),
+        role_name=role.name,
         dev_invitation_link=invitation_link,
     )
 
@@ -149,8 +145,17 @@ def update_user_role(
     role = db.query(Role).filter(Role.id == role_id, Role.tenant_id == current_user.tenant_id).first()
     if not role:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Role not found")
+    if user.id == current_user.id:
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="You cannot change your own role")
+    # Nunca dejar a la empresa sin al menos un Administrador activo.
+    if (
+        user.role_key == ADMIN_ROLE_KEY
+        and role.template_key != ADMIN_ROLE_KEY
+        and user.status == "active"
+        and count_active_admins(db, current_user.tenant_id, exclude_user_id=user.id) == 0
+    ):
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Tenant must keep at least one admin")
     user.role_id = role.id
-    user.role = role.template_key or "custom"
     db.commit()
     db.refresh(user)
     return _serialize_member(user)
@@ -168,6 +173,12 @@ def update_user_status(
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="You cannot disable your own account")
     if user.status == "invited":
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Pending invitation cannot change status")
+    if (
+        payload.status == "inactive"
+        and user.role_key == ADMIN_ROLE_KEY
+        and count_active_admins(db, current_user.tenant_id, exclude_user_id=user.id) == 0
+    ):
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Tenant must keep at least one admin")
     user.status = "active" if payload.status == "active" else "disabled"
     db.commit()
     db.refresh(user)

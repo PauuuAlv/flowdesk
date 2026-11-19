@@ -1,4 +1,7 @@
-from pydantic import BaseModel, EmailStr
+import re
+from datetime import datetime
+
+from pydantic import BaseModel, EmailStr, Field, field_validator
 
 
 class PlatformAdminLoginRequest(BaseModel):
@@ -32,3 +35,45 @@ class CreateTenantResponse(BaseModel):
     # flujo manualmente. ANTES DE PRODUCCIÓN esto debe quitarse y mandarse
     # únicamente por correo — nunca en la respuesta del API.
     dev_invitation_link: str
+
+
+# --- Gestión de empresas (tenants) desde la administración de plataforma ---
+
+SLUG_PATTERN = re.compile(r"^[a-z0-9]+(?:-[a-z0-9]+)*$")
+
+
+class TenantSummary(BaseModel):
+    id: str
+    name: str
+    slug: str
+    is_active: bool
+    created_at: datetime | None
+    admin_email: str | None
+    admin_full_name: str | None
+    users_count: int
+    active_users_count: int
+
+
+class UpdateTenantRequest(BaseModel):
+    name: str = Field(min_length=2, max_length=255)
+    slug: str = Field(min_length=2, max_length=100)
+
+    @field_validator("name")
+    @classmethod
+    def normalize_name(cls, value: str) -> str:
+        normalized = " ".join(value.split())
+        if len(normalized) < 2:
+            raise ValueError("Name must have at least 2 characters")
+        return normalized
+
+    @field_validator("slug")
+    @classmethod
+    def validate_slug(cls, value: str) -> str:
+        normalized = value.strip().lower()
+        if not SLUG_PATTERN.match(normalized):
+            raise ValueError("Slug may only contain lowercase letters, numbers and hyphens")
+        return normalized
+
+
+class UpdateTenantStatusRequest(BaseModel):
+    is_active: bool

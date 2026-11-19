@@ -25,6 +25,7 @@ class TenantRoleResponse(BaseModel):
     name: str
     description: str
     origin: Literal["template", "custom"]
+    template_key: str | None = None
     is_protected: bool
     user_count: int
     permissions: list[str]
@@ -32,6 +33,8 @@ class TenantRoleResponse(BaseModel):
 
 class PermissionResponse(BaseModel):
     code: str
+    module: str
+    description: str
 
 
 class UpdateMemberRoleRequest(BaseModel):

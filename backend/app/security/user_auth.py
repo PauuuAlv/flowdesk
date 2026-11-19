@@ -6,6 +6,7 @@ from sqlalchemy.orm import Session
 
 from app.core.database import get_db
 from app.models.user import User
+from app.repositories.tenant_repository import TenantRepository
 
 # Igual que en platform_admin_auth.py: esto NO vuelve a validar el token
 # (eso ya lo hizo TenantContextMiddleware antes de llegar aquí). Solo existe
@@ -36,6 +37,10 @@ def get_current_user(
     if not user or user.status != "active":
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="User not found or inactive")
 
+    # Si la empresa fue inhabilitada, los tokens ya emitidos dejan de servir.
+    if not TenantRepository().is_active(db, user.tenant_id):
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Company disabled")
+
     return user
 
 
@@ -43,6 +48,6 @@ def get_current_admin_user(current_user: User = Depends(get_current_user)) -> Us
     """Para endpoints que solo el admin de un tenant puede usar (como invitar
     gente nueva). Un 'member' recibe 403, no 401 (sí está autenticado,
     solo no tiene permiso)."""
-    if current_user.role != "admin":
+    if current_user.role_key != "admin":
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Admin role required")
     return current_user

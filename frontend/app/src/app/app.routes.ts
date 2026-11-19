@@ -162,9 +162,26 @@ export const routes: Routes = [
     path: 'administracion-flowdesk',
     canActivate: [platformAdminGuard],
     loadComponent: () =>
-      import('./features/platform-admin/dashboard/platform-admin-page').then(
-        (component) => component.PlatformAdminPage
-      )
+      import('./layout/platform-admin-shell/platform-admin-shell').then(
+        (component) => component.PlatformAdminShell
+      ),
+    children: [
+      { path: '', redirectTo: 'empresas', pathMatch: 'full' },
+      {
+        path: 'empresas',
+        loadComponent: () =>
+          import('./features/platform-admin/tenants/tenant-list-page').then(
+            (component) => component.TenantListPage
+          )
+      },
+      {
+        path: 'empresas/nueva',
+        loadComponent: () =>
+          import('./features/platform-admin/dashboard/platform-admin-page').then(
+            (component) => component.PlatformAdminPage
+          )
+      }
+    ]
   },
   { path: '**', redirectTo: '' }
 ];

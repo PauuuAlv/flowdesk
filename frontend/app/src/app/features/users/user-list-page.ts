@@ -83,8 +83,19 @@ export class UserListPage {
         this.users.update((users) => users.map((item) => (item.id === updated.id ? updated : item)));
         this.successMessage.set(`El rol de ${updated.full_name} se actualizó correctamente.`);
       },
-      error: () => this.errorMessage.set('No fue posible actualizar el rol del usuario.')
+      error: (error: { status?: number }) => {
+        this.errorMessage.set(
+          error?.status === 409
+            ? 'No es posible cambiar ese rol: la empresa debe conservar al menos un Administrador activo y no puedes cambiar tu propio rol.'
+            : 'No fue posible actualizar el rol del usuario.'
+        );
+        this.loadData();
+      }
     });
+  }
+
+  protected isSelf(user: TenantMember): boolean {
+    return user.id === this.currentUser?.id;
   }
 
   protected resendInvitation(user: TenantMember): void {
@@ -143,6 +154,6 @@ export class UserListPage {
   }
 
   private hasPermission(permission: (typeof PERMISSIONS)[keyof typeof PERMISSIONS]): boolean {
-    return this.currentUser?.role === 'admin' || Boolean(this.currentUser?.permissions?.includes(permission));
+    return Boolean(this.currentUser?.permissions?.includes(permission));
   }
 }

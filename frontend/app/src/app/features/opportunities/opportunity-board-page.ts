@@ -29,5 +29,5 @@ export class OpportunityBoardPage {
   protected toggleArchived(event:Event){this.showArchived.set((event.target as HTMLInputElement).checked)}
   protected money(value:number){return new Intl.NumberFormat('es-MX',{style:'currency',currency:'MXN',maximumFractionDigits:0}).format(value)}
   private replace(item:Opportunity){this.items.update(values=>values.map(value=>value.id===item.id?item:value));this.error.set('')}
-  private has(permission:(typeof PERMISSIONS)[keyof typeof PERMISSIONS]){return this.user?.role==='admin'||Boolean(this.user?.permissions?.includes(permission))}
+  private has(permission:(typeof PERMISSIONS)[keyof typeof PERMISSIONS]){return Boolean(this.user?.permissions?.includes(permission))}
 }

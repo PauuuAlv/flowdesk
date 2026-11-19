@@ -1,23 +1,20 @@
 import { HttpErrorResponse } from '@angular/common/http';
 import { Component, inject, signal } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
-import { Router } from '@angular/router';
+import { RouterLink } from '@angular/router';
 
 import { CreateTenantResponse } from '../../../core/models/auth.models';
 import { AuthService } from '../../../core/services/auth.service';
-import { SessionService } from '../../../core/services/session.service';
 
 @Component({
   selector: 'app-platform-admin-page',
-  imports: [ReactiveFormsModule],
+  imports: [ReactiveFormsModule, RouterLink],
   templateUrl: './platform-admin-page.html',
   styleUrl: './platform-admin-page.scss'
 })
 export class PlatformAdminPage {
   private readonly formBuilder = inject(FormBuilder);
   private readonly authService = inject(AuthService);
-  private readonly sessionService = inject(SessionService);
-  private readonly router = inject(Router);
 
   protected readonly submitting = signal(false);
   protected readonly errorMessage = signal('');
@@ -77,11 +74,6 @@ export class PlatformAdminPage {
     } catch {
       this.errorMessage.set('No fue posible copiar el enlace. Selecciónalo y cópialo manualmente.');
     }
-  }
-
-  protected logout(): void {
-    this.sessionService.clearPlatformAdmin();
-    void this.router.navigate(['/administracion-flowdesk/iniciar-sesion']);
   }
 
   private getErrorMessage(error: HttpErrorResponse): string {

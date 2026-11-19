@@ -26,5 +26,5 @@ export class DashboardPage {
   protected stageLabel(stage:DashboardPipelineStage['stage']){return{prospecting:'Prospección',qualification:'Calificación',proposal:'Propuesta',negotiation:'Negociación'}[stage]}
   protected activityType(type:string){return{call:'Llamada',email:'Correo',meeting:'Reunión',task:'Tarea'}[type]??type}
   protected quoteStatus(status:string){return{draft:'Borrador',sent:'Enviada',accepted:'Aceptada',rejected:'Rechazada',expired:'Vencida'}[status]??status}
-  private has(permission:(typeof PERMISSIONS)[keyof typeof PERMISSIONS]){return this.user?.role==='admin'||Boolean(this.user?.permissions?.includes(permission))}
+  private has(permission:(typeof PERMISSIONS)[keyof typeof PERMISSIONS]){return Boolean(this.user?.permissions?.includes(permission))}
 }

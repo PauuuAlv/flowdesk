@@ -8,6 +8,7 @@ export interface TenantRole {
   name: string;
   description: string;
   origin: RoleOrigin;
+  template_key: 'admin' | 'member' | 'viewer' | null;
   is_protected: boolean;
   user_count: number;
   permissions: PermissionCode[];

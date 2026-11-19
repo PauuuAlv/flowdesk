@@ -1,15 +1,11 @@
 import uuid
-from typing import Literal
-
 from pydantic import BaseModel, EmailStr, Field
 
 
 class InviteUserRequest(BaseModel):
     email: EmailStr
     full_name: str | None = None
-    # Un admin puede invitar a otro admin o a un member, pero nunca a un
-    # platform_admin (ese rol ni siquiera existe en este modelo, ver User).
-    role: Literal["admin", "member"] = "member"
+    # Rol del tenant que tendra el invitado. Si no se manda, se usa "Miembro".
     role_id: uuid.UUID | None = None
 
 

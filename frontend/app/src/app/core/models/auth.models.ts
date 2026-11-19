@@ -58,13 +58,12 @@ export interface CreateTenantResponse {
   dev_invitation_link: string;
 }
 
-export type TenantUserRole = 'admin' | 'member';
+export type TenantUserRole = 'admin' | 'member' | 'viewer' | 'custom';
 
 export interface InviteUserRequest {
   email: string;
   full_name: string;
-  role: TenantUserRole;
-  role_id?: string;
+  role_id: string;
 }
 
 export interface InviteUserResponse {

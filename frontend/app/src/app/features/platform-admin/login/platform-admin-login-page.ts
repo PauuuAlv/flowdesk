@@ -41,6 +41,7 @@ export class PlatformAdminLoginPage {
     this.authService.platformAdminLogin(this.loginForm.getRawValue()).subscribe({
       next: (tokens) => {
         this.sessionService.savePlatformAdminToken(tokens);
+        this.sessionService.savePlatformAdminEmail(this.loginForm.controls.email.value);
         this.submitting.set(false);
         void this.router.navigate(['/administracion-flowdesk']);
       },

@@ -43,7 +43,7 @@ export const inviteUsersGuard: CanActivateFn = () => {
   const router = inject(Router);
   const user = sessionService.getUser();
 
-  return user?.role === 'admin' || user?.permissions?.includes(PERMISSIONS.usersInvite)
+  return user?.permissions?.includes(PERMISSIONS.usersInvite)
     ? true
     : router.createUrlTree(['/panel/sin-permiso']);
 };
@@ -67,7 +67,7 @@ function permissionGuard(permission: (typeof PERMISSIONS)[keyof typeof PERMISSIO
   const sessionService = inject(SessionService);
   const router = inject(Router);
   const user = sessionService.getUser();
-  return user?.role === 'admin' || user?.permissions?.includes(permission)
+  return user?.permissions?.includes(permission)
     ? true
     : router.createUrlTree(['/panel/sin-permiso']);
 }

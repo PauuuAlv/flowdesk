@@ -98,9 +98,10 @@ export class RoleFormPage {
       next: (role) => {
         this.roleForm.patchValue({ name: role.name, description: role.description });
         role.permissions.forEach((permission) => this.permissionControls[permission].setValue(true));
+        if (role.origin === 'template') this.roleForm.controls.name.disable();
         if (role.is_protected) {
           this.protectedRole.set(true);
-          this.roleForm.controls.name.disable();
+          this.roleForm.controls.permissions.disable();
         }
         this.loading.set(false);
       },

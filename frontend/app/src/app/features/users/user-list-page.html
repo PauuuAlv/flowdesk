@@ -26,7 +26,7 @@
       @for (user of filteredUsers(); track user.id) {
         <article class="user-row">
           <div class="identity"><span class="avatar">{{ user.full_name.charAt(0) }}</span><div><strong>{{ user.full_name }}</strong><small>{{ user.email }}</small></div></div>
-          <label class="role-select"><span class="sr-only">Rol de {{ user.full_name }}</span><select [value]="user.role_id" (change)="changeRole(user, $event)" [disabled]="user.status === 'inactive' || !canUpdate">@for (role of roles(); track role.id) { <option [value]="role.id" [selected]="role.id === user.role_id">{{ role.name }}</option> }</select></label>
+          <label class="role-select"><span class="sr-only">Rol de {{ user.full_name }}</span><select [value]="user.role_id" (change)="changeRole(user, $event)" [disabled]="user.status === 'inactive' || !canUpdate || isSelf(user)">@for (role of roles(); track role.id) { <option [value]="role.id" [selected]="role.id === user.role_id">{{ role.name }}</option> }</select></label>
           <span class="status" [class]="'status ' + user.status">{{ statusLabel(user.status) }}</span>
           <div class="actions">
             @if (user.status === 'pending' && canInvite) { <button type="button" (click)="resendInvitation(user)">Reenviar</button> }

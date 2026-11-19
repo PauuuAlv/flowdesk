@@ -15,7 +15,7 @@
         <div class="field">
           <label for="role-name">Nombre del rol</label>
           <input id="role-name" type="text" formControlName="name" maxlength="50" placeholder="Ej: Contabilidad" />
-          @if (protectedRole()) { <small class="help">El nombre del rol Administrador está protegido.</small> }
+          @if (protectedRole()) { <small class="help">El rol Administrador está protegido: conserva su nombre y siempre tiene todos los permisos.</small> }
           @if (roleForm.controls.name.touched && roleForm.controls.name.hasError('required')) { <small>Ingresa el nombre del rol.</small> }
           @else if (roleForm.controls.name.touched && roleForm.controls.name.invalid) { <small>Usa entre 3 y 50 caracteres, sin símbolos especiales.</small> }
         </div>

@@ -12,6 +12,7 @@ from app.models.user import User
 from app.models.tenant import Tenant
 from app.repositories.user_repository import UserRepository
 from app.repositories.password_reset_repository import PasswordResetRepository
+from app.repositories.tenant_repository import TenantRepository
 from app.schemas.auth import (
     LoginRequest,
     TokenResponse,
@@ -52,7 +53,11 @@ def login(payload: LoginRequest, db: Session = Depends(get_db)):
     if not user or not verify_password(payload.password, user.hashed_password):
         raise invalid_credentials
 
-    access_token = create_access_token(user_id=user.id, tenant_id=user.tenant_id, role=user.role)
+    # Solo se revela que la empresa está inhabilitada después de validar la contraseña.
+    if not TenantRepository().is_active(db, user.tenant_id):
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Company disabled")
+
+    access_token = create_access_token(user_id=user.id, tenant_id=user.tenant_id, role=user.role_key)
     refresh_token = create_refresh_token(user_id=user.id, tenant_id=user.tenant_id)
 
     return TokenResponse(access_token=access_token, refresh_token=refresh_token)
@@ -72,12 +77,14 @@ def refresh(payload: RefreshRequest, db: Session = Depends(get_db)):
     user = user_repo.get(tenant_id=uuid.UUID(data["tenant_id"]), id=uuid.UUID(data["sub"]))
     if not user or not user.is_active:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="User not found or inactive")
+    if not TenantRepository().is_active(db, user.tenant_id):
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Company disabled")
 
     # NOTA: como el refresh token no rota (ver security/jwt.py), aquí solo
     # emitimos un access_token nuevo y reusamos el mismo refresh_token.
     # Si más adelante implementan rotación, aquí es donde se generaría
     # un refresh_token nuevo y se invalidaría el anterior.
-    access_token = create_access_token(user_id=user.id, tenant_id=user.tenant_id, role=user.role)
+    access_token = create_access_token(user_id=user.id, tenant_id=user.tenant_id, role=user.role_key)
 
     return TokenResponse(access_token=access_token, refresh_token=payload.refresh_token)
 
@@ -98,6 +105,9 @@ def register(payload: RegisterRequest, db: Session = Depends(get_db)):
     if not user or user.status != "invited":
         raise invalid_token
 
+    if not TenantRepository().is_active(db, user.tenant_id):
+        raise invalid_token
+
     if user.invitation_expires_at is None or user.invitation_expires_at < datetime.now(timezone.utc):
         raise invalid_token
 
@@ -111,7 +121,7 @@ def register(payload: RegisterRequest, db: Session = Depends(get_db)):
     db.commit()
     db.refresh(user)
 
-    access_token = create_access_token(user_id=user.id, tenant_id=user.tenant_id, role=user.role)
+    access_token = create_access_token(user_id=user.id, tenant_id=user.tenant_id, role=user.role_key)
     refresh_token = create_refresh_token(user_id=user.id, tenant_id=user.tenant_id)
 
     return TokenResponse(access_token=access_token, refresh_token=refresh_token)
@@ -127,9 +137,9 @@ def get_me(db: Session = Depends(get_db), current_user: User = Depends(get_curre
         tenant_name=tenant.name if tenant else "Empresa",
         email=current_user.email,
         full_name=current_user.full_name,
-        role=current_user.role,
-        role_id=str(current_user.role_id) if current_user.role_id else None,
-        role_name=current_user.assigned_role.name if current_user.assigned_role else current_user.role.capitalize(),
+        role=current_user.role_key,
+        role_id=str(current_user.role_id),
+        role_name=current_user.assigned_role.name if current_user.assigned_role else None,
         permissions=get_user_permission_codes(current_user),
         status=current_user.status,
     )
@@ -150,7 +160,7 @@ def forgot_password(
     user_repo = UserRepository(db)
     user = user_repo.find_by_email_any_tenant(db, payload.email)
 
-    if not user or user.status != "active":
+    if not user or user.status != "active" or not TenantRepository().is_active(db, user.tenant_id):
         return generic_response  # no seguimos, pero tampoco lo decimos
 
     raw_token = generate_raw_token()
@@ -192,7 +202,7 @@ def reset_password(payload: ResetPasswordRequest, db: Session = Depends(get_db))
 
     user_repo = UserRepository(db)
     user = user_repo.get(tenant_id=reset_row.tenant_id, id=reset_row.user_id)
-    if not user or user.status != "active":
+    if not user or user.status != "active" or not TenantRepository().is_active(db, user.tenant_id):
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Invalid or expired reset token",

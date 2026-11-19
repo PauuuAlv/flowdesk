@@ -1,4 +1,4 @@
-from sqlalchemy import Column, String, Boolean, DateTime, ForeignKey, UniqueConstraint
+from sqlalchemy import Column, String, Boolean, DateTime, ForeignKey, ForeignKeyConstraint, UniqueConstraint
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
 
@@ -19,6 +19,11 @@ class User(BaseModel, TenantMixin):
     __tablename__ = "users"
     __table_args__ = (
         UniqueConstraint("tenant_id", "email", name="uq_user_tenant_email"),
+        ForeignKeyConstraint(
+            ["role_id", "tenant_id"],
+            ["roles.id", "roles.tenant_id"],
+            name="fk_users_role_tenant",
+        ),
     )
 
     email = Column(String(255), nullable=False, index=True)
@@ -26,12 +31,10 @@ class User(BaseModel, TenantMixin):
     hashed_password = Column(String(255), nullable=True)
     full_name = Column(String(255), nullable=True)
 
-    # 'admin': administra su tenant, puede invitar/desactivar usuarios.
-    # 'member': usuario normal, sin permisos de administración.
-    role = Column(String(50), nullable=False, default="member")
-    # Compatibilidad progresiva: `role` conserva el valor anterior mientras
-    # los usuarios existentes migran a roles dinámicos por tenant.
-    role_id = Column(UUID(as_uuid=True), ForeignKey("roles.id"), nullable=True, index=True)
+    # Rol del tenant asignado al usuario. Es la ÚNICA fuente de verdad de sus
+    # permisos (roles -> role_permissions -> permissions). El rol debe ser del
+    # mismo tenant que el usuario (FK compuesta, fk_users_role_tenant).
+    role_id = Column(UUID(as_uuid=True), nullable=False, index=True)
     assigned_role = relationship("Role", lazy="joined")
 
     # 'invited' | 'active' | 'disabled'
@@ -46,6 +49,13 @@ class User(BaseModel, TenantMixin):
     invitation_token_hash = Column(String(255), nullable=True, unique=True, index=True)
     invitation_expires_at = Column(DateTime(timezone=True), nullable=True)
     activated_at = Column(DateTime(timezone=True), nullable=True)
+
+    @property
+    def role_key(self) -> str:
+        """'admin' | 'member' | 'viewer' para roles por defecto, 'custom' si no."""
+        if self.assigned_role and self.assigned_role.template_key:
+            return self.assigned_role.template_key
+        return "custom"
 
     @property
     def is_active(self) -> bool:

@@ -33,28 +33,28 @@ export class TenantShell {
 
   protected get canManageUsers(): boolean {
     const permissions = this.user?.permissions ?? [];
-    return this.user?.role === 'admin' || permissions.includes(PERMISSIONS.usersInvite);
+    return permissions.includes(PERMISSIONS.usersInvite);
   }
 
   protected get canViewUsers(): boolean {
     const permissions = this.user?.permissions ?? [];
-    return this.user?.role === 'admin' || permissions.includes(PERMISSIONS.usersView);
+    return permissions.includes(PERMISSIONS.usersView);
   }
 
   protected get canViewRoles(): boolean {
     const permissions = this.user?.permissions ?? [];
-    return this.user?.role === 'admin' || permissions.includes(PERMISSIONS.rolesView);
+    return permissions.includes(PERMISSIONS.rolesView);
   }
 
   protected get canViewClients(): boolean {
     const permissions = this.user?.permissions ?? [];
-    return this.user?.role === 'admin' || permissions.includes(PERMISSIONS.clientsView);
+    return permissions.includes(PERMISSIONS.clientsView);
   }
-  protected get canViewOpportunities(): boolean { const p=this.user?.permissions??[]; return this.user?.role==='admin'||p.includes(PERMISSIONS.opportunitiesView); }
-  protected get canViewActivities():boolean{const p=this.user?.permissions??[];return this.user?.role==='admin'||p.includes(PERMISSIONS.activitiesView)}
-  protected get canViewQuotes():boolean{const p=this.user?.permissions??[];return this.user?.role==='admin'||p.includes(PERMISSIONS.quotesView)}
-  protected get canViewSettings():boolean{const p=this.user?.permissions??[];return this.user?.role==='admin'||p.includes(PERMISSIONS.settingsView)}
-  protected get canViewProducts():boolean{const p=this.user?.permissions??[];return this.user?.role==='admin'||p.includes(PERMISSIONS.productsView)}
+  protected get canViewOpportunities(): boolean { const p=this.user?.permissions??[]; return p.includes(PERMISSIONS.opportunitiesView); }
+  protected get canViewActivities():boolean{const p=this.user?.permissions??[];return p.includes(PERMISSIONS.activitiesView)}
+  protected get canViewQuotes():boolean{const p=this.user?.permissions??[];return p.includes(PERMISSIONS.quotesView)}
+  protected get canViewSettings():boolean{const p=this.user?.permissions??[];return p.includes(PERMISSIONS.settingsView)}
+  protected get canViewProducts():boolean{const p=this.user?.permissions??[];return p.includes(PERMISSIONS.productsView)}
 
   protected toggleSidebar(): void {
     this.sidebarOpen.update((open) => !open);

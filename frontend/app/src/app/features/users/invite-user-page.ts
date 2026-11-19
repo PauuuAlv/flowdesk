@@ -35,7 +35,7 @@ export class InviteUserPage {
       next: (roles) => {
         this.roles.set(roles);
         this.loadingRoles.set(false);
-        const memberRole = roles.find((role) => role.name.toLowerCase() === 'miembro');
+        const memberRole = roles.find((role) => role.template_key === 'member');
         if (memberRole) this.inviteForm.controls.role_id.setValue(memberRole.id);
       },
       error: () => {
@@ -57,7 +57,7 @@ export class InviteUserPage {
 
     this.submitting.set(true);
     this.authService
-      .inviteUser({ ...this.inviteForm.getRawValue(), role: 'member' })
+      .inviteUser(this.inviteForm.getRawValue())
       .subscribe({
       next: (user) => {
         this.submitting.set(false);

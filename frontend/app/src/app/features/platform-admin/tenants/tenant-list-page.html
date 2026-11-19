@@ -1,0 +1,152 @@
+<section class="module-page">
+  <header class="page-heading">
+    <div>
+      <p class="eyebrow">Administración de plataforma</p>
+      <h1>Empresas</h1>
+      <p>
+        {{ tenants().length }} {{ tenants().length === 1 ? 'empresa registrada' : 'empresas registradas' }}
+        · {{ activeCount() }} habilitadas
+      </p>
+    </div>
+    <a class="primary-action" routerLink="/administracion-flowdesk/empresas/nueva">Nueva empresa</a>
+  </header>
+
+  @if (successMessage()) { <p class="message success" role="status">{{ successMessage() }}</p> }
+  @if (errorMessage()) { <p class="message error" role="alert">{{ errorMessage() }}</p> }
+
+  <div class="filters" aria-label="Filtros de empresas">
+    <label>
+      <span>Buscar</span>
+      <input type="search" placeholder="Nombre, identificador o correo del administrador" (input)="updateSearch($event)" />
+    </label>
+    <label>
+      <span>Estado</span>
+      <select (change)="updateStatusFilter($event)">
+        <option value="all">Todas</option>
+        <option value="active">Habilitadas</option>
+        <option value="inactive">Inhabilitadas</option>
+      </select>
+    </label>
+  </div>
+
+  @if (loading()) {
+    <div class="state-card skeleton" aria-label="Cargando empresas"><i></i><i></i><i></i></div>
+  } @else if (!tenants().length) {
+    <div class="state-card">
+      <span aria-hidden="true">▦</span>
+      <h2>Aún no hay empresas</h2>
+      <p>Registra la primera empresa cliente para que su administrador pueda comenzar.</p>
+      <a class="primary-action" routerLink="/administracion-flowdesk/empresas/nueva">Crear empresa</a>
+    </div>
+  } @else if (!filteredTenants().length) {
+    <div class="state-card"><h2>Sin resultados</h2><p>Prueba con otro término o cambia el filtro.</p></div>
+  } @else {
+    <div class="tenant-grid">
+      @for (tenant of filteredTenants(); track tenant.id) {
+        <article class="tenant-card" [class.inactive]="!tenant.is_active">
+          <div class="tenant-heading">
+            <span class="avatar" aria-hidden="true">{{ initials(tenant) }}</span>
+            <div><h2>{{ tenant.name }}</h2><p>{{ tenant.slug }}</p></div>
+            <span class="status" [class.inactive]="!tenant.is_active">
+              {{ tenant.is_active ? 'Habilitada' : 'Inhabilitada' }}
+            </span>
+          </div>
+          <dl>
+            <div>
+              <dt>Administrador</dt>
+              <dd>
+                @if (tenant.admin_email) {
+                  {{ tenant.admin_full_name || 'Sin nombre' }} · {{ tenant.admin_email }}
+                } @else { Sin administrador }
+              </dd>
+            </div>
+            <div class="inline-stats">
+              <div><dt>Usuarios</dt><dd>{{ tenant.active_users_count }} activos de {{ tenant.users_count }}</dd></div>
+              <div><dt>Alta</dt><dd>{{ tenant.created_at ? (tenant.created_at | date: 'dd/MM/yyyy') : '—' }}</dd></div>
+            </div>
+          </dl>
+          <footer>
+            <button class="link" type="button" (click)="openEdit(tenant)">Editar</button>
+            <button class="link warn" type="button" (click)="openToggle(tenant)">
+              {{ tenant.is_active ? 'Inhabilitar' : 'Habilitar' }}
+            </button>
+            <button class="link danger-link" type="button" (click)="openDelete(tenant)">Eliminar</button>
+          </footer>
+        </article>
+      }
+    </div>
+  }
+</section>
+
+@if (tenantToEdit(); as tenant) {
+  <div class="modal-backdrop" role="presentation">
+    <section class="confirm-dialog" role="dialog" aria-modal="true" aria-labelledby="edit-title">
+      <h2 id="edit-title">Editar empresa</h2>
+      <form [formGroup]="editForm" (ngSubmit)="saveEdit()" novalidate>
+        @if (dialogError()) { <p class="message error" role="alert">{{ dialogError() }}</p> }
+        <label class="field">
+          <span>Nombre de la empresa</span>
+          <input type="text" formControlName="name" autocomplete="organization" />
+          @if (editForm.controls.name.touched && editForm.controls.name.invalid) { <small>Ingresa el nombre de la empresa.</small> }
+        </label>
+        <label class="field">
+          <span>Identificador</span>
+          <input type="text" formControlName="slug" autocapitalize="none" />
+          @if (editForm.controls.slug.touched && editForm.controls.slug.invalid) { <small>Usa letras minúsculas, números y guiones.</small> }
+        </label>
+        <div class="dialog-actions">
+          <button class="secondary" type="button" (click)="closeDialogs()">Cancelar</button>
+          <button class="primary" type="submit" [disabled]="processing()">{{ processing() ? 'Guardando…' : 'Guardar cambios' }}</button>
+        </div>
+      </form>
+    </section>
+  </div>
+}
+
+@if (tenantToToggle(); as tenant) {
+  <div class="modal-backdrop" role="presentation">
+    <section class="confirm-dialog" role="dialog" aria-modal="true" aria-labelledby="toggle-title">
+      <span class="warning-icon" [class.neutral]="!tenant.is_active" aria-hidden="true">!</span>
+      <h2 id="toggle-title">{{ tenant.is_active ? 'Inhabilitar' : 'Habilitar' }} empresa</h2>
+      @if (tenant.is_active) {
+        <p>Los usuarios de <strong>{{ tenant.name }}</strong> no podrán iniciar sesión y las sesiones abiertas se cerrarán. Sus datos se conservan y puedes habilitarla de nuevo cuando quieras.</p>
+      } @else {
+        <p>Los usuarios de <strong>{{ tenant.name }}</strong> podrán volver a iniciar sesión.</p>
+      }
+      @if (dialogError()) { <p class="message error" role="alert">{{ dialogError() }}</p> }
+      <div class="dialog-actions">
+        <button class="secondary" type="button" (click)="closeDialogs()">Cancelar</button>
+        <button [class]="tenant.is_active ? 'danger' : 'primary'" type="button" [disabled]="processing()" (click)="confirmToggle()">
+          {{ processing() ? 'Guardando…' : (tenant.is_active ? 'Inhabilitar' : 'Habilitar') }}
+        </button>
+      </div>
+    </section>
+  </div>
+}
+
+@if (tenantToDelete(); as tenant) {
+  <div class="modal-backdrop" role="presentation">
+    <section class="confirm-dialog" role="dialog" aria-modal="true" aria-labelledby="delete-title">
+      <span class="warning-icon" aria-hidden="true">!</span>
+      <h2 id="delete-title">Eliminar empresa</h2>
+      <p>
+        Se eliminarán <strong>{{ tenant.name }}</strong> y <strong>todos sus datos</strong>: usuarios, clientes,
+        oportunidades, actividades, cotizaciones y productos. <strong>Esta acción no se puede deshacer.</strong>
+      </p>
+      @if (tenant.is_active) {
+        <p class="hint">Si solo quieres bloquear el acceso, usa <em>Inhabilitar</em>.</p>
+      }
+      <label class="field">
+        <span>Escribe <code>{{ tenant.slug }}</code> para confirmar</span>
+        <input type="text" autocapitalize="none" autocomplete="off" [value]="deleteConfirmation()" (input)="updateDeleteConfirmation($event)" />
+      </label>
+      @if (dialogError()) { <p class="message error" role="alert">{{ dialogError() }}</p> }
+      <div class="dialog-actions">
+        <button class="secondary" type="button" (click)="closeDialogs()">Cancelar</button>
+        <button class="danger" type="button" [disabled]="processing() || !canConfirmDelete(tenant)" (click)="confirmDelete()">
+          {{ processing() ? 'Eliminando…' : 'Eliminar definitivamente' }}
+        </button>
+      </div>
+    </section>
+  </div>
+}

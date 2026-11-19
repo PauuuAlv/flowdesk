@@ -107,6 +107,6 @@ export class ClientListPage {
   }
 
   private hasPermission(permission: (typeof PERMISSIONS)[keyof typeof PERMISSIONS]): boolean {
-    return this.user?.role === 'admin' || Boolean(this.user?.permissions?.includes(permission));
+    return Boolean(this.user?.permissions?.includes(permission));
   }
 }
