@@ -11,4 +11,12 @@ export class CompanySettingsService {
   update(body: SaveCompanySettings): Observable<CompanySettings> {
     return this.http.patch<CompanySettings>('/api/company-settings', body);
   }
+  uploadLogo(file: File): Observable<CompanySettings> {
+    const body = new FormData();
+    body.append('logo', file);
+    return this.http.post<CompanySettings>('/api/company-settings/logo', body);
+  }
+  deleteLogo(): Observable<void> {
+    return this.http.delete<void>('/api/company-settings/logo');
+  }
 }

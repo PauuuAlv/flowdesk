@@ -42,6 +42,11 @@
         <a routerLink="/panel/oportunidades" routerLinkActive="active" (click)="closeSidebar()"
           ><span class="nav-icon" aria-hidden="true">◇</span>Oportunidades</a
         >
+        @if (canManageOpportunityStages) {
+          <a routerLink="/panel/configuracion/etapas-oportunidad" routerLinkActive="active" (click)="closeSidebar()"
+            ><span class="nav-icon" aria-hidden="true">≡</span>Etapas de oportunidades</a
+          >
+        }
       }
       @if (canViewActivities) {
         <a routerLink="/panel/actividades" routerLinkActive="active" (click)="closeSidebar()"
@@ -57,6 +62,10 @@
         <a routerLink="/panel/productos" routerLinkActive="active" (click)="closeSidebar()"
           ><span class="nav-icon" aria-hidden="true">□</span>Productos y servicios</a
         >
+        @if (canManageProductCatalogs) {
+          <a routerLink="/panel/configuracion/unidades" routerLinkActive="active" (click)="closeSidebar()"><span class="nav-icon" aria-hidden="true">↔</span>Unidades de medida</a>
+          <a routerLink="/panel/configuracion/marcas" routerLinkActive="active" (click)="closeSidebar()"><span class="nav-icon" aria-hidden="true">◆</span>Marcas</a>
+        }
       }
       @if (canViewRoles) {
         <a routerLink="/panel/roles" routerLinkActive="active" (click)="closeSidebar()">
@@ -65,6 +74,12 @@
         </a>
       }
       @if (canViewSettings) {
+        <a
+          routerLink="/panel/configuracion/plan"
+          routerLinkActive="active"
+          (click)="closeSidebar()"
+          ><span class="nav-icon" aria-hidden="true">▥</span>Plan y uso</a
+        >
         <a
           routerLink="/panel/configuracion/empresa"
           routerLinkActive="active"
@@ -102,12 +117,44 @@
           ☰
         </button>
         <div>
+          @if (user?.tenant_logo_url) { <img class="company-logo" [src]="user?.tenant_logo_url" alt="" /> }
           <span>Empresa</span>
           <strong>{{ companyName }}</strong>
         </div>
       </div>
 
-      <div class="profile-area">
+      <div class="topbar-actions">
+        <div class="notifications-area">
+          <button class="notification-trigger" type="button" (click)="toggleNotifications()"
+            [attr.aria-expanded]="notificationsOpen()" aria-haspopup="menu" aria-label="Abrir notificaciones">
+            <svg aria-hidden="true" viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9"/><path d="M10 21h4"/></svg>
+            @if (unreadCount() > 0) {
+              <b>{{ unreadCount() > 99 ? '99+' : unreadCount() }}</b>
+            }
+          </button>
+          @if (notificationsOpen()) {
+            <section class="notifications-menu" role="menu" aria-label="Notificaciones">
+              <header>
+                <div><strong>Notificaciones</strong><small>{{ unreadCount() }} pendientes</small></div>
+                @if (unreadCount() > 0) { <button type="button" (click)="markAllRead()">Marcar todas</button> }
+              </header>
+              <div class="notifications-list">
+                @if (notificationsLoading()) {
+                  <p class="notification-state">Cargando…</p>
+                } @else if (!notifications().length) {
+                  <p class="notification-state">No tienes notificaciones pendientes.</p>
+                } @else {
+                  @for (item of notifications(); track item.id) {
+                    <button type="button" class="notification-item" [class.unread]="!item.is_read" (click)="openNotification(item)">
+                      <i aria-hidden="true"></i><span><strong>{{ item.title }}</strong><small>{{ item.message }}</small><time>{{ notificationDate(item.created_at) }}</time></span>
+                    </button>
+                  }
+                }
+              </div>
+            </section>
+          }
+        </div>
+        <div class="profile-area">
         <button
           class="profile-trigger"
           type="button"
@@ -140,6 +187,7 @@
             <button role="menuitem" type="button" (click)="logout()">Cerrar sesión</button>
           </div>
         }
+        </div>
       </div>
     </header>
 

@@ -37,4 +37,8 @@ class Settings(BaseSettings):
     RESEND_API_KEY: str | None = None
     RESEND_API_URL: str = "https://api.resend.com/emails"
 
+    # Archivos locales en desarrollo. En producción este servicio puede
+    # sustituirse por un adaptador S3/R2 sin guardar binarios en PostgreSQL.
+    MEDIA_ROOT: str = "/app/storage"
+
 settings = Settings()

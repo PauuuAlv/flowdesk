@@ -9,7 +9,8 @@ export interface DashboardMetrics {
   accepted_quotes_value: number;
 }
 export interface DashboardPipelineStage {
-  stage: 'prospecting' | 'qualification' | 'proposal' | 'negotiation';
+  stage: string;
+  stage_name: string;
   count: number;
   value: number;
 }

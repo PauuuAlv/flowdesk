@@ -9,6 +9,7 @@ from app.core.database import get_db
 from app.models.activity import Activity
 from app.models.client import Client
 from app.models.opportunity import Opportunity
+from app.models.opportunity_stage import OpportunityStage
 from app.models.quote import Quote
 from app.models.user import User
 from app.schemas.dashboard import (
@@ -21,9 +22,6 @@ from app.schemas.dashboard import (
 from app.security.permissions import require_permission
 
 router = APIRouter()
-
-PIPELINE_STAGES = ("prospecting", "qualification", "proposal", "negotiation")
-
 
 def _money(value) -> Decimal:
     return Decimal(value or 0).quantize(Decimal("0.01"))
@@ -41,10 +39,15 @@ def get_dashboard(
         Client.tenant_id == tenant_id, Client.status == "active"
     ).scalar() or 0
 
+    pipeline_stages = db.query(OpportunityStage).filter(
+        OpportunityStage.tenant_id == tenant_id,
+        OpportunityStage.stage_type == "normal",
+    ).order_by(OpportunityStage.position).all()
+    pipeline_stage_keys = tuple(stage.key for stage in pipeline_stages)
     open_items = db.query(Opportunity).filter(
         Opportunity.tenant_id == tenant_id,
         Opportunity.archived_at.is_(None),
-        Opportunity.stage.in_(PIPELINE_STAGES),
+        Opportunity.stage.in_(pipeline_stage_keys),
     ).all()
     pipeline_value = sum((_money(item.amount) for item in open_items), Decimal("0.00"))
     weighted_pipeline = sum(
@@ -66,11 +69,12 @@ def get_dashboard(
     ).scalar()
 
     pipeline = []
-    for stage in PIPELINE_STAGES:
-        stage_items = [item for item in open_items if item.stage == stage]
+    for stage in pipeline_stages:
+        stage_items = [item for item in open_items if item.stage == stage.key]
         pipeline.append(
             PipelineStage(
-                stage=stage,
+                stage=stage.key,
+                stage_name=stage.name,
                 count=len(stage_items),
                 value=sum((_money(item.amount) for item in stage_items), Decimal("0.00")),
             )

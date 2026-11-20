@@ -19,6 +19,7 @@ class Opportunity(BaseModel, TenantMixin):
     loss_reason = Column(String(50), nullable=True)
     loss_detail = Column(String(300), nullable=True)
     archived_at = Column(DateTime(timezone=True), nullable=True, index=True)
+    closed_at = Column(DateTime(timezone=True), nullable=True, index=True)
 
     client = relationship("Client", lazy="joined")
     owner = relationship("User", lazy="joined")

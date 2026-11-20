@@ -25,6 +25,7 @@ class UserMeResponse(BaseModel):
     id: str
     tenant_id: str
     tenant_name: str
+    tenant_logo_url: str | None = None
     email: str
     full_name: str | None
     role: str

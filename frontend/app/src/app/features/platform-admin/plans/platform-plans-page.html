@@ -1,0 +1,16 @@
+<section class="page">
+  <header><p>CATÁLOGO SAAS</p><h1>Planes</h1><span>Consulta la capacidad y las funciones disponibles en cada plan de Flowdesk.</span></header>
+  <div class="notice"><strong>Configuración protegida:</strong> los planes funcionan como plantillas globales. Las empresas conservan sus límites hasta que se les reasigne un plan.</div>
+  @if (error()) { <div class="error">{{ error() }}</div> }
+  @if (loading()) { <div class="empty">Cargando planes…</div> } @else {
+    <div class="plans">@for (plan of plans(); track plan.key) {
+      <article [class.featured]="plan.key === 'professional'">
+        @if (plan.key === 'professional') { <small class="recommended">MÁS UTILIZADO</small> }
+        <h2>{{ plan.name }}</h2><p>{{ plan.tenant_count }} empresas utilizan este plan</p>
+        <div class="limits"><span><b>{{ number(plan.max_users) }}</b> usuarios</span><span><b>{{ number(plan.max_clients) }}</b> clientes</span><span><b>{{ number(plan.max_products) }}</b> productos</span></div>
+        <h3>Incluye</h3><ul>@for (feature of plan.features; track feature) { <li>✓ {{ feature }}</li> }</ul>
+        <footer><span>Clave interna</span><code>{{ plan.key }}</code></footer>
+      </article>
+    }</div>
+  }
+</section>

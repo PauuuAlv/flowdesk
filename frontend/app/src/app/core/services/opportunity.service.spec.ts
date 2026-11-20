@@ -21,9 +21,34 @@ describe('OpportunityService', () => {
     r.flush([]);
   });
   it('changes a stage', () => {
-    service.updateStage('1', 'proposal').subscribe();
+    service.updateStage('1', { stage: 'proposal', probability: 60, expected_close_date: null, note: 'Avance' }).subscribe();
     const r = http.expectOne('/api/opportunities/1/stage');
-    expect(r.request.body).toEqual({ stage: 'proposal' });
+    expect(r.request.body).toEqual({ stage: 'proposal', probability: 60, expected_close_date: null, note: 'Avance' });
+    r.flush({});
+  });
+  it('lists the tenant stage catalog', () => {
+    service.stages(true, 'demo').subscribe();
+    const r = http.expectOne(
+      (request) =>
+        request.url === '/api/opportunity-stages' &&
+        request.params.get('include_inactive') === 'true' &&
+        request.params.get('search') === 'demo',
+    );
+    expect(r.request.method).toBe('GET');
+    r.flush([]);
+  });
+  it('creates a tenant stage', () => {
+    service
+      .createStage({
+        name: 'Demostración',
+        stage_type: 'normal',
+        default_probability: 50,
+        position: 3,
+      })
+      .subscribe();
+    const r = http.expectOne('/api/opportunity-stages');
+    expect(r.request.method).toBe('POST');
+    expect(r.request.body.name).toBe('Demostración');
     r.flush({});
   });
   it('closes a lost opportunity with its reason', () => {
@@ -33,6 +58,7 @@ describe('OpportunityService', () => {
       stage: 'lost',
       loss_reason: 'price',
       loss_detail: 'Fuera de presupuesto',
+      note: null,
     });
     r.flush({});
   });

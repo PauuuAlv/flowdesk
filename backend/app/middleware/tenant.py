@@ -27,7 +27,7 @@ class TenantContextMiddleware(BaseHTTPMiddleware):
     """
 
     async def dispatch(self, request: Request, call_next):
-        if request.url.path in PUBLIC_PATHS or request.url.path.startswith("/api/platform-admin/"):
+        if request.url.path in PUBLIC_PATHS or request.url.path.startswith("/api/platform-admin/") or request.url.path.startswith("/api/company-settings/logo/public/"):
             return await call_next(request)
 
         auth_header = request.headers.get("Authorization", "")

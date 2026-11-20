@@ -17,6 +17,8 @@ export class CompanySettingsPage {
   protected readonly saving = signal(false);
   protected readonly error = signal('');
   protected readonly success = signal('');
+  protected readonly logoUrl = signal<string | null>(null);
+  protected readonly uploadingLogo = signal(false);
   protected slug = '';
   protected readonly canUpdate =
     this.session.getUser()?.role === 'admin' ||
@@ -47,6 +49,7 @@ export class CompanySettingsPage {
     this.service.get().subscribe({
       next: (x) => {
         this.slug = x.slug;
+        this.logoUrl.set(x.logo_url);
         this.form.setValue({
           name: x.name,
           legal_name: x.legal_name ?? '',
@@ -74,6 +77,46 @@ export class CompanySettingsPage {
         this.loading.set(false);
       },
     });
+  }
+  protected selectLogo(event: Event) {
+    if (!this.canUpdate) return;
+    const input = event.target as HTMLInputElement;
+    const file = input.files?.[0];
+    input.value = '';
+    if (!file) return;
+    if (!['image/jpeg', 'image/png', 'image/webp'].includes(file.type)) {
+      this.error.set('Selecciona una imagen JPG, PNG o WebP.');
+      return;
+    }
+    if (file.size > 5 * 1024 * 1024) {
+      this.error.set('El logotipo no puede superar 5 MB.');
+      return;
+    }
+    this.uploadingLogo.set(true); this.error.set(''); this.success.set('');
+    this.service.uploadLogo(file).subscribe({
+      next: (company) => {
+        this.uploadingLogo.set(false); this.logoUrl.set(company.logo_url);
+        this.form.controls.logo_url.setValue(company.logo_url ?? '');
+        this.updateSessionLogo(company.logo_url);
+        this.success.set('El logotipo se actualizó correctamente.');
+      },
+      error: () => { this.uploadingLogo.set(false); this.error.set('No fue posible cargar el logotipo. Verifica el formato y tamaño.'); },
+    });
+  }
+  protected removeLogo() {
+    if (!this.canUpdate || !this.logoUrl()) return;
+    this.uploadingLogo.set(true); this.error.set(''); this.success.set('');
+    this.service.deleteLogo().subscribe({
+      next: () => {
+        this.uploadingLogo.set(false); this.logoUrl.set(null); this.form.controls.logo_url.setValue('');
+        this.updateSessionLogo(null); this.success.set('El logotipo se eliminó correctamente.');
+      },
+      error: () => { this.uploadingLogo.set(false); this.error.set('No fue posible eliminar el logotipo.'); },
+    });
+  }
+  private updateSessionLogo(logoUrl: string | null) {
+    const user = this.session.getUser();
+    if (user) this.session.saveUser({ ...user, tenant_logo_url: logoUrl });
   }
   protected submit() {
     if (!this.canUpdate || this.form.invalid) {

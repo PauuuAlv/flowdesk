@@ -91,7 +91,7 @@
           @for (item of data.pipeline; track item.stage) {
             <div class="pipeline-row">
               <div class="pipeline-meta">
-                <strong>{{ stageLabel(item.stage) }}</strong
+                <strong>{{ item.stage_name }}</strong
                 ><span>{{ item.count }} oportunidades</span>
               </div>
               <div class="pipeline-bar" aria-hidden="true">

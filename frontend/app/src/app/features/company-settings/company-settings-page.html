@@ -29,6 +29,18 @@
             <p>Información comercial y fiscal visible en Flowdesk.</p>
           </div>
         </div>
+        <div class="logo-editor">
+          <div class="logo-preview">
+            @if (logoUrl()) { <img [src]="logoUrl()" alt="Logotipo de la empresa" /> }
+            @else { <span>{{ form.controls.name.value.charAt(0).toUpperCase() || 'E' }}</span> }
+          </div>
+          <div><strong>Logotipo de la empresa</strong><p>JPG, PNG o WebP. Máximo 5 MB. Se optimizará automáticamente.</p>
+            @if (canUpdate) {
+              <div class="logo-actions"><label class="upload-button"><input type="file" accept="image/jpeg,image/png,image/webp" (change)="selectLogo($event)" />{{ uploadingLogo() ? 'Procesando…' : logoUrl() ? 'Cambiar imagen' : 'Subir imagen' }}</label>
+              @if (logoUrl()) { <button type="button" class="remove-logo" [disabled]="uploadingLogo()" (click)="removeLogo()">Eliminar</button> }</div>
+            }
+          </div>
+        </div>
         <div class="grid">
           <label
             ><span>Nombre comercial *</span
@@ -47,11 +59,6 @@
           ><label
             ><span>RFC</span
             ><input formControlName="tax_id" maxlength="20" placeholder="Ej: ARM010101AA1" /></label
-          ><label
-            ><span>URL del logotipo</span
-            ><input formControlName="logo_url" placeholder="https://..." /><small class="hint"
-              >La carga directa del archivo se conectará al almacenamiento público.</small
-            ></label
           >
         </div>
       </section>

@@ -27,7 +27,7 @@ header button {
 }
 .content {
   max-width: 82rem;
-  padding: clamp(2rem, 5vw, 4rem);
+  padding: 0;
   margin: auto;
 }
 .intro {
@@ -252,6 +252,18 @@ select {
   display: block;
   margin-top: 0.6rem;
   color: #275d78;
+}
+.details {
+  display: block;
+  padding: 0.75rem;
+  margin-top: 0.8rem;
+  color: #275d78;
+  border: 1px solid #aac2cf;
+  border-radius: 0.45rem;
+  font-size: 0.8rem;
+  font-weight: 750;
+  text-align: center;
+  text-decoration: none;
 }
 .empty {
   padding: 2rem;

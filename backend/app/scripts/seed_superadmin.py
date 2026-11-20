@@ -22,6 +22,9 @@ def seed_superadmin() -> None:
             .first()
         )
         if existing:
+            if existing.role != "superadmin":
+                existing.role = "superadmin"
+                db.commit()
             print(f"[seed] PlatformAdmin '{settings.SUPERADMIN_EMAIL}' ya existe, no se crea de nuevo.")
             return
 
@@ -30,6 +33,7 @@ def seed_superadmin() -> None:
             hashed_password=hash_password(settings.SUPERADMIN_PASSWORD),
             full_name="ArmSystem Superadmin",
             is_active=True,
+            role="superadmin",
         )
         db.add(admin)
         db.commit()

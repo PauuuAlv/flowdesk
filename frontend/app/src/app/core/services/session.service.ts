@@ -1,9 +1,12 @@
 import { Injectable } from '@angular/core';
+import { Subject } from 'rxjs';
 
 import { PlatformAdminTokenResponse, TokenResponse, UserMeResponse } from '../models/auth.models';
 
 @Injectable({ providedIn: 'root' })
 export class SessionService {
+  private readonly userUpdates = new Subject<UserMeResponse | null>();
+  readonly userUpdates$ = this.userUpdates.asObservable();
   private readonly accessTokenKey = 'flowdesk.access_token';
   private readonly refreshTokenKey = 'flowdesk.refresh_token';
   private readonly userKey = 'flowdesk.user';
@@ -16,6 +19,7 @@ export class SessionService {
 
   saveUser(user: UserMeResponse): void {
     localStorage.setItem(this.userKey, JSON.stringify(user));
+    this.userUpdates.next(user);
   }
 
   getAccessToken(): string | null {
@@ -54,5 +58,6 @@ export class SessionService {
     localStorage.removeItem(this.accessTokenKey);
     localStorage.removeItem(this.refreshTokenKey);
     localStorage.removeItem(this.userKey);
+    this.userUpdates.next(null);
   }
 }

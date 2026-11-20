@@ -1,0 +1,41 @@
+<section class="page">
+  <a class="back" routerLink="/administracion-flowdesk/empresas">← Volver a empresas</a>
+  @if (error()) { <div class="error">{{ error() }}</div> }
+  @if (loading()) { <div class="card">Cargando empresa…</div> }
+  @if (tenant(); as company) {
+    <header class="hero">
+      <div class="avatar">{{ company.name.slice(0, 2).toUpperCase() }}</div>
+      <div><p>DETALLE DE EMPRESA</p><h1>{{ company.name }}</h1><span>{{ company.slug }}</span></div>
+      <span [class]="'badge ' + company.subscription_status">{{ status(company.subscription_status) }}</span>
+    </header>
+    <section class="summary">
+      <article><span>Plan actual</span><strong>{{ company.plan_name }}</strong></article>
+      <article><span>Integrantes</span><strong>{{ company.usage.users }}/{{ company.max_users }}</strong></article>
+      <article><span>Creada</span><strong>{{ date(company.created_at) }}</strong></article>
+      <article><span>Renovación</span><strong>{{ date(company.subscription_renews_at) }}</strong></article>
+    </section>
+    <div class="grid">
+      <section class="card">
+        <h2>Empresa y administrador</h2><p>Información principal del tenant.</p>
+        <dl><div><dt>Empresa</dt><dd>{{ company.name }}</dd></div><div><dt>Identificador</dt><dd>{{ company.slug }}</dd></div><div><dt>Administrador principal</dt><dd>{{ company.admin_name || 'Sin nombre registrado' }}</dd></div><div><dt>Correo</dt><dd>{{ company.admin_email || 'Sin correo registrado' }}</dd></div></dl>
+      </section>
+      <section class="card">
+        <h2>Suscripción</h2><p>Control del plan y acceso de la empresa.</p>
+        <div class="controls"><label>Plan<select [value]="company.plan_key" [disabled]="saving() || !access.canManage()" (change)="changePlan($event)"><option value="basic">Básico</option><option value="professional">Profesional</option><option value="enterprise">Empresarial</option></select></label><label>Estado<select [value]="company.subscription_status" [disabled]="saving() || !access.canManage()" (change)="changeStatus($event)"><option value="trial">Prueba</option><option value="active">Activo</option><option value="suspended">Suspendido</option><option value="cancelled">Cancelado</option></select></label></div>
+        @if (saving()) { <small class="saving">Guardando cambios…</small> }
+      </section>
+    </div>
+    <section class="card">
+      <h2>Uso y límites</h2><p>Consumo actual incluido en el plan {{ company.plan_name }}.</p>
+      <div class="usage">
+        <div><span>Usuarios <b>{{ company.usage.users }}/{{ company.max_users }}</b></span><i><em [style.width.%]="percent(company.usage.users, company.max_users)"></em></i><small>{{ company.usage.active_users }} activos · {{ company.usage.invited_users }} invitados</small></div>
+        <div><span>Clientes <b>{{ company.usage.clients }}/{{ company.max_clients }}</b></span><i><em [style.width.%]="percent(company.usage.clients, company.max_clients)"></em></i></div>
+        <div><span>Productos <b>{{ company.usage.products }}/{{ company.max_products }}</b></span><i><em [style.width.%]="percent(company.usage.products, company.max_products)"></em></i></div>
+      </div>
+    </section>
+    <section class="card modules">
+      <h2>Módulos del tenant</h2><p>Información registrada dentro de cada área del CRM.</p>
+      <div class="module-grid">@for (module of modules(); track module.name) { <article><span>{{ module.name }}</span><strong>{{ module.count === null ? 'Disponible' : module.count }}</strong><small>Habilitado</small></article> }</div>
+    </section>
+  }
+</section>

@@ -1,4 +1,6 @@
-from sqlalchemy import Column, Numeric, String, Text, UniqueConstraint
+from sqlalchemy import Column, ForeignKey, Numeric, String, Text, UniqueConstraint
+from sqlalchemy.dialects.postgresql import UUID
+from sqlalchemy.orm import relationship
 
 from app.models.base import BaseModel, TenantMixin
 
@@ -13,6 +15,11 @@ class Product(BaseModel, TenantMixin):
     category = Column(String(80), nullable=True, index=True)
     item_type = Column(String(20), nullable=False, default="service", index=True)
     unit = Column(String(30), nullable=False, default="service")
+    unit_id = Column(UUID(as_uuid=True), ForeignKey("measurement_units.id"), nullable=False, index=True)
+    brand_id = Column(UUID(as_uuid=True), ForeignKey("brands.id"), nullable=True, index=True)
     base_price = Column(Numeric(14, 2), nullable=False, default=0)
     tax_rate = Column(Numeric(5, 2), nullable=False, default=16)
     status = Column(String(20), nullable=False, default="active", index=True)
+
+    measurement_unit = relationship("MeasurementUnit", lazy="joined")
+    brand = relationship("Brand", lazy="joined")

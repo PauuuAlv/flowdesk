@@ -1,0 +1,25 @@
+:host { display: block; min-height: 100vh; background: var(--flowdesk-bg); }
+.platform-shell { min-height: 100vh; display: grid; grid-template-columns: 16rem 1fr; }
+aside { position: sticky; top: 0; height: 100vh; box-sizing: border-box; padding: 1.7rem 1rem; color: #fff; background: var(--flowdesk-navy); }
+.brand { display: block; padding: 0 .75rem 2rem; color: #fff; font-size: 1.45rem; font-weight: 800; text-decoration: none; }
+aside p, .coming small { padding: 0 .75rem; color: #86a9ba; font-size: .68rem; font-weight: 800; letter-spacing: .12em; text-transform: uppercase; }
+nav { display: grid; gap: .35rem; }
+nav a { display: flex; gap: .8rem; align-items: center; padding: .8rem .85rem; border-radius: .55rem; color: #dce8ed; font-weight: 700; text-decoration: none; }
+nav a.active, nav a:hover { color: #fff; background: rgb(255 255 255 / 12%); }
+nav span { width: 1rem; text-align: center; color: #9fc4d5; }
+.coming { display: grid; gap: .7rem; padding: 1.6rem .75rem; margin-top: 1.7rem; border-top: 1px solid rgb(255 255 255 / 10%); color: #7897a6; font-size: .82rem; }
+.coming small { padding: 0; }
+.workspace > header { height: 5.2rem; display: flex; align-items: center; justify-content: space-between; box-sizing: border-box; padding: 0 clamp(1.5rem, 4vw, 3rem); color: #fff; background: var(--flowdesk-navy); border-left: 1px solid rgb(255 255 255 / 10%); }
+.workspace header div { display: grid; }
+.workspace header small { color: #86a9ba; font-size: .65rem; font-weight: 800; letter-spacing: .11em; }
+.workspace header strong { margin-top: .15rem; }
+button { padding: .65rem 1rem; border: 0; border-radius: .45rem; color: var(--flowdesk-navy); background: #fff; font-weight: 750; cursor: pointer; }
+main { padding: clamp(1.5rem, 4vw, 3.5rem); }
+@media (max-width: 760px) {
+  .platform-shell { grid-template-columns: 1fr; }
+  aside { position: static; height: auto; padding: 1rem; }
+  .brand { padding-bottom: .8rem; }
+  aside p, .coming { display: none; }
+  nav { grid-template-columns: 1fr 1fr; }
+  .workspace > header { height: 4.5rem; }
+}

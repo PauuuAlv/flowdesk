@@ -31,7 +31,7 @@ export class ProductListPage {
       (x) =>
         (this.status() === 'all' || x.status === this.status()) &&
         (this.type() === 'all' || x.item_type === this.type()) &&
-        (!q || `${x.name} ${x.sku} ${x.category ?? ''}`.toLowerCase().includes(q)),
+        (!q || `${x.name} ${x.sku} ${x.category ?? ''} ${x.brand_name ?? ''}`.toLowerCase().includes(q)),
     );
   });
   constructor() {

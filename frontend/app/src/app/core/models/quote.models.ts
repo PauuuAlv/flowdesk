@@ -6,6 +6,9 @@ export interface QuoteItem {
   description: string;
   quantity: number;
   unit_price: number;
+  gross_amount: number;
+  discount_percent: number;
+  discount_amount: number;
   amount: number;
 }
 export interface Quote {
@@ -40,13 +43,12 @@ export interface SaveQuoteRequest {
   owner_user_id: string;
   issue_date: string;
   valid_until: string;
-  discount: number;
-  tax_rate: number;
   notes: string | null;
   items: Array<{
     product_id: string | null;
     description: string;
     quantity: number;
     unit_price: number;
+    discount_percent: number;
   }>;
 }

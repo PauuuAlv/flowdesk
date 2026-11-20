@@ -1,0 +1,17 @@
+<section class="page">
+  <header><p>CONTROL COMERCIAL</p><h1>Suscripciones</h1><span>Administra manualmente el plan, estado, renovación y correo de facturación de cada empresa.</span></header>
+  <div class="notice">Los cobros todavía no se procesan automáticamente. Los cambios realizados aquí controlan el acceso y los límites del tenant.</div>
+  @if(error()){<div class="message error">{{error()}}</div>} @if(success()){<div class="message success">{{success()}}</div>}
+  <section class="requests"><div class="section-title"><h2>Solicitudes de cambio</h2><span>Revisa las solicitudes enviadas por los administradores de cada empresa.</span></div>
+    @for(request of requests();track request.id){<article [class.resolved]="request.status!=='pending'"><div><strong>{{request.tenant_name}}</strong><span>{{request.requested_by_name}} · {{request.requested_by_email}}</span></div><div><small>CAMBIO SOLICITADO</small><b>{{planName(request.current_plan_key)}} → {{planName(request.requested_plan_key)}}</b>@if(request.note){<p>{{request.note}}</p>}</div>@if(request.status==='pending'&&access.canManage()){<div class="request-actions"><button class="reject" [disabled]="resolving()===request.id" (click)="resolve(request,'rejected')">Rechazar</button><button [disabled]="resolving()===request.id" (click)="resolve(request,'approved')">Aprobar</button></div>}@else{<span [class]="'request-status '+request.status">{{request.status==='approved'?'Aprobada':request.status==='rejected'?'Rechazada':'Pendiente'}}</span>}</article>}@empty{<div class="empty">No hay solicitudes de cambio de plan.</div>}
+  </section>
+  @if(loading()){<div class="empty">Cargando suscripciones…</div>}@else{
+    <div class="subscriptions">@for(company of tenants();track company.id){
+      <article [class.disabled]="!company.is_active">
+        <div class="company"><div class="avatar">{{company.name.slice(0,2).toUpperCase()}}</div><div><strong>{{company.name}}</strong><span>{{company.slug}}</span></div><small [class]="company.subscription_status">{{status(company.subscription_status)}}</small></div>
+        <div class="fields"><label>Plan<select #plan [disabled]="!access.canManage()" [value]="company.plan_key"><option value="basic">Básico</option><option value="professional">Profesional</option><option value="enterprise">Empresarial</option></select></label><label>Estado<select #state [disabled]="!access.canManage()" [value]="company.subscription_status"><option value="trial">Prueba</option><option value="active">Activo</option><option value="suspended">Suspendido</option><option value="cancelled">Cancelado</option></select></label><label>Próxima renovación<input #renewal [disabled]="!access.canManage()" type="date" [value]="inputDate(company.subscription_renews_at)"/></label><label>Correo de facturación<input #billing [disabled]="!access.canManage()" type="email" [value]="company.billing_email || company.admin_email || ''" placeholder="contabilidad@empresa.com"/></label></div>
+        <div class="usage"><span>{{company.usage.users}}/{{company.max_users}} usuarios</span><span>{{company.usage.clients}}/{{company.max_clients}} clientes</span><span>{{company.usage.products}}/{{company.max_products}} productos</span>@if(access.canManage()){<button [disabled]="saving()===company.id" (click)="save(company,plan.value,state.value,renewal.value,billing.value)">{{saving()===company.id?'Guardando…':'Guardar cambios'}}</button>}</div>
+      </article>
+    }@empty{<div class="empty">No hay empresas registradas.</div>}</div>
+  }
+</section>

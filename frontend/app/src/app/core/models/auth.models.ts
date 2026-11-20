@@ -22,6 +22,7 @@ export interface UserMeResponse {
   id: string;
   tenant_id: string;
   tenant_name?: string;
+  tenant_logo_url?: string | null;
   email: string;
   full_name: string | null;
   role: string;
@@ -41,6 +42,24 @@ export interface PlatformAdminTokenResponse {
   access_token: string;
   token_type: string;
 }
+export type PlatformRole = 'superadmin' | 'viewer';
+export interface PlatformAdminMe {
+  id: string;
+  email: string;
+  full_name: string | null;
+  role: PlatformRole;
+}
+export interface PlatformMember extends PlatformAdminMe {
+  is_active: boolean;
+  invitation_pending: boolean;
+  created_at: string;
+  invitation_link?: string | null;
+}
+export interface InvitePlatformMemberRequest {
+  email: string;
+  full_name: string;
+  role: 'viewer';
+}
 
 export interface CreateTenantRequest {
   name: string;
@@ -54,7 +73,12 @@ export type SaaSPlanKey = 'basic' | 'professional' | 'enterprise';
 export type SubscriptionStatus = 'trial' | 'active' | 'suspended' | 'cancelled';
 export interface TenantUsage {
   users: number;
+  active_users: number;
+  invited_users: number;
   clients: number;
+  opportunities: number;
+  activities: number;
+  quotes: number;
   products: number;
 }
 export interface TenantSaaS {
@@ -69,6 +93,9 @@ export interface TenantSaaS {
   max_clients: number;
   max_products: number;
   usage: TenantUsage;
+  admin_name: string | null;
+  admin_email: string | null;
+  billing_email: string | null;
   subscription_started_at: string;
   subscription_renews_at: string | null;
   created_at: string;
@@ -77,6 +104,28 @@ export interface UpdateTenantSubscriptionRequest {
   plan_key: SaaSPlanKey;
   subscription_status: SubscriptionStatus;
   subscription_renews_at: string | null;
+  billing_email?: string | null;
+}
+
+export interface SaaSPlan {
+  key: SaaSPlanKey;
+  name: string;
+  max_users: number;
+  max_clients: number;
+  max_products: number;
+  tenant_count: number;
+  features: string[];
+}
+
+export interface PlatformAudit {
+  id: string;
+  action: string;
+  description: string;
+  tenant_id: string | null;
+  tenant_name: string | null;
+  admin_email: string | null;
+  details: Record<string, unknown>;
+  created_at: string;
 }
 
 export interface CreateTenantResponse {

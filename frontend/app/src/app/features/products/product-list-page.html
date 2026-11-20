@@ -19,7 +19,7 @@
     <label
       >Buscar<input
         type="search"
-        placeholder="Nombre, código o categoría"
+        placeholder="Nombre, código, categoría o marca"
         (input)="setSearch($event)" /></label
     ><label
       >Tipo<select (change)="setType($event)">
@@ -58,6 +58,7 @@
           <tr>
             <th>Elemento</th>
             <th>Tipo</th>
+            <th>Marca</th>
             <th>Unidad</th>
             <th>Precio base</th>
             <th>IVA</th>
@@ -73,7 +74,8 @@
                 ><span>{{ item.sku }}{{ item.category ? ' · ' + item.category : '' }}</span>
               </td>
               <td>{{ item.item_type === 'product' ? 'Producto' : 'Servicio' }}</td>
-              <td>{{ unit(item.unit) }}</td>
+              <td>{{ item.brand_name || 'Sin marca' }}</td>
+              <td>{{ item.unit_name }}</td>
               <td>
                 <strong>{{ money(item.base_price) }}</strong>
               </td>

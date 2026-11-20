@@ -137,6 +137,14 @@ export const routes: Routes = [
           ),
       },
       {
+        path: 'configuracion/etapas-oportunidad',
+        canActivate: [updateOpportunitiesGuard],
+        loadComponent: () =>
+          import('./features/opportunity-stages/opportunity-stage-catalog-page').then(
+            (c) => c.OpportunityStageCatalogPage,
+          ),
+      },
+      {
         path: 'actividades',
         canActivate: [viewActivitiesGuard],
         loadComponent: () =>
@@ -197,11 +205,31 @@ export const routes: Routes = [
           import('./features/products/product-form-page').then((c) => c.ProductFormPage),
       },
       {
+        path: 'configuracion/unidades',
+        canActivate: [updateProductsGuard],
+        data: { catalog: 'units' },
+        loadComponent: () => import('./features/product-catalogs/product-catalog-settings-page').then((c) => c.ProductCatalogSettingsPage),
+      },
+      {
+        path: 'configuracion/marcas',
+        canActivate: [updateProductsGuard],
+        data: { catalog: 'brands' },
+        loadComponent: () => import('./features/product-catalogs/product-catalog-settings-page').then((c) => c.ProductCatalogSettingsPage),
+      },
+      {
         path: 'configuracion/empresa',
         canActivate: [viewCompanySettingsGuard],
         loadComponent: () =>
           import('./features/company-settings/company-settings-page').then(
             (c) => c.CompanySettingsPage,
+          ),
+      },
+      {
+        path: 'configuracion/plan',
+        canActivate: [viewCompanySettingsGuard],
+        loadComponent: () =>
+          import('./features/tenant-plan/tenant-plan-page').then(
+            (c) => c.TenantPlanPage,
           ),
       },
       {
@@ -244,12 +272,71 @@ export const routes: Routes = [
       ),
   },
   {
+    path: 'administracion-flowdesk/aceptar-invitacion',
+    loadComponent: () =>
+      import('./features/platform-admin/accept-invite/platform-accept-invite-page').then(
+        (component) => component.PlatformAcceptInvitePage,
+      ),
+  },
+  {
     path: 'administracion-flowdesk',
     canActivate: [platformAdminGuard],
     loadComponent: () =>
-      import('./features/platform-admin/dashboard/platform-admin-page').then(
-        (component) => component.PlatformAdminPage,
+      import('./features/platform-admin/shell/platform-admin-shell').then(
+        (component) => component.PlatformAdminShell,
       ),
+    children: [
+      {
+        path: '',
+        pathMatch: 'full',
+        loadComponent: () =>
+          import('./features/platform-admin/overview/platform-overview-page').then(
+            (component) => component.PlatformOverviewPage,
+          ),
+      },
+      {
+        path: 'empresas',
+        loadComponent: () =>
+          import('./features/platform-admin/dashboard/platform-admin-page').then(
+            (component) => component.PlatformAdminPage,
+          ),
+      },
+      {
+        path: 'empresas/:tenantId',
+        loadComponent: () =>
+          import('./features/platform-admin/tenant-detail/platform-tenant-detail-page').then(
+            (component) => component.PlatformTenantDetailPage,
+          ),
+      },
+      {
+        path: 'planes',
+        loadComponent: () =>
+          import('./features/platform-admin/plans/platform-plans-page').then(
+            (component) => component.PlatformPlansPage,
+          ),
+      },
+      {
+        path: 'suscripciones',
+        loadComponent: () =>
+          import('./features/platform-admin/subscriptions/platform-subscriptions-page').then(
+            (component) => component.PlatformSubscriptionsPage,
+          ),
+      },
+      {
+        path: 'auditoria',
+        loadComponent: () =>
+          import('./features/platform-admin/audit/platform-audit-page').then(
+            (component) => component.PlatformAuditPage,
+          ),
+      },
+      {
+        path: 'equipo',
+        loadComponent: () =>
+          import('./features/platform-admin/team/platform-team-page').then(
+            (component) => component.PlatformTeamPage,
+          ),
+      },
+    ],
   },
   { path: '**', redirectTo: '' },
 ];

@@ -1,7 +1,7 @@
 import { HttpErrorResponse } from '@angular/common/http';
 import { Component, computed, inject, signal } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
-import { Router } from '@angular/router';
+import { RouterLink } from '@angular/router';
 
 import {
   CreateTenantResponse,
@@ -10,19 +10,18 @@ import {
   TenantSaaS,
 } from '../../../core/models/auth.models';
 import { AuthService } from '../../../core/services/auth.service';
-import { SessionService } from '../../../core/services/session.service';
+import { PlatformAccessService } from '../../../core/services/platform-access.service';
 
 @Component({
   selector: 'app-platform-admin-page',
-  imports: [ReactiveFormsModule],
+  imports: [ReactiveFormsModule, RouterLink],
   templateUrl: './platform-admin-page.html',
   styleUrl: './platform-admin-page.scss',
 })
 export class PlatformAdminPage {
   private readonly formBuilder = inject(FormBuilder);
   private readonly authService = inject(AuthService);
-  private readonly sessionService = inject(SessionService);
-  private readonly router = inject(Router);
+  protected readonly access = inject(PlatformAccessService);
 
   protected readonly submitting = signal(false);
   protected readonly errorMessage = signal('');
@@ -41,12 +40,6 @@ export class PlatformAdminPage {
         (!q || `${t.name} ${t.slug} ${t.plan_name}`.toLowerCase().includes(q)),
     );
   });
-  protected readonly metrics = computed(() => ({
-    total: this.tenants().length,
-    active: this.tenants().filter((t) => t.is_active).length,
-    trial: this.tenants().filter((t) => t.subscription_status === 'trial').length,
-    suspended: this.tenants().filter((t) => !t.is_active).length,
-  }));
   protected readonly tenantForm = this.formBuilder.nonNullable.group({
     name: ['', [Validators.required, Validators.minLength(2)]],
     slug: ['', [Validators.required, Validators.pattern(/^[a-z0-9]+(?:-[a-z0-9]+)*$/)]],
@@ -73,6 +66,7 @@ export class PlatformAdminPage {
   }
 
   protected submit(): void {
+    if (!this.access.canManage()) return;
     this.errorMessage.set('');
     this.createdTenant.set(null);
     this.copied.set(false);
@@ -110,11 +104,6 @@ export class PlatformAdminPage {
     }
   }
 
-  protected logout(): void {
-    this.sessionService.clearPlatformAdmin();
-    void this.router.navigate(['/administracion-flowdesk/iniciar-sesion']);
-  }
-
   protected setSearch(event: Event) {
     this.search.set((event.target as HTMLInputElement).value);
   }
@@ -126,6 +115,7 @@ export class PlatformAdminPage {
     plan_key: SaaSPlanKey,
     subscription_status: SubscriptionStatus,
   ): void {
+    if (!this.access.canManage()) return;
     this.updatingTenant.set(tenant.id);
     this.errorMessage.set('');
     this.authService

@@ -1,4 +1,4 @@
-from sqlalchemy import Column, String, Boolean
+from sqlalchemy import Column, String, Boolean, DateTime
 
 from app.models.base import BaseModel
 
@@ -19,6 +19,9 @@ class PlatformAdmin(BaseModel):
     __tablename__ = "platform_admins"
 
     email = Column(String(255), nullable=False, unique=True, index=True)
-    hashed_password = Column(String(255), nullable=False)
+    hashed_password = Column(String(255), nullable=True)
     full_name = Column(String(255), nullable=True)
     is_active = Column(Boolean, nullable=False, default=True)
+    role = Column(String(30), nullable=False, default="viewer")
+    invitation_token_hash = Column(String(64), nullable=True, unique=True)
+    invitation_expires_at = Column(DateTime(timezone=True), nullable=True)

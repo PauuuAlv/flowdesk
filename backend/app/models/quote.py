@@ -36,5 +36,8 @@ class QuoteItem(BaseModel):
     description=Column(String(240),nullable=False)
     quantity=Column(Numeric(12,2),nullable=False)
     unit_price=Column(Numeric(14,2),nullable=False)
+    gross_amount=Column(Numeric(14,2),nullable=False,default=0)
+    discount_percent=Column(Numeric(5,2),nullable=False,default=0)
+    discount_amount=Column(Numeric(14,2),nullable=False,default=0)
     amount=Column(Numeric(14,2),nullable=False)
     product=relationship("Product",lazy="joined")

@@ -1,38 +1,20 @@
-<main class="admin-shell">
-  <header>
-    <strong>Flowdesk</strong><span>Administración de plataforma</span
-    ><button class="secondary-button" type="button" (click)="logout()">Cerrar sesión</button>
-  </header>
+<section class="admin-shell">
   <div class="content">
     <section class="intro">
       <p class="eyebrow">Control SaaS</p>
-      <h1>Empresas y suscripciones</h1>
-      <p>Consulta el consumo, administra los planes y controla el acceso de cada tenant.</p>
+      <h1>Empresas</h1>
+      <p>Consulta cada tenant, su equipo, plan, estado y consumo de la plataforma.</p>
     </section>
     @if (errorMessage()) {
       <div class="message error" role="alert">{{ errorMessage() }}</div>
     }
-    <section class="metrics" aria-label="Resumen de empresas">
-      <article>
-        <span>Empresas</span><strong>{{ metrics().total }}</strong>
-      </article>
-      <article>
-        <span>Con acceso</span><strong>{{ metrics().active }}</strong>
-      </article>
-      <article>
-        <span>En prueba</span><strong>{{ metrics().trial }}</strong>
-      </article>
-      <article>
-        <span>Suspendidas</span><strong>{{ metrics().suspended }}</strong>
-      </article>
-    </section>
     <section class="tenant-section">
       <div class="section-heading">
         <div>
           <h2>Empresas registradas</h2>
           <p>Los límites se aplican automáticamente al crear usuarios, clientes y productos.</p>
         </div>
-        <a href="#crear-empresa">Nueva empresa</a>
+        @if (access.canManage()) { <a href="#crear-empresa">Nueva empresa</a> }
       </div>
       <div class="filters">
         <label
@@ -97,7 +79,7 @@
                 <label
                   >Plan<select
                     [value]="tenant.plan_key"
-                    [disabled]="updatingTenant() === tenant.id"
+                    [disabled]="updatingTenant() === tenant.id || !access.canManage()"
                     (change)="changePlan(tenant, $event)"
                   >
                     <option value="basic">Básico</option>
@@ -107,7 +89,7 @@
                 ><label
                   >Estado<select
                     [value]="tenant.subscription_status"
-                    [disabled]="updatingTenant() === tenant.id"
+                    [disabled]="updatingTenant() === tenant.id || !access.canManage()"
                     (change)="changeStatus(tenant, $event)"
                   >
                     <option value="trial">Prueba</option>
@@ -117,6 +99,9 @@
                   </select></label
                 >
               </div>
+              <a class="details" [routerLink]="['/administracion-flowdesk/empresas', tenant.id]"
+                >Consultar empresa</a
+              >
               @if (updatingTenant() === tenant.id) {
                 <small class="saving">Actualizando suscripción…</small>
               }
@@ -126,7 +111,7 @@
       }
     </section>
 
-    <section class="create-section" id="crear-empresa">
+    @if (access.canManage()) { <section class="create-section" id="crear-empresa">
       <div class="section-heading">
         <div>
           <p class="eyebrow">Alta de tenant</p>
@@ -228,6 +213,6 @@
           </div>
         }
       </section>
-    </section>
+    </section> }
   </div>
-</main>
+</section>

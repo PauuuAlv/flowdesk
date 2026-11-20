@@ -1,10 +1,12 @@
 import { Component, inject, signal } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
+import { forkJoin } from 'rxjs';
 import {
+  Brand,
+  MeasurementUnit,
   ProductStatus,
   ProductType,
-  ProductUnit,
   SaveProductRequest,
 } from '../../core/models/product.models';
 import { ProductService } from '../../core/services/product.service';
@@ -23,6 +25,8 @@ export class ProductFormPage {
   protected readonly loading = signal(Boolean(this.id));
   protected readonly saving = signal(false);
   protected readonly error = signal('');
+  protected readonly units = signal<MeasurementUnit[]>([]);
+  protected readonly brands = signal<Brand[]>([]);
   protected readonly form = this.fb.nonNullable.group({
     name: ['', [Validators.required, Validators.minLength(2), Validators.maxLength(140)]],
     sku: [
@@ -35,7 +39,8 @@ export class ProductFormPage {
       ],
     ],
     item_type: ['service' as ProductType, Validators.required],
-    unit: ['service' as ProductUnit, Validators.required],
+    unit_id: ['', Validators.required],
+    brand_id: [''],
     category: ['', Validators.maxLength(80)],
     base_price: [0, [Validators.required, Validators.min(0)]],
     tax_rate: [16, [Validators.required, Validators.min(0), Validators.max(100)]],
@@ -43,7 +48,17 @@ export class ProductFormPage {
     status: ['active' as ProductStatus, Validators.required],
   });
   constructor() {
-    if (this.id) this.load(this.id);
+    this.form.controls.sku.disable();
+    this.form.controls.name.valueChanges.subscribe(() => this.refreshAutomaticSku());
+    this.form.controls.item_type.valueChanges.subscribe(() => this.refreshAutomaticSku());
+    forkJoin({ units: this.service.units(Boolean(this.id)), brands: this.service.brands(Boolean(this.id)) }).subscribe({
+      next: ({ units, brands }) => {
+        this.units.set(units); this.brands.set(brands);
+        if (this.id) this.load(this.id);
+        else { if (units.length) this.form.controls.unit_id.setValue(units[0].id); this.loading.set(false); }
+      },
+      error: () => { this.error.set('No fue posible cargar unidades y marcas.'); this.loading.set(false); },
+    });
   }
   protected submit() {
     if (this.form.invalid) {
@@ -53,14 +68,14 @@ export class ProductFormPage {
     const value = this.form.getRawValue();
     const body: SaveProductRequest = {
       name: value.name.trim(),
-      sku: value.sku.trim().toUpperCase(),
       item_type: value.item_type,
-      unit: value.unit,
+      unit_id: value.unit_id,
+      brand_id: value.brand_id || null,
       category: value.category.trim() || null,
       base_price: Number(value.base_price),
       tax_rate: Number(value.tax_rate),
       description: value.description.trim() || null,
-      ...(this.id ? { status: value.status } : {}),
+      ...(this.id ? { sku: value.sku.trim().toUpperCase(), status: value.status } : {}),
     };
     this.saving.set(true);
     this.error.set('');
@@ -68,8 +83,12 @@ export class ProductFormPage {
       next: () => void this.router.navigate(['/panel/productos']),
       error: (e) => {
         this.saving.set(false);
+        const duplicateName = e.message?.startsWith('DUPLICATE_NAME:');
+        const existingSku = duplicateName ? e.message.split(':', 2)[1] : '';
         this.error.set(
-          e.message === 'DUPLICATE_SKU'
+          duplicateName
+            ? `Ya existe un elemento con ese nombre y utiliza el código ${existingSku}. Puedes editar el registro existente.`
+            : e.message === 'DUPLICATE_SKU'
             ? 'Ya existe un elemento con ese código en tu empresa.'
             : 'No fue posible guardar el elemento.',
         );
@@ -83,7 +102,8 @@ export class ProductFormPage {
           name: x.name,
           sku: x.sku,
           item_type: x.item_type,
-          unit: x.unit,
+          unit_id: x.unit_id,
+          brand_id: x.brand_id ?? '',
           category: x.category ?? '',
           base_price: x.base_price,
           tax_rate: x.tax_rate,
@@ -97,5 +117,18 @@ export class ProductFormPage {
         this.error.set('No fue posible cargar el elemento.');
       },
     });
+  }
+
+  private refreshAutomaticSku() {
+    if (this.id) return;
+    const name = this.form.controls.name.value.trim();
+    const prefix = this.form.controls.item_type.value === 'product' ? 'PRO' : 'SER';
+    const slug = name
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .toUpperCase()
+      .replace(/[^A-Z0-9]+/g, '-')
+      .replace(/^-|-$/g, '') || 'ELEMENTO';
+    this.form.controls.sku.setValue(`${prefix}-${slug}`.slice(0, 50).replace(/-$/, ''), { emitEvent: false });
   }
 }

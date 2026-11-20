@@ -4,7 +4,7 @@ from typing import Literal
 
 from pydantic import BaseModel, Field, field_validator, model_validator
 
-OpportunityStage = Literal["prospecting", "contact", "proposal", "negotiation", "won", "lost"]
+OpportunityStage = str
 
 
 class OpportunityPayload(BaseModel):
@@ -12,7 +12,7 @@ class OpportunityPayload(BaseModel):
     owner_user_id: str
     name: str = Field(min_length=3, max_length=140)
     amount: Decimal = Field(ge=0, max_digits=14, decimal_places=2)
-    stage: OpportunityStage
+    stage: str = Field(min_length=1, max_length=50)
     probability: int = Field(ge=0, le=100)
     expected_close_date: date | None = None
     notes: str | None = Field(default=None, max_length=1000)
@@ -34,23 +34,30 @@ class SaveOpportunityRequest(OpportunityPayload):
 
 
 class UpdateOpportunityStageRequest(BaseModel):
-    stage: OpportunityStage
+    stage: str = Field(min_length=1, max_length=50)
+    probability: int | None = Field(default=None, ge=0, le=100)
+    expected_close_date: date | None = None
+    note: str | None = Field(default=None, max_length=1000)
+
+    @field_validator("note")
+    @classmethod
+    def normalize_stage_note(cls, value: str | None) -> str | None:
+        value = value.strip() if value else None
+        return value or None
 
 
 class CloseOpportunityRequest(BaseModel):
-    stage: Literal["won", "lost"]
+    stage: str = Field(min_length=1, max_length=50)
     loss_reason: Literal["price", "no_response", "competitor", "budget_cancelled", "not_qualified", "other"] | None = None
     loss_detail: str | None = Field(default=None, max_length=300)
+    note: str | None = Field(default=None, max_length=1000)
 
     @model_validator(mode="after")
     def validate_loss_data(self):
-        if self.stage == "lost" and not self.loss_reason:
-            raise ValueError("Loss reason is required")
-        if self.stage == "won":
-            self.loss_reason = None
-            self.loss_detail = None
-        elif self.loss_detail:
+        if self.loss_detail:
             self.loss_detail = self.loss_detail.strip() or None
+        if self.note:
+            self.note = self.note.strip() or None
         return self
 
 
@@ -69,6 +76,7 @@ class OpportunityResponse(BaseModel):
     loss_reason: str | None
     loss_detail: str | None
     archived: bool
+    closed_at: datetime | None
     created_at: datetime
     updated_at: datetime
 
@@ -76,3 +84,17 @@ class OpportunityResponse(BaseModel):
 class OpportunityAssigneeResponse(BaseModel):
     id: str
     name: str
+
+
+class OpportunityStageHistoryResponse(BaseModel):
+    id: str
+    from_stage_key: str | None
+    to_stage_key: str
+    from_stage_name: str | None
+    to_stage_name: str
+    probability: int
+    expected_close_date: date | None
+    note: str | None
+    changed_by_user_id: str
+    changed_by_name: str
+    created_at: datetime

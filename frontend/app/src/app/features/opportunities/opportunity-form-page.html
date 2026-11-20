@@ -40,9 +40,9 @@
           ><input type="number" min="0" step="0.01" formControlName="amount" /></label
         ><label
           ><span>Etapa *</span
-          ><select formControlName="stage">
-            @for (s of stages; track s[0]) {
-              <option [value]="s[0]">{{ s[1] }}</option>
+          ><select formControlName="stage" (change)="changeStage($event)">
+            @for (s of stages(); track s.id) {
+              <option [value]="s.key">{{ s.name }}</option>
             }
           </select></label
         ><label

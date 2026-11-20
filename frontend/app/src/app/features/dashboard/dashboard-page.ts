@@ -57,14 +57,6 @@ export class DashboardPage {
   protected pipelineWidth(item: DashboardPipelineStage) {
     return Math.max((Number(item.value) / this.maxPipelineValue()) * 100, item.count ? 7 : 0);
   }
-  protected stageLabel(stage: DashboardPipelineStage['stage']) {
-    return {
-      prospecting: 'Prospección',
-      qualification: 'Calificación',
-      proposal: 'Propuesta',
-      negotiation: 'Negociación',
-    }[stage];
-  }
   protected activityType(type: string) {
     return { call: 'Llamada', email: 'Correo', meeting: 'Reunión', task: 'Tarea' }[type] ?? type;
   }

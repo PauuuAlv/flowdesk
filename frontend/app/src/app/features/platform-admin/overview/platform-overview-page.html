@@ -1,0 +1,41 @@
+<section class="page">
+  <header class="title">
+    <div><p>RESUMEN GENERAL</p><h1>Panel de plataforma</h1><span>Consulta el estado y el uso general de Flowdesk.</span></div>
+    @if (access.canManage()) { <a routerLink="/administracion-flowdesk/empresas" fragment="crear-empresa">Nueva empresa</a> }
+  </header>
+  @if (error()) { <div class="error">{{ error() }} <button (click)="load()">Reintentar</button></div> }
+  @if (loading()) { <div class="empty">Cargando información…</div> } @else {
+    <section class="metrics">
+      <article><span>Empresas</span><strong>{{ metrics().companies }}</strong><small>Total registrado</small></article>
+      <article><span>Con acceso</span><strong>{{ metrics().active + metrics().trial }}</strong><small>Activas y en prueba</small></article>
+      <article><span>Usuarios</span><strong>{{ metrics().users }}</strong><small>En todos los tenants</small></article>
+      <article><span>Suspendidas</span><strong>{{ metrics().suspended }}</strong><small>Sin acceso a la plataforma</small></article>
+    </section>
+    <section class="dashboard-grid">
+      <article class="card plan-card">
+        <div class="card-title"><div><h2>Empresas por plan</h2><p>Distribución de suscripciones actuales.</p></div><strong>{{ metrics().companies }}</strong></div>
+        <div class="bars">
+          @for (plan of plans(); track plan.key) {
+            <div><span>{{ plan.name }} <b>{{ plan.count }}</b></span><i><em [style.width.%]="planWidth(plan.count)"></em></i></div>
+          }
+        </div>
+      </article>
+      <article class="card status-card">
+        <h2>Estado de acceso</h2><p>Situación actual de las empresas.</p>
+        <div class="status-ring" [style.--active]="metrics().active + metrics().trial" [style.--total]="metrics().companies"><strong>{{ metrics().active + metrics().trial }}</strong><span>con acceso</span></div>
+        <div class="legend"><span><i class="active"></i> Activas {{ metrics().active }}</span><span><i class="trial"></i> Prueba {{ metrics().trial }}</span><span><i class="off"></i> Sin acceso {{ metrics().suspended }}</span></div>
+      </article>
+    </section>
+    <section class="card recent">
+      <div class="card-title"><div><h2>Empresas recientes</h2><p>Últimos tenants incorporados a Flowdesk.</p></div><a routerLink="/administracion-flowdesk/empresas">Ver todas</a></div>
+      <div class="table">
+        @for (tenant of recent(); track tenant.id) {
+          <a [routerLink]="['/administracion-flowdesk/empresas', tenant.id]">
+            <div><strong>{{ tenant.name }}</strong><span>{{ tenant.admin_email || 'Sin correo administrativo' }}</span></div>
+            <span>{{ tenant.plan_name }}</span><span [class]="'status ' + tenant.subscription_status">{{ status(tenant.subscription_status) }}</span><span>{{ tenant.usage.users }} integrantes</span><small>{{ date(tenant.created_at) }}</small>
+          </a>
+        } @empty { <div class="empty">Aún no hay empresas registradas.</div> }
+      </div>
+    </section>
+  }
+</section>
