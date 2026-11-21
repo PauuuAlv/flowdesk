@@ -33,3 +33,11 @@ def get_current_platform_admin(
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Admin not found or inactive")
 
     return admin
+
+
+def require_platform_superadmin(
+    admin: PlatformAdmin = Depends(get_current_platform_admin),
+) -> PlatformAdmin:
+    if admin.role != "superadmin":
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Superadministrator access required")
+    return admin

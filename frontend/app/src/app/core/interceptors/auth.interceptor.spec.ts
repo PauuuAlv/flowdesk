@@ -17,8 +17,8 @@ describe('authInterceptor', () => {
       providers: [
         provideRouter([]),
         provideHttpClient(withInterceptors([authInterceptor])),
-        provideHttpClientTesting()
-      ]
+        provideHttpClientTesting(),
+      ],
     });
 
     http = TestBed.inject(HttpClient);
@@ -27,7 +27,7 @@ describe('authInterceptor', () => {
     sessionService.saveTokens({
       access_token: 'expired-access-token',
       refresh_token: 'valid-refresh-token',
-      token_type: 'bearer'
+      token_type: 'bearer',
     });
   });
 
@@ -52,7 +52,7 @@ describe('authInterceptor', () => {
     refreshRequest.flush({
       access_token: 'new-access-token',
       refresh_token: 'valid-refresh-token',
-      token_type: 'bearer'
+      token_type: 'bearer',
     });
 
     const retriedRequest = httpController.expectOne('/api/auth/me');
@@ -66,7 +66,7 @@ describe('authInterceptor', () => {
   it('should use only the platform token for platform administrator requests', () => {
     sessionService.savePlatformAdminToken({
       access_token: 'platform-token',
-      token_type: 'bearer'
+      token_type: 'bearer',
     });
 
     http.post('/api/platform-admin/tenants', {}).subscribe();

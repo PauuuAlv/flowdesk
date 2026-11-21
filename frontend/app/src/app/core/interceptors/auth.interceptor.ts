@@ -14,7 +14,7 @@ const publicUserEndpoints = [
   '/api/auth/register',
   '/api/auth/refresh',
   '/api/auth/forgot-password',
-  '/api/auth/reset-password'
+  '/api/auth/reset-password',
 ];
 
 export const authInterceptor: HttpInterceptorFn = (request, next) => {
@@ -24,7 +24,8 @@ export const authInterceptor: HttpInterceptorFn = (request, next) => {
   const isPlatformAdminRequest = request.url.startsWith('/api/platform-admin/');
   const isPlatformAdminLogin = request.url.startsWith('/api/platform-admin/auth/login');
   const isPublicUserRequest = publicUserEndpoints.some((url) => request.url.startsWith(url));
-  const isProtectedUserRequest = request.url.startsWith('/api/') && !isPlatformAdminRequest && !isPublicUserRequest;
+  const isProtectedUserRequest =
+    request.url.startsWith('/api/') && !isPlatformAdminRequest && !isPublicUserRequest;
   const accessToken = sessionService.getAccessToken();
 
   if (isPlatformAdminRequest && !isPlatformAdminLogin) {
@@ -40,7 +41,7 @@ export const authInterceptor: HttpInterceptorFn = (request, next) => {
           void router.navigate(['/administracion-flowdesk/iniciar-sesion']);
         }
         return throwError(() => error);
-      })
+      }),
     );
   }
 
@@ -63,12 +64,12 @@ export const authInterceptor: HttpInterceptorFn = (request, next) => {
           catchError((refreshError) => {
             sessionService.clear();
             void router.navigate(['/iniciar-sesion'], {
-              queryParams: { sesion: 'expirada' }
+              queryParams: { sesion: 'expirada' },
             });
             return throwError(() => refreshError);
           }),
           finalize(() => (refreshRequest$ = null)),
-          shareReplay(1)
+          shareReplay(1),
         );
       }
 
@@ -76,11 +77,11 @@ export const authInterceptor: HttpInterceptorFn = (request, next) => {
         switchMap((tokens) =>
           next(
             request.clone({
-              setHeaders: { Authorization: `Bearer ${tokens.access_token}` }
-            })
-          )
-        )
+              setHeaders: { Authorization: `Bearer ${tokens.access_token}` },
+            }),
+          ),
+        ),
       );
-    })
+    }),
   );
 };

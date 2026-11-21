@@ -37,11 +37,7 @@
           </select></label
         ><label>Emisión *<input type="date" formControlName="issue_date" /></label
         ><label>Válida hasta *<input type="date" formControlName="valid_until" /></label
-        ><label
-          >Descuento $<input type="number" min="0" step=".01" formControlName="discount" /></label
-        ><label
-          >IVA %<input type="number" min="0" max="100" step=".01" formControlName="tax_rate"
-        /></label>
+        >
       </div>
       <section class="card concepts">
         <div class="title">
@@ -49,9 +45,22 @@
           <button type="button" (click)="add()">Agregar concepto</button>
         </div>
         <div formArrayName="items">
+          <div class="row row-head" aria-hidden="true">
+            <span>Producto</span><span>Descripción</span><span>Cantidad</span
+            ><span>Precio unitario</span><span>Descuento %</span><span>Importe</span><span></span>
+          </div>
           @for (row of items.controls; track $index; let i = $index) {
             <div class="row" [formGroupName]="i">
-              <select formControlName="product_id" aria-label="Producto o servicio del catálogo" (change)="selectProduct(i,$event)"><option value="">Concepto manual</option>@for(product of products();track product.id){<option [value]="product.id">{{product.sku}} · {{product.name}}</option>}</select><input formControlName="description" placeholder="Descripción" /><input
+              <select
+                formControlName="product_id"
+                aria-label="Producto o servicio del catálogo"
+                (change)="selectProduct(i, $event)"
+              >
+                <option value="">Concepto manual</option>
+                @for (product of products(); track product.id) {
+                  <option [value]="product.id">{{ product.sku }} · {{ product.name }}</option>
+                }</select
+              ><input formControlName="description" placeholder="Descripción" /><input
                 type="number"
                 min=".01"
                 step=".01"
@@ -63,21 +72,26 @@
                 step=".01"
                 formControlName="unit_price"
                 aria-label="Precio unitario"
-              /><strong>{{
-                money(rowAmount(row))
-              }}</strong
+              /><input
+                type="number"
+                min="0"
+                max="100"
+                step=".01"
+                formControlName="discount_percent"
+                aria-label="Descuento por concepto en porcentaje"
+                title="Descuento por concepto (%)"
+              /><strong>{{ money(rowAmount(row)) }}</strong
               ><button type="button" (click)="remove(i)" [disabled]="items.length === 1">×</button>
             </div>
           }
         </div>
+        <p class="tax-note">Los precios capturados ya incluyen IVA.</p>
         <label>Notas<textarea rows="4" maxlength="1000" formControlName="notes"></textarea></label>
         <div class="totals">
           <span
             >Subtotal <b>{{ money(subtotal) }}</b></span
           ><span
-            >Descuento <b>- {{ money(discountValue) }}</b></span
-          ><span
-            >IVA <b>{{ money(tax) }}</b></span
+            >Descuentos por concepto <b>- {{ money(discountValue) }}</b></span
           ><strong>Total {{ money(total) }}</strong>
         </div>
       </section>

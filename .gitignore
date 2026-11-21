@@ -10,6 +10,7 @@
 # Datos locales de bases de datos y contenedores
 /postgres_data/
 /mysql_data/
+/storage/
 
 # Sistema operativo
 .DS_Store

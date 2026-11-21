@@ -15,14 +15,14 @@ class InviteUserResponse(BaseModel):
     role: str
     role_id: str | None = None
     role_name: str | None = None
-    # SOLO DEV, igual que en platform_admin: mientras no haya envío de correo
-    # real, regresamos el link aquí para poder probar. Quitar antes de prod.
-    dev_invitation_link: str
+    invitation_link: str
+
 
 class UserMeResponse(BaseModel):
     id: str
     tenant_id: str
     tenant_name: str
+    tenant_logo_url: str | None = None
     email: str
     full_name: str | None
     role: str

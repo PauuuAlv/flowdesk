@@ -15,6 +15,7 @@ class Tenant(BaseModel):
     legal_name = Column(String(255), nullable=True)
     tax_id = Column(String(20), nullable=True)
     contact_email = Column(String(255), nullable=True)
+    billing_email = Column(String(255), nullable=True)
     contact_phone = Column(String(30), nullable=True)
     website = Column(String(255), nullable=True)
     logo_url = Column(String(500), nullable=True)

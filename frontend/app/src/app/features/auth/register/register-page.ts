@@ -8,14 +8,14 @@ import { AuthService } from '../../../core/services/auth.service';
 import { SessionService } from '../../../core/services/session.service';
 import {
   getPasswordChecks,
-  strongPasswordValidator
+  strongPasswordValidator,
 } from '../../../core/validators/password.validator';
 
 @Component({
   selector: 'app-register-page',
   imports: [ReactiveFormsModule, RouterLink],
   templateUrl: './register-page.html',
-  styleUrl: './register-page.scss'
+  styleUrl: './register-page.scss',
 })
 export class RegisterPage {
   private readonly formBuilder = inject(FormBuilder);
@@ -33,7 +33,7 @@ export class RegisterPage {
 
   protected readonly registerForm = this.formBuilder.nonNullable.group({
     password: ['', [Validators.required, strongPasswordValidator]],
-    password_confirmation: ['', Validators.required]
+    password_confirmation: ['', Validators.required],
   });
 
   protected passwordsDoNotMatch(): boolean {
@@ -80,21 +80,21 @@ export class RegisterPage {
       .register({ token: this.token, password })
       .pipe(
         tap((tokens) => this.sessionService.saveTokens(tokens)),
-        switchMap(() => this.authService.me())
+        switchMap(() => this.authService.me()),
       )
       .subscribe({
-      next: (user) => {
-        this.submitting.set(false);
-        this.sessionService.saveUser(user);
-        this.successMessage.set('Invitación aceptada. Tu cuenta ya está activa.');
-        this.registerForm.reset();
-        void this.router.navigate(['/panel']);
-      },
-      error: (error: HttpErrorResponse) => {
-        this.submitting.set(false);
-        this.errorMessage.set(this.getErrorMessage(error));
-      }
-    });
+        next: (user) => {
+          this.submitting.set(false);
+          this.sessionService.saveUser(user);
+          this.successMessage.set('Invitación aceptada. Tu cuenta ya está activa.');
+          this.registerForm.reset();
+          void this.router.navigate(['/panel']);
+        },
+        error: (error: HttpErrorResponse) => {
+          this.submitting.set(false);
+          this.errorMessage.set(this.getErrorMessage(error));
+        },
+      });
   }
 
   private getErrorMessage(error: HttpErrorResponse): string {

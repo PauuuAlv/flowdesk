@@ -1,0 +1,46 @@
+<section class="stage-page">
+  <header>
+    <div><p class="eyebrow">Configuración comercial</p><h1>Etapas de oportunidades</h1>
+      <p>Personaliza el proceso comercial de tu empresa. Puedes registrar hasta 20 etapas.</p></div>
+  </header>
+  @if (error()) { <p class="message error" role="alert">{{ error() }}</p> }
+  @if (success()) { <p class="message success">{{ success() }}</p> }
+
+  <div class="layout">
+    <form class="card form" [formGroup]="form" (ngSubmit)="submit()">
+      <h2>{{ editing() ? 'Editar etapa' : 'Nueva etapa' }}</h2>
+      <label><span>Nombre *</span><input formControlName="name" placeholder="Ej: Demostración" /></label>
+      <label><span>Tipo *</span><select formControlName="stage_type">
+        <option value="normal">Etapa normal</option><option value="won">Cierre ganado</option><option value="lost">Cierre perdido</option>
+      </select></label>
+      <div class="two">
+        <label><span>Probabilidad (%) *</span><input type="number" min="0" max="100" formControlName="default_probability" /></label>
+        <label><span>Orden *</span><input type="number" min="1" max="20" formControlName="position" /></label>
+      </div>
+      <p class="hint">La probabilidad se aplicará al mover una oportunidad a esta etapa.</p>
+      <div class="actions"><button type="submit" [disabled]="saving()">{{ saving() ? 'Guardando…' : (editing() ? 'Guardar cambios' : 'Crear etapa') }}</button>
+        @if (editing()) { <button type="button" class="secondary" (click)="cancel()">Cancelar</button> }
+      </div>
+    </form>
+
+    <section class="catalog">
+      <div class="filters"><label><span>Buscar etapas</span><input type="search" placeholder="Nombre de la etapa" (input)="searchChanged($event)" /></label>
+        <label class="check"><input type="checkbox" checked (change)="inactiveChanged($event)" /> Mostrar inactivas</label></div>
+      @if (loading()) { <div class="card state">Cargando etapas…</div> }
+      @else {
+        <div class="stage-list">
+          @for (stage of stages(); track stage.id) {
+            <article class="card" [class.inactive]="!stage.is_active">
+              <div class="position">{{ stage.position }}</div><div class="info"><div><h3>{{ stage.name }}</h3>
+                <span class="badge">{{ stage.stage_type === 'normal' ? 'Normal' : stage.stage_type === 'won' ? 'Ganada' : 'Perdida' }}</span>
+                @if (!stage.is_active) { <span class="badge muted">Inactiva</span> }</div>
+                <p>Probabilidad predeterminada: <strong>{{ stage.default_probability }}%</strong></p></div>
+              <div class="row-actions"><button type="button" class="link" (click)="edit(stage)">Editar</button>
+                <button type="button" class="link" (click)="toggle(stage)">{{ stage.is_active ? 'Desactivar' : 'Activar' }}</button></div>
+            </article>
+          } @empty { <div class="card state">No se encontraron etapas.</div> }
+        </div>
+      }
+    </section>
+  </div>
+</section>

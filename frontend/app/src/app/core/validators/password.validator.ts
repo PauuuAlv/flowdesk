@@ -14,12 +14,12 @@ export function getPasswordChecks(value: string): PasswordChecks {
     uppercase: /[A-Z]/.test(value),
     lowercase: /[a-z]/.test(value),
     number: /\d/.test(value),
-    special: /[!@#$%^&*(),.?":{}|<>_\-+=\[\]\\/;'`~]/.test(value)
+    special: /[!@#$%^&*(),.?":{}|<>_\-+=\[\]\\/;'`~]/.test(value),
   };
 }
 
 export const strongPasswordValidator: ValidatorFn = (
-  control: AbstractControl<string>
+  control: AbstractControl<string>,
 ): ValidationErrors | null => {
   const checks = getPasswordChecks(control.value ?? '');
   return Object.values(checks).every(Boolean) ? null : { weakPassword: true };

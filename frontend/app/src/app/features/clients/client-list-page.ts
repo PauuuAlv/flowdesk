@@ -10,7 +10,7 @@ import { SessionService } from '../../core/services/session.service';
   selector: 'app-client-list-page',
   imports: [RouterLink],
   templateUrl: './client-list-page.html',
-  styleUrl: './client-list-page.scss'
+  styleUrl: './client-list-page.scss',
 })
 export class ClientListPage {
   private readonly clientService = inject(ClientService);
@@ -53,7 +53,7 @@ export class ClientListPage {
       error: () => {
         this.loading.set(false);
         this.errorMessage.set('No fue posible consultar los clientes. Intenta nuevamente.');
-      }
+      },
     });
   }
 
@@ -84,17 +84,17 @@ export class ClientListPage {
         this.processing.set(false);
         this.clientToToggle.set(null);
         this.clients.update((clients) =>
-          clients.map((item) => (item.id === updated.id ? updated : item))
+          clients.map((item) => (item.id === updated.id ? updated : item)),
         );
         this.successMessage.set(
-          `${updated.company_name} quedó ${updated.status === 'active' ? 'activo' : 'inactivo'}.`
+          `${updated.company_name} quedó ${updated.status === 'active' ? 'activo' : 'inactivo'}.`,
         );
       },
       error: () => {
         this.processing.set(false);
         this.clientToToggle.set(null);
         this.errorMessage.set('No fue posible cambiar el estado del cliente.');
-      }
+      },
     });
   }
 

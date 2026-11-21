@@ -1,6 +1,14 @@
-from fastapi import APIRouter, Depends, HTTPException
+import io
+import time
+import uuid
+from pathlib import Path
+
+from fastapi import APIRouter, Depends, File, HTTPException, Response, UploadFile, status
+from fastapi.responses import FileResponse
+from PIL import Image, UnidentifiedImageError
 from sqlalchemy.orm import Session
 
+from app.core.config import settings
 from app.core.database import get_db
 from app.models.tenant import Tenant
 from app.models.user import User
@@ -8,6 +16,20 @@ from app.schemas.company_settings import CompanySettingsPayload, CompanySettings
 from app.security.permissions import require_permission
 
 router = APIRouter()
+MAX_LOGO_BYTES = 5 * 1024 * 1024
+LOGO_SIZE = (800, 800)
+
+
+def _logo_directory() -> Path:
+    directory = Path(settings.MEDIA_ROOT).resolve() / "logos"
+    directory.mkdir(parents=True, exist_ok=True)
+    return directory
+
+
+def _delete_local_logo(tenant_id) -> None:
+    path = _logo_directory() / f"{tenant_id}.webp"
+    if path.exists():
+        path.unlink()
 
 
 def _get(tenant_id, db: Session) -> Tenant:
@@ -46,8 +68,63 @@ def update_company_settings(
     current_user: User = Depends(require_permission("settings.update")),
 ):
     tenant = _get(current_user.tenant_id, db)
-    for key, value in payload.model_dump().items():
+    for key, value in payload.model_dump(exclude={"logo_url"}).items():
         setattr(tenant, key, value)
     db.commit()
     db.refresh(tenant)
     return _serialize(tenant)
+
+
+@router.post("/logo", response_model=CompanySettingsResponse)
+async def upload_company_logo(
+    logo: UploadFile = File(...),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_permission("settings.update")),
+):
+    allowed_types = {"image/jpeg", "image/png", "image/webp"}
+    if logo.content_type not in allowed_types:
+        raise HTTPException(status_code=415, detail="Logo must be JPG, PNG or WebP")
+    content = await logo.read(MAX_LOGO_BYTES + 1)
+    if len(content) > MAX_LOGO_BYTES:
+        raise HTTPException(status_code=413, detail="Logo exceeds 5 MB")
+    try:
+        image = Image.open(io.BytesIO(content))
+        if image.width * image.height > 25_000_000:
+            raise ValueError("Image dimensions are too large")
+        image.verify()
+        image = Image.open(io.BytesIO(content))
+        image.thumbnail(LOGO_SIZE)
+        if image.mode not in ("RGB", "RGBA"):
+            image = image.convert("RGBA")
+    except (UnidentifiedImageError, OSError, ValueError) as exc:
+        raise HTTPException(status_code=422, detail="Invalid image file") from exc
+
+    tenant = _get(current_user.tenant_id, db)
+    destination = _logo_directory() / f"{tenant.id}.webp"
+    temporary = destination.with_suffix(".tmp")
+    image.save(temporary, format="WEBP", quality=88, method=6)
+    temporary.replace(destination)
+    tenant.logo_url = f"/api/company-settings/logo/public/{tenant.id}?v={int(time.time())}"
+    db.commit(); db.refresh(tenant)
+    return _serialize(tenant)
+
+
+@router.delete("/logo", status_code=status.HTTP_204_NO_CONTENT)
+def delete_company_logo(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_permission("settings.update")),
+):
+    tenant = _get(current_user.tenant_id, db)
+    _delete_local_logo(tenant.id)
+    tenant.logo_url = None
+    db.commit()
+    return Response(status_code=status.HTTP_204_NO_CONTENT)
+
+
+@router.get("/logo/public/{tenant_id}", include_in_schema=False)
+def public_company_logo(tenant_id: uuid.UUID, db: Session = Depends(get_db)):
+    tenant = db.query(Tenant).filter(Tenant.id == tenant_id, Tenant.logo_url.is_not(None)).first()
+    path = _logo_directory() / f"{tenant_id}.webp"
+    if not tenant or not path.exists():
+        raise HTTPException(status_code=404, detail="Logo not found")
+    return FileResponse(path, media_type="image/webp", headers={"Cache-Control": "public, max-age=86400"})

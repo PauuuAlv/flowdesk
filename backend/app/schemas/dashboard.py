@@ -17,6 +17,7 @@ class DashboardMetrics(BaseModel):
 
 class PipelineStage(BaseModel):
     stage: str
+    stage_name: str
     count: int
     value: Decimal
 

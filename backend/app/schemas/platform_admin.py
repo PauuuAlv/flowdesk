@@ -6,6 +6,7 @@ from pydantic import BaseModel, EmailStr, Field, field_validator
 
 PlanKey = Literal["basic", "professional", "enterprise"]
 SubscriptionStatus = Literal["trial", "active", "suspended", "cancelled"]
+PlatformRole = Literal["superadmin", "viewer"]
 
 
 class PlatformAdminLoginRequest(BaseModel):
@@ -16,9 +17,35 @@ class PlatformAdminLoginRequest(BaseModel):
 class PlatformAdminTokenResponse(BaseModel):
     access_token: str
     token_type: str = "bearer"
-    # NOTA: a diferencia de User, por ahora PlatformAdmin no tiene refresh token
-    # (son pocos usuarios, de ArmSystem, con sesiones más cortas está bien).
-    # Si en el futuro hace falta, se agrega igual que en security/jwt.py para User.
+
+
+class PlatformAdminMeResponse(BaseModel):
+    id: str
+    email: str
+    full_name: str | None
+    role: PlatformRole
+
+
+class InvitePlatformMemberRequest(BaseModel):
+    email: EmailStr
+    full_name: str = Field(min_length=3, max_length=255)
+    role: Literal["viewer"] = "viewer"
+
+
+class PlatformMemberResponse(BaseModel):
+    id: str
+    email: str
+    full_name: str | None
+    role: PlatformRole
+    is_active: bool
+    invitation_pending: bool
+    created_at: datetime
+    invitation_link: str | None = None
+
+
+class AcceptPlatformInvitationRequest(BaseModel):
+    token: str
+    password: str = Field(min_length=8)
 
 
 class CreateTenantRequest(BaseModel):
@@ -35,16 +62,17 @@ class CreateTenantResponse(BaseModel):
     tenant_slug: str
     admin_user_id: str
     admin_email: str
-    # SOLO PARA DESARROLLO: mientras no haya envío de correo real (SES/boto3),
-    # regresamos el link de invitación en la respuesta para poder probar el
-    # flujo manualmente. ANTES DE PRODUCCIÓN esto debe quitarse y mandarse
-    # únicamente por correo — nunca en la respuesta del API.
-    dev_invitation_link: str
+    invitation_link: str
 
 
 class TenantUsageResponse(BaseModel):
     users: int
+    active_users: int
+    invited_users: int
     clients: int
+    opportunities: int
+    activities: int
+    quotes: int
     products: int
 
 
@@ -53,26 +81,27 @@ class TenantUsageResponse(BaseModel):
 SLUG_PATTERN = re.compile(r"^[a-z0-9]+(?:-[a-z0-9]+)*$")
 
 
-class TenantSummary(BaseModel):
+class TenantSaaSResponse(BaseModel):
+    """Respuesta única de empresa para la administración de plataforma:
+    datos generales, administrador principal, plan, suscripción y consumo."""
+
     id: str
     name: str
     slug: str
-    is_active: bool
-    created_at: datetime | None
-    admin_email: str | None
-    admin_full_name: str | None
-    users_count: int
-    active_users_count: int
-    # Plan y suscripción SaaS
     plan_key: PlanKey
     plan_name: str
     subscription_status: SubscriptionStatus
+    is_active: bool
     max_users: int
     max_clients: int
     max_products: int
     usage: TenantUsageResponse
-    subscription_started_at: datetime | None
+    admin_name: str | None
+    admin_email: str | None
+    billing_email: str | None
+    subscription_started_at: datetime
     subscription_renews_at: datetime | None
+    created_at: datetime
 
 
 class UpdateTenantRequest(BaseModel):
@@ -104,7 +133,25 @@ class UpdateTenantSubscriptionRequest(BaseModel):
     plan_key: PlanKey
     subscription_status: SubscriptionStatus
     subscription_renews_at: datetime | None = None
+    billing_email: EmailStr | None = None
 
 
-# Compatibilidad: la vista de suscripciones usa la misma respuesta unificada.
-TenantSaaSResponse = TenantSummary
+class SaaSPlanResponse(BaseModel):
+    key: PlanKey
+    name: str
+    max_users: int
+    max_clients: int
+    max_products: int
+    tenant_count: int
+    features: list[str]
+
+
+class PlatformAuditResponse(BaseModel):
+    id: str
+    action: str
+    description: str
+    tenant_id: str | None
+    tenant_name: str | None
+    admin_email: str | None
+    details: dict
+    created_at: datetime

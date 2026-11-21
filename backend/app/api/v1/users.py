@@ -128,7 +128,7 @@ def invite_user(
         role=role.template_key or "custom",
         role_id=str(role.id),
         role_name=role.name,
-        dev_invitation_link=invitation_link,
+        invitation_link=invitation_link,
     )
 
 

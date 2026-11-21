@@ -11,7 +11,7 @@ describe('AccessControlService', () => {
 
   beforeEach(() => {
     TestBed.configureTestingModule({
-      providers: [AccessControlService, provideHttpClient(), provideHttpClientTesting()]
+      providers: [AccessControlService, provideHttpClient(), provideHttpClientTesting()],
     });
     service = TestBed.inject(AccessControlService);
     httpController = TestBed.inject(HttpTestingController);
@@ -30,7 +30,7 @@ describe('AccessControlService', () => {
     const body = {
       name: 'Contabilidad',
       description: 'Consulta información financiera de clientes.',
-      permissions: [PERMISSIONS.dashboardView, PERMISSIONS.clientsView]
+      permissions: [PERMISSIONS.dashboardView, PERMISSIONS.clientsView],
     };
     service.saveRole(body).subscribe();
     const request = httpController.expectOne('/api/roles');
@@ -43,7 +43,7 @@ describe('AccessControlService', () => {
     const body = {
       name: 'Supervisor',
       description: 'Supervisa la operación de la empresa.',
-      permissions: [PERMISSIONS.dashboardView]
+      permissions: [PERMISSIONS.dashboardView],
     };
     service.saveRole(body, 'role-2').subscribe();
     const request = httpController.expectOne('/api/roles/role-2');

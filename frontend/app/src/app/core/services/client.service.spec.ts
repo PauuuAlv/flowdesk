@@ -17,11 +17,13 @@ describe('ClientService', () => {
     status: 'active',
     notes: null,
     created_at: '2026-11-08T00:00:00Z',
-    updated_at: '2026-11-08T00:00:00Z'
+    updated_at: '2026-11-08T00:00:00Z',
   };
 
   beforeEach(() => {
-    TestBed.configureTestingModule({ providers: [provideHttpClient(), provideHttpClientTesting()] });
+    TestBed.configureTestingModule({
+      providers: [provideHttpClient(), provideHttpClientTesting()],
+    });
     service = TestBed.inject(ClientService);
     httpController = TestBed.inject(HttpTestingController);
   });
@@ -41,7 +43,7 @@ describe('ClientService', () => {
       contact_name: client.contact_name,
       email: client.email,
       phone: null,
-      notes: null
+      notes: null,
     };
     service.save(body).subscribe((response) => expect(response).toEqual(client));
     const request = httpController.expectOne('/api/clients');

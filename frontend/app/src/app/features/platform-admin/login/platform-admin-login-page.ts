@@ -10,7 +10,7 @@ import { SessionService } from '../../../core/services/session.service';
   selector: 'app-platform-admin-login-page',
   imports: [ReactiveFormsModule, RouterLink],
   templateUrl: './platform-admin-login-page.html',
-  styleUrl: './platform-admin-login-page.scss'
+  styleUrl: './platform-admin-login-page.scss',
 })
 export class PlatformAdminLoginPage {
   private readonly formBuilder = inject(FormBuilder);
@@ -23,7 +23,7 @@ export class PlatformAdminLoginPage {
   protected readonly showPassword = signal(false);
   protected readonly loginForm = this.formBuilder.nonNullable.group({
     email: ['', [Validators.required, Validators.email]],
-    password: ['', Validators.required]
+    password: ['', Validators.required],
   });
 
   protected togglePasswordVisibility(): void {
@@ -50,9 +50,9 @@ export class PlatformAdminLoginPage {
         this.errorMessage.set(
           error.status === 0
             ? 'No fue posible conectar con el servidor.'
-            : 'Correo o contraseña incorrectos.'
+            : 'Correo o contraseña incorrectos.',
         );
-      }
+      },
     });
   }
 }

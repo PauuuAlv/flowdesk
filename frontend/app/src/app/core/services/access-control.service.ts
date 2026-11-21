@@ -22,17 +22,19 @@ export class AccessControlService {
       : this.http.post<TenantRole>('/api/roles', request);
     return response.pipe(
       catchError((error: HttpErrorResponse) =>
-        throwError(() => new Error(error.status === 409 ? 'DUPLICATE_ROLE' : 'SAVE_ROLE_FAILED'))
-      )
+        throwError(() => new Error(error.status === 409 ? 'DUPLICATE_ROLE' : 'SAVE_ROLE_FAILED')),
+      ),
     );
   }
 
   deleteRole(roleId: string): Observable<void> {
-    return this.http.delete<void>(`/api/roles/${roleId}`).pipe(
-      catchError((error: HttpErrorResponse) =>
-        throwError(() => new Error(error.status === 409 ? 'ROLE_IN_USE' : 'DELETE_ROLE_FAILED'))
-      )
-    );
+    return this.http
+      .delete<void>(`/api/roles/${roleId}`)
+      .pipe(
+        catchError((error: HttpErrorResponse) =>
+          throwError(() => new Error(error.status === 409 ? 'ROLE_IN_USE' : 'DELETE_ROLE_FAILED')),
+        ),
+      );
   }
 
   listMembers(): Observable<TenantMember[]> {

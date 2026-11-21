@@ -2,32 +2,29 @@ import { HttpClient, HttpParams } from '@angular/common/http';
 import { inject, Injectable } from '@angular/core';
 import { Observable } from 'rxjs';
 
-import {
-  TenantSummary,
-  UpdateTenantRequest,
-  UpdateTenantSubscriptionRequest
-} from '../models/tenant.models';
+import { TenantSaaS } from '../models/auth.models';
+import { UpdateTenantRequest } from '../models/tenant.models';
 
-/** Gestión de empresas desde la administración de plataforma (superadmin). */
+/**
+ * Acciones de gestión de una empresa (superadministrador): editar sus datos,
+ * habilitarla/inhabilitarla y eliminarla. El listado, el plan y la suscripción
+ * se manejan desde AuthService.
+ */
 @Injectable({ providedIn: 'root' })
 export class TenantAdminService {
   private readonly http = inject(HttpClient);
   private readonly baseUrl = '/api/platform-admin/tenants';
 
-  list(): Observable<TenantSummary[]> {
-    return this.http.get<TenantSummary[]>(this.baseUrl);
+  get(id: string): Observable<TenantSaaS> {
+    return this.http.get<TenantSaaS>(`${this.baseUrl}/${id}`);
   }
 
-  update(id: string, request: UpdateTenantRequest): Observable<TenantSummary> {
-    return this.http.patch<TenantSummary>(`${this.baseUrl}/${id}`, request);
+  update(id: string, request: UpdateTenantRequest): Observable<TenantSaaS> {
+    return this.http.patch<TenantSaaS>(`${this.baseUrl}/${id}`, request);
   }
 
-  updateStatus(id: string, isActive: boolean): Observable<TenantSummary> {
-    return this.http.patch<TenantSummary>(`${this.baseUrl}/${id}/status`, { is_active: isActive });
-  }
-
-  updateSubscription(id: string, request: UpdateTenantSubscriptionRequest): Observable<TenantSummary> {
-    return this.http.patch<TenantSummary>(`${this.baseUrl}/${id}/subscription`, request);
+  updateStatus(id: string, isActive: boolean): Observable<TenantSaaS> {
+    return this.http.patch<TenantSaaS>(`${this.baseUrl}/${id}/status`, { is_active: isActive });
   }
 
   delete(id: string, confirmSlug: string): Observable<void> {

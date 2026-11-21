@@ -11,7 +11,7 @@ import { SessionService } from '../../../core/services/session.service';
   selector: 'app-login-page',
   imports: [ReactiveFormsModule, RouterLink],
   templateUrl: './login-page.html',
-  styleUrl: './login-page.scss'
+  styleUrl: './login-page.scss',
 })
 export class LoginPage {
   private readonly formBuilder = inject(FormBuilder);
@@ -24,13 +24,13 @@ export class LoginPage {
   protected readonly errorMessage = signal(
     this.route.snapshot.queryParamMap.get('sesion') === 'expirada'
       ? 'Tu sesión expiró. Inicia sesión nuevamente.'
-      : ''
+      : '',
   );
   protected readonly successMessage = signal('');
   protected readonly showPassword = signal(false);
   protected readonly loginForm = this.formBuilder.nonNullable.group({
     email: ['', [Validators.required, Validators.email]],
-    password: ['', Validators.required]
+    password: ['', Validators.required],
   });
 
   protected togglePasswordVisibility(): void {
@@ -50,31 +50,32 @@ export class LoginPage {
       .login(this.loginForm.getRawValue())
       .pipe(
         tap((tokens) => this.sessionService.saveTokens(tokens)),
-        switchMap(() => this.authService.me())
+        switchMap(() => this.authService.me()),
       )
       .subscribe({
-      next: (user) => {
-        this.submitting.set(false);
-        this.sessionService.saveUser(user);
-        this.successMessage.set(
-          `Sesión iniciada correctamente${user.full_name ? `, ${user.full_name}` : ''}.`
-        );
-        const returnUrl = this.route.snapshot.queryParamMap.get('returnUrl');
-        void this.router.navigateByUrl(returnUrl?.startsWith('/') ? returnUrl : '/panel');
-      },
-      error: (error: HttpErrorResponse) => {
-        this.submitting.set(false);
-        this.errorMessage.set(this.getErrorMessage(error));
-      }
-    });
+        next: (user) => {
+          this.submitting.set(false);
+          this.sessionService.saveUser(user);
+          this.successMessage.set(
+            `Sesión iniciada correctamente${user.full_name ? `, ${user.full_name}` : ''}.`,
+          );
+          const returnUrl = this.route.snapshot.queryParamMap.get('returnUrl');
+          void this.router.navigateByUrl(returnUrl?.startsWith('/') ? returnUrl : '/panel');
+        },
+        error: (error: HttpErrorResponse) => {
+          this.submitting.set(false);
+          this.errorMessage.set(this.getErrorMessage(error));
+        },
+      });
   }
 
   private getErrorMessage(error: HttpErrorResponse): string {
-    if (error.status === 0) return 'No fue posible conectar con el servidor. Intenta nuevamente más tarde.';
-    if (error.status === 403 && error.error?.detail === 'Company disabled') {
+    if (error.status === 0)
+      return 'No fue posible conectar con el servidor. Intenta nuevamente más tarde.';
+    if (error.status === 403 && error.error?.detail === 'Company disabled')
       return 'Tu empresa está inhabilitada. Contacta al administrador de Flowdesk.';
-    }
-    if (error.status === 401) return 'Correo o contraseña incorrectos. Verifica tus datos e intenta de nuevo.';
+    if (error.status === 401)
+      return 'Correo o contraseña incorrectos. Verifica tus datos e intenta de nuevo.';
     return 'No fue posible iniciar sesión. Intenta nuevamente.';
   }
 }

@@ -11,16 +11,15 @@ class OpportunityContractTests(unittest.TestCase):
     def test_probability_is_bounded(self):
         with self.assertRaises(ValidationError):
             SaveOpportunityRequest(client_id="a",owner_user_id="b",name="Venta",amount=10,stage="contact",probability=101)
-    def test_stage_is_restricted(self):
+    def test_stage_key_is_required(self):
         with self.assertRaises(ValidationError):
-            SaveOpportunityRequest(client_id="a",owner_user_id="b",name="Venta",amount=10,stage="unknown",probability=10)
-    def test_lost_opportunity_requires_reason(self):
-        with self.assertRaises(ValidationError):
-            CloseOpportunityRequest(stage="lost")
-    def test_won_opportunity_discards_loss_data(self):
-        value=CloseOpportunityRequest(stage="won",loss_reason="price",loss_detail="No debe conservarse")
-        self.assertIsNone(value.loss_reason)
-        self.assertIsNone(value.loss_detail)
+            SaveOpportunityRequest(client_id="a",owner_user_id="b",name="Venta",amount=10,stage="",probability=10)
+    def test_stage_can_use_a_tenant_catalog_key(self):
+        value=SaveOpportunityRequest(client_id="a",owner_user_id="b",name="Venta",amount=10,stage="demo-tecnica",probability=45)
+        self.assertEqual(value.stage,"demo-tecnica")
+    def test_close_detail_is_normalized(self):
+        value=CloseOpportunityRequest(stage="cierre-perdido",loss_reason="price",loss_detail="  Fuera de presupuesto  ")
+        self.assertEqual(value.loss_detail,"Fuera de presupuesto")
 
 
 if __name__=="__main__": unittest.main()

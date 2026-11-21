@@ -1,0 +1,38 @@
+<div class="platform-shell">
+  <aside>
+    <a class="brand" routerLink="/administracion-flowdesk">Flowdesk</a>
+    <p>Administración</p>
+    <nav aria-label="Administración de plataforma">
+      <a
+        routerLink="/administracion-flowdesk"
+        [routerLinkActiveOptions]="{ exact: true }"
+        routerLinkActive="active"
+        ><span>⌂</span> Panel</a
+      >
+      <a routerLink="/administracion-flowdesk/empresas" routerLinkActive="active"
+        ><span>▦</span> Empresas</a
+      >
+      <a routerLink="/administracion-flowdesk/planes" routerLinkActive="active"
+        ><span>◇</span> Planes</a
+      >
+      <a routerLink="/administracion-flowdesk/suscripciones" routerLinkActive="active"
+        ><span>▤</span> Suscripciones</a
+      >
+      <a routerLink="/administracion-flowdesk/auditoria" routerLinkActive="active"
+        ><span>◷</span> Auditoría</a
+      >
+      @if (access.canManage()) {
+        <a routerLink="/administracion-flowdesk/equipo" routerLinkActive="active"
+          ><span>◎</span> Equipo de plataforma</a
+        >
+      }
+    </nav>
+  </aside>
+  <section class="workspace">
+    <header>
+      <div><small>PLATAFORMA</small><strong>{{ access.member()?.full_name || 'Control SaaS' }}</strong></div>
+      <button type="button" (click)="logout()">Cerrar sesión</button>
+    </header>
+    <main><router-outlet /></main>
+  </section>
+</div>

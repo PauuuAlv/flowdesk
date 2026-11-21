@@ -17,8 +17,16 @@ import {
   ResetPasswordRequest,
   ResetPasswordResponse,
   TokenResponse,
-  UserMeResponse
+  UserMeResponse,
+  TenantSaaS,
+  SaaSPlan,
+  PlatformAudit,
+  PlatformAdminMe,
+  PlatformMember,
+  InvitePlatformMemberRequest,
+  UpdateTenantSubscriptionRequest,
 } from '../models/auth.models';
+import { PlanChangeRequest } from '../models/tenant-plan.models';
 
 @Injectable({ providedIn: 'root' })
 export class AuthService {
@@ -45,8 +53,60 @@ export class AuthService {
     return this.http.post<PlatformAdminTokenResponse>('/api/platform-admin/auth/login', request);
   }
 
+  platformAdminMe(): Observable<PlatformAdminMe> {
+    return this.http.get<PlatformAdminMe>('/api/platform-admin/auth/me');
+  }
+
+  listPlatformTeam(): Observable<PlatformMember[]> {
+    return this.http.get<PlatformMember[]>('/api/platform-admin/team');
+  }
+
+  invitePlatformMember(request: InvitePlatformMemberRequest): Observable<PlatformMember> {
+    return this.http.post<PlatformMember>('/api/platform-admin/team/invite', request);
+  }
+
+  acceptPlatformInvitation(token: string, password: string): Observable<PlatformAdminTokenResponse> {
+    return this.http.post<PlatformAdminTokenResponse>('/api/platform-admin/auth/accept-invite', {
+      token,
+      password,
+    });
+  }
+
   createTenant(request: CreateTenantRequest): Observable<CreateTenantResponse> {
     return this.http.post<CreateTenantResponse>('/api/platform-admin/tenants', request);
+  }
+
+  listTenants(): Observable<TenantSaaS[]> {
+    return this.http.get<TenantSaaS[]>('/api/platform-admin/tenants');
+  }
+
+  listSaaSPlans(): Observable<SaaSPlan[]> {
+    return this.http.get<SaaSPlan[]>('/api/platform-admin/plans');
+  }
+
+  listPlatformAudit(): Observable<PlatformAudit[]> {
+    return this.http.get<PlatformAudit[]>('/api/platform-admin/audit');
+  }
+
+  listSubscriptionRequests(): Observable<PlanChangeRequest[]> {
+    return this.http.get<PlanChangeRequest[]>('/api/platform-admin/subscription-requests');
+  }
+
+  resolveSubscriptionRequest(
+    id: string,
+    status: 'approved' | 'rejected',
+  ): Observable<PlanChangeRequest> {
+    return this.http.patch<PlanChangeRequest>(
+      `/api/platform-admin/subscription-requests/${id}`,
+      { status },
+    );
+  }
+
+  updateTenantSubscription(
+    id: string,
+    request: UpdateTenantSubscriptionRequest,
+  ): Observable<TenantSaaS> {
+    return this.http.patch<TenantSaaS>(`/api/platform-admin/tenants/${id}/subscription`, request);
   }
 
   inviteUser(request: InviteUserRequest): Observable<InviteUserResponse> {

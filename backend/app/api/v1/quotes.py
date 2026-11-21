@@ -1,6 +1,7 @@
 import io
 import uuid
 from datetime import date
+from pathlib import Path
 from fastapi import APIRouter,Depends,HTTPException,status
 from fastapi.responses import StreamingResponse
 from reportlab.lib import colors
@@ -8,10 +9,12 @@ from reportlab.lib.pagesizes import letter
 from reportlab.lib.enums import TA_RIGHT
 from reportlab.lib.styles import ParagraphStyle, getSampleStyleSheet
 from reportlab.lib.units import cm
+from reportlab.lib.utils import ImageReader
 from reportlab.platypus import Paragraph,Spacer,Table,TableStyle,SimpleDocTemplate
 from sqlalchemy import func
 from sqlalchemy.orm import Session
 from app.core.database import get_db
+from app.core.config import settings
 from app.models.client import Client
 from app.models.opportunity import Opportunity
 from app.models.product import Product
@@ -45,7 +48,7 @@ def _relations(payload:SaveQuoteRequest,tenant_id,db:Session):
 def _effective_status(item:Quote):return "expired" if item.status=="sent" and item.valid_until<date.today() else item.status
 def _serialize(item:Quote,tenant:Tenant|None):
     tenant_name=tenant.name if tenant else "Empresa";prefix=item.prefix or "COT"
-    return QuoteResponse(id=str(item.id),folio=f"{prefix}-{item.issue_date.year}-{item.sequence:04d}",tenant_name=tenant_name,client_id=str(item.client_id),client_name=item.client.company_name,client_contact=item.client.contact_name,client_email=item.client.email,opportunity_id=str(item.opportunity_id) if item.opportunity_id else None,opportunity_name=item.opportunity.name if item.opportunity else None,owner_user_id=str(item.owner_user_id),owner_name=item.owner.full_name or item.owner.email,issue_date=item.issue_date,valid_until=item.valid_until,currency=item.currency,discount=item.discount,tax_rate=item.tax_rate,subtotal=item.subtotal,tax=item.tax,total=item.total,status=_effective_status(item),notes=item.notes,items=[QuoteItemResponse(id=str(x.id),product_id=str(x.product_id) if x.product_id else None,position=x.position,description=x.description,quantity=x.quantity,unit_price=x.unit_price,amount=x.amount) for x in item.items],created_at=item.created_at,updated_at=item.updated_at)
+    return QuoteResponse(id=str(item.id),folio=f"{prefix}-{item.issue_date.year}-{item.sequence:04d}",tenant_name=tenant_name,client_id=str(item.client_id),client_name=item.client.company_name,client_contact=item.client.contact_name,client_email=item.client.email,opportunity_id=str(item.opportunity_id) if item.opportunity_id else None,opportunity_name=item.opportunity.name if item.opportunity else None,owner_user_id=str(item.owner_user_id),owner_name=item.owner.full_name or item.owner.email,issue_date=item.issue_date,valid_until=item.valid_until,currency=item.currency,discount=item.discount,tax_rate=item.tax_rate,subtotal=item.subtotal,tax=item.tax,total=item.total,status=_effective_status(item),notes=item.notes,items=[QuoteItemResponse(id=str(x.id),product_id=str(x.product_id) if x.product_id else None,position=x.position,description=x.description,quantity=x.quantity,unit_price=x.unit_price,gross_amount=x.gross_amount,discount_percent=x.discount_percent,discount_amount=x.discount_amount,amount=x.amount) for x in item.items],created_at=item.created_at,updated_at=item.updated_at)
 
 def _quote_items(payload:SaveQuoteRequest,tenant_id,db:Session):
     items=[]
@@ -55,7 +58,8 @@ def _quote_items(payload:SaveQuoteRequest,tenant_id,db:Session):
             try:product_id=uuid.UUID(x.product_id)
             except ValueError as exc:raise HTTPException(422,"Invalid product identifier") from exc
             if not db.query(Product).filter(Product.id==product_id,Product.tenant_id==tenant_id).first():raise HTTPException(404,"Product not found")
-        items.append(QuoteItem(product_id=product_id,position=position,description=x.description,quantity=x.quantity,unit_price=x.unit_price,amount=x.quantity*x.unit_price))
+        gross=x.quantity*x.unit_price;discount=gross*x.discount_percent/100
+        items.append(QuoteItem(product_id=product_id,position=position,description=x.description,quantity=x.quantity,unit_price=x.unit_price,gross_amount=gross,discount_percent=x.discount_percent,discount_amount=discount,amount=gross-discount))
     return items
 
 def _tenant(tenant_id,db:Session):return db.query(Tenant).filter(Tenant.id==tenant_id).first()
@@ -68,8 +72,8 @@ def list_quotes(db:Session=Depends(get_db),user:User=Depends(require_permission(
 
 @router.post("",response_model=QuoteResponse,status_code=status.HTTP_201_CREATED)
 def create_quote(payload:SaveQuoteRequest,db:Session=Depends(get_db),user:User=Depends(require_permission("quotes.create"))):
-    client,owner,opportunity=_relations(payload,user.tenant_id,db);subtotal,tax,total=calculate_totals(payload);sequence=(db.query(func.max(Quote.sequence)).filter(Quote.tenant_id==user.tenant_id).scalar() or 0)+1;tenant=_tenant(user.tenant_id,db)
-    item=Quote(tenant_id=user.tenant_id,sequence=sequence,prefix=tenant.quote_prefix if tenant else "COT",client_id=client.id,owner_user_id=owner.id,opportunity_id=opportunity.id if opportunity else None,issue_date=payload.issue_date,valid_until=payload.valid_until,currency=tenant.currency if tenant else "MXN",discount=payload.discount,tax_rate=payload.tax_rate,subtotal=subtotal,tax=tax,total=total,notes=payload.notes,status="draft")
+    client,owner,opportunity=_relations(payload,user.tenant_id,db);subtotal,discount,total=calculate_totals(payload);sequence=(db.query(func.max(Quote.sequence)).filter(Quote.tenant_id==user.tenant_id).scalar() or 0)+1;tenant=_tenant(user.tenant_id,db)
+    item=Quote(tenant_id=user.tenant_id,sequence=sequence,prefix=tenant.quote_prefix if tenant else "COT",client_id=client.id,owner_user_id=owner.id,opportunity_id=opportunity.id if opportunity else None,issue_date=payload.issue_date,valid_until=payload.valid_until,currency=tenant.currency if tenant else "MXN",discount=discount,tax_rate=0,subtotal=subtotal,tax=0,total=total,notes=payload.notes,status="draft")
     item.items=_quote_items(payload,user.tenant_id,db);db.add(item);db.commit();db.refresh(item);return _serialize(item,tenant)
 
 
@@ -78,7 +82,7 @@ def get_quote(quote_id:uuid.UUID,db:Session=Depends(get_db),user:User=Depends(re
 
 @router.get("/{quote_id}/pdf")
 def quote_pdf(quote_id:uuid.UUID,db:Session=Depends(get_db),user:User=Depends(require_permission("quotes.view"))):
-    data=_serialize(_get(quote_id,user.tenant_id,db),_tenant(user.tenant_id,db))
+    tenant=_tenant(user.tenant_id,db);data=_serialize(_get(quote_id,user.tenant_id,db),tenant)
     buffer=io.BytesIO()
     navy=colors.HexColor("#123040")
     blue=colors.HexColor("#275d78")
@@ -103,9 +107,14 @@ def quote_pdf(quote_id:uuid.UUID,db:Session=Depends(get_db),user:User=Depends(re
         canvas.saveState()
         canvas.setFillColor(navy)
         canvas.rect(0,height-2.15*cm,width,2.15*cm,fill=1,stroke=0)
-        canvas.setFillColor(white)
-        canvas.setFont("Helvetica-Bold",17)
-        canvas.drawString(1.5*cm,height-1.25*cm,"FLOWDESK")
+        logo_path=Path(settings.MEDIA_ROOT)/"logos"/f"{tenant.id}.webp" if tenant else None
+        if logo_path and logo_path.exists():
+            logo=ImageReader(str(logo_path));source_width,source_height=logo.getSize();max_width,max_height=3.8*cm,1.35*cm
+            scale=min(max_width/source_width,max_height/source_height);logo_width,logo_height=source_width*scale,source_height*scale
+            canvas.setFillColor(white);canvas.roundRect(1.5*cm,height-1.75*cm,max_width,1.35*cm,.12*cm,fill=1,stroke=0)
+            canvas.drawImage(logo,1.5*cm+(max_width-logo_width)/2,height-1.75*cm+(1.35*cm-logo_height)/2,width=logo_width,height=logo_height,mask="auto")
+        else:
+            canvas.setFillColor(white);canvas.setFont("Helvetica-Bold",17);canvas.drawString(1.5*cm,height-1.25*cm,"FLOWDESK")
         canvas.setFillColor(colors.HexColor("#a9c9d8"))
         canvas.setFont("Helvetica",8)
         canvas.drawRightString(width-1.5*cm,height-1.2*cm,"CRM SaaS multiempresa")
@@ -129,20 +138,22 @@ def quote_pdf(quote_id:uuid.UUID,db:Session=Depends(get_db),user:User=Depends(re
     ],colWidths=[9.0*cm,8.5*cm])
     client_card.setStyle(TableStyle([("BACKGROUND",(0,0),(-1,-1),soft),("BOX",(0,0),(-1,-1),.6,line),("LINEBEFORE",(1,0),(1,-1),.6,line),("VALIGN",(0,0),(-1,-1),"TOP"),("LEFTPADDING",(0,0),(-1,-1),12),("RIGHTPADDING",(0,0),(-1,-1),12),("TOPPADDING",(0,0),(-1,0),10),("BOTTOMPADDING",(0,0),(-1,0),2),("TOPPADDING",(0,1),(-1,1),2),("BOTTOMPADDING",(0,1),(-1,1),11)]))
 
-    rows=[[Paragraph("DESCRIPCIÓN",table_header),Paragraph("CANT.",table_header),Paragraph("PRECIO UNITARIO",table_header),Paragraph("IMPORTE",table_header)]]
-    rows += [[Paragraph(x.description,body),f"{x.quantity:,.2f}",f"${x.unit_price:,.2f}",f"${x.amount:,.2f}"] for x in data.items]
-    items_table=Table(rows,colWidths=[8.2*cm,2.2*cm,3.5*cm,3.6*cm],repeatRows=1)
+    rows=[[Paragraph("DESCRIPCIÓN",table_header),Paragraph("CANT.",table_header),Paragraph("PRECIO",table_header),Paragraph("DESC.",table_header),Paragraph("IMPORTE",table_header)]]
+    rows += [[Paragraph(x.description,body),f"{x.quantity:,.2f}",f"${x.unit_price:,.2f}",f"{x.discount_percent:,.2f}%",f"${x.amount:,.2f}"] for x in data.items]
+    items_table=Table(rows,colWidths=[7.0*cm,1.8*cm,3.0*cm,2.2*cm,3.5*cm],repeatRows=1)
     item_style=[("BACKGROUND",(0,0),(-1,0),navy),("TEXTCOLOR",(0,0),(-1,0),white),("VALIGN",(0,0),(-1,-1),"MIDDLE"),("ALIGN",(1,1),(-1,-1),"RIGHT"),("GRID",(0,0),(-1,-1),.35,line),("LEFTPADDING",(0,0),(-1,-1),9),("RIGHTPADDING",(0,0),(-1,-1),9),("TOPPADDING",(0,0),(-1,-1),8),("BOTTOMPADDING",(0,0),(-1,-1),8)]
     for row_index in range(2,len(rows),2):item_style.append(("BACKGROUND",(0,row_index),(-1,row_index),colors.HexColor("#f8fafb")))
     items_table.setStyle(TableStyle(item_style))
 
-    totals=Table([
+    total_rows=[
         [Paragraph("Subtotal",body),Paragraph(f"${data.subtotal:,.2f}",right)],
         [Paragraph("Descuento",body),Paragraph(f"-${data.discount:,.2f}",right)],
-        [Paragraph(f"IVA ({data.tax_rate:,.2f}%)",body),Paragraph(f"${data.tax:,.2f}",right)],
-        [Paragraph("TOTAL",total_style),Paragraph(f"${data.total:,.2f} {data.currency}",total_style)]
-    ],colWidths=[3.8*cm,4.7*cm])
-    totals.setStyle(TableStyle([("BACKGROUND",(0,0),(-1,2),soft),("BACKGROUND",(0,3),(-1,3),blue),("BOX",(0,0),(-1,-1),.6,line),("LINEABOVE",(0,3),(-1,3),1,gold),("LEFTPADDING",(0,0),(-1,-1),11),("RIGHTPADDING",(0,0),(-1,-1),11),("TOPPADDING",(0,0),(-1,-1),7),("BOTTOMPADDING",(0,0),(-1,-1),7)]))
+    ]
+    if data.tax: total_rows.append([Paragraph(f"IVA histórico ({data.tax_rate:,.2f}%)",body),Paragraph(f"${data.tax:,.2f}",right)])
+    total_rows.append([Paragraph("TOTAL",total_style),Paragraph(f"${data.total:,.2f} {data.currency}",total_style)])
+    totals=Table(total_rows,colWidths=[3.8*cm,4.7*cm])
+    total_index=len(total_rows)-1
+    totals.setStyle(TableStyle([("BACKGROUND",(0,0),(-1,total_index-1),soft),("BACKGROUND",(0,total_index),(-1,total_index),blue),("BOX",(0,0),(-1,-1),.6,line),("LINEABOVE",(0,total_index),(-1,total_index),1,gold),("LEFTPADDING",(0,0),(-1,-1),11),("RIGHTPADDING",(0,0),(-1,-1),11),("TOPPADDING",(0,0),(-1,-1),7),("BOTTOMPADDING",(0,0),(-1,-1),7)]))
     totals_wrapper=Table([["",totals]],colWidths=[9.0*cm,8.5*cm])
     totals_wrapper.setStyle(TableStyle([("VALIGN",(0,0),(-1,-1),"TOP"),("LEFTPADDING",(0,0),(-1,-1),0),("RIGHTPADDING",(0,0),(-1,-1),0)]))
 
@@ -160,8 +171,8 @@ def quote_pdf(quote_id:uuid.UUID,db:Session=Depends(get_db),user:User=Depends(re
 def update_quote(quote_id:uuid.UUID,payload:SaveQuoteRequest,db:Session=Depends(get_db),user:User=Depends(require_permission("quotes.update"))):
     item=_get(quote_id,user.tenant_id,db)
     if item.status!="draft":raise HTTPException(409,"Only draft quotes can be edited")
-    client,owner,opportunity=_relations(payload,user.tenant_id,db);subtotal,tax,total=calculate_totals(payload)
-    for key,value in {"client_id":client.id,"owner_user_id":owner.id,"opportunity_id":opportunity.id if opportunity else None,"issue_date":payload.issue_date,"valid_until":payload.valid_until,"discount":payload.discount,"tax_rate":payload.tax_rate,"subtotal":subtotal,"tax":tax,"total":total,"notes":payload.notes}.items():setattr(item,key,value)
+    client,owner,opportunity=_relations(payload,user.tenant_id,db);subtotal,discount,total=calculate_totals(payload)
+    for key,value in {"client_id":client.id,"owner_user_id":owner.id,"opportunity_id":opportunity.id if opportunity else None,"issue_date":payload.issue_date,"valid_until":payload.valid_until,"discount":discount,"tax_rate":0,"subtotal":subtotal,"tax":0,"total":total,"notes":payload.notes}.items():setattr(item,key,value)
     item.items=_quote_items(payload,user.tenant_id,db);db.commit();db.refresh(item);return _serialize(item,_tenant(user.tenant_id,db))
 
 

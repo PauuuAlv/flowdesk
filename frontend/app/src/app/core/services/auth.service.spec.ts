@@ -7,7 +7,7 @@ import {
   LoginRequest,
   RefreshRequest,
   RegisterRequest,
-  ResetPasswordRequest
+  ResetPasswordRequest,
 } from '../models/auth.models';
 import { AuthService } from './auth.service';
 
@@ -17,7 +17,7 @@ describe('AuthService', () => {
 
   beforeEach(() => {
     TestBed.configureTestingModule({
-      providers: [AuthService, provideHttpClient(), provideHttpClientTesting()]
+      providers: [AuthService, provideHttpClient(), provideHttpClientTesting()],
     });
 
     service = TestBed.inject(AuthService);
@@ -29,7 +29,7 @@ describe('AuthService', () => {
   it('should send the register contract to the API', () => {
     const requestBody: RegisterRequest = {
       token: 'invitation-token',
-      password: 'Contraseña123!'
+      password: 'Contraseña123!',
     };
 
     service.register(requestBody).subscribe((response) => {
@@ -42,14 +42,14 @@ describe('AuthService', () => {
     request.flush({
       access_token: 'access-token',
       refresh_token: 'refresh-token',
-      token_type: 'bearer'
+      token_type: 'bearer',
     });
   });
 
   it('should send the login contract to the API', () => {
     const requestBody: LoginRequest = {
       email: 'palvaradocamacho@gmail.com',
-      password: 'Contraseña123!'
+      password: 'Contraseña123!',
     };
 
     service.login(requestBody).subscribe((response) => {
@@ -62,7 +62,7 @@ describe('AuthService', () => {
     request.flush({
       access_token: 'access-token',
       refresh_token: 'refresh-token',
-      token_type: 'bearer'
+      token_type: 'bearer',
     });
   });
 
@@ -79,7 +79,7 @@ describe('AuthService', () => {
     request.flush({
       access_token: 'new-access-token',
       refresh_token: 'refresh-token',
-      token_type: 'bearer'
+      token_type: 'bearer',
     });
   });
 
@@ -97,14 +97,14 @@ describe('AuthService', () => {
       email: 'paulina@empresa.com',
       full_name: 'Paulina Alvarado',
       role: 'admin',
-      status: 'active'
+      status: 'active',
     });
   });
 
   it('should use the separate platform administrator login endpoint', () => {
     const requestBody = {
       email: 'superadmin@flowdesk.com',
-      password: 'secure-password'
+      password: 'secure-password',
     };
 
     service.platformAdminLogin(requestBody).subscribe((response) => {
@@ -123,12 +123,12 @@ describe('AuthService', () => {
       slug: 'empresa-prueba',
       admin_email: 'admin@example.com',
       admin_full_name: 'Admin de prueba',
-      plan_key: 'basic' as const
+      plan_key: 'basic' as const,
     };
 
     service.createTenant(requestBody).subscribe((response) => {
       expect(response.tenant_slug).toBe(requestBody.slug);
-      expect(response.dev_invitation_link).toContain('token=');
+      expect(response.invitation_link).toContain('token=');
     });
 
     const request = httpController.expectOne('/api/platform-admin/tenants');
@@ -140,7 +140,7 @@ describe('AuthService', () => {
       tenant_slug: requestBody.slug,
       admin_user_id: 'user-id',
       admin_email: requestBody.admin_email,
-      dev_invitation_link: 'http://localhost/accept-invite?token=test-token'
+      invitation_link: 'http://localhost/accept-invite?token=test-token',
     });
   });
 
@@ -148,12 +148,12 @@ describe('AuthService', () => {
     const requestBody = {
       full_name: 'Daniel Ramírez',
       email: 'daniel@example.com',
-      role_id: 'role-member-id'
+      role_id: 'role-member-id',
     };
 
     service.inviteUser(requestBody).subscribe((response) => {
       expect(response.role).toBe('member');
-      expect(response.dev_invitation_link).toContain('token=');
+      expect(response.invitation_link).toContain('token=');
     });
 
     const request = httpController.expectOne('/api/users/invite');
@@ -164,7 +164,7 @@ describe('AuthService', () => {
       user_id: 'user-id',
       email: requestBody.email,
       role: 'member',
-      dev_invitation_link: 'http://localhost/accept-invite?token=user-token'
+      invitation_link: 'http://localhost/accept-invite?token=user-token',
     });
   });
 
@@ -181,7 +181,10 @@ describe('AuthService', () => {
   });
 
   it('should send the reset password contract without the confirmation field', () => {
-    const requestBody: ResetPasswordRequest = { token: 'temporary-token', new_password: 'NuevaContraseña123!' };
+    const requestBody: ResetPasswordRequest = {
+      token: 'temporary-token',
+      new_password: 'NuevaContraseña123!',
+    };
     service.resetPassword(requestBody).subscribe((response) => {
       expect(response.message).toBeTruthy();
     });

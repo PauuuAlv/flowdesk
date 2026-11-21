@@ -8,8 +8,8 @@
       <p class="eyebrow">CRM SaaS multiempresa</p>
       <h1 id="register-title">Tu acceso a Flowdesk está casi listo.</h1>
       <p class="description">
-        Crea una contraseña segura para aceptar la invitación y activar tu cuenta dentro de
-        la empresa que te invitó.
+        Crea una contraseña segura para aceptar la invitación y activar tu cuenta dentro de la
+        empresa que te invitó.
       </p>
     </div>
 
@@ -25,7 +25,9 @@
       </div>
 
       @if (!token) {
-        <div class="message error" role="alert">El enlace de invitación no contiene un token válido.</div>
+        <div class="message error" role="alert">
+          El enlace de invitación no contiene un token válido.
+        </div>
       }
 
       @if (errorMessage()) {
@@ -37,46 +39,87 @@
       }
 
       <div class="field">
-          <label for="password">Contraseña</label>
-          <div class="password-input">
-            <input id="password" [type]="showPassword() ? 'text' : 'password'" formControlName="password" autocomplete="new-password" />
-            <button class="password-toggle" type="button" (click)="togglePasswordVisibility()" [class.is-visible]="showPassword()" [attr.aria-label]="showPassword() ? 'Ocultar contraseña' : 'Mostrar contraseña'" [attr.aria-pressed]="showPassword()">
-              <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M2.5 12s3.5-6 9.5-6 9.5 6 9.5 6-3.5 6-9.5 6-9.5-6-9.5-6Z"/><circle cx="12" cy="12" r="2.75"/><line class="eye-slash" x1="4" y1="4" x2="20" y2="20"/></svg>
-            </button>
-          </div>
-          @if (registerForm.controls.password.touched && registerForm.controls.password.invalid) {
-            <small>La contraseña todavía no cumple todos los requisitos.</small>
-          }
-          @let checks = passwordChecks();
-          <ul class="password-rules" aria-label="Requisitos de contraseña">
-            <li [class.valid]="checks.minLength">Mínimo 8 caracteres</li>
-            <li [class.valid]="checks.uppercase">Una letra mayúscula</li>
-            <li [class.valid]="checks.lowercase">Una letra minúscula</li>
-            <li [class.valid]="checks.number">Un número</li>
-            <li [class.valid]="checks.special">Un carácter especial</li>
-          </ul>
+        <label for="password">Contraseña</label>
+        <div class="password-input">
+          <input
+            id="password"
+            [type]="showPassword() ? 'text' : 'password'"
+            formControlName="password"
+            autocomplete="new-password"
+          />
+          <button
+            class="password-toggle"
+            type="button"
+            (click)="togglePasswordVisibility()"
+            [class.is-visible]="showPassword()"
+            [attr.aria-label]="showPassword() ? 'Ocultar contraseña' : 'Mostrar contraseña'"
+            [attr.aria-pressed]="showPassword()"
+          >
+            <svg aria-hidden="true" viewBox="0 0 24 24">
+              <path d="M2.5 12s3.5-6 9.5-6 9.5 6 9.5 6-3.5 6-9.5 6-9.5-6-9.5-6Z" />
+              <circle cx="12" cy="12" r="2.75" />
+              <line class="eye-slash" x1="4" y1="4" x2="20" y2="20" />
+            </svg>
+          </button>
+        </div>
+        @if (registerForm.controls.password.touched && registerForm.controls.password.invalid) {
+          <small>La contraseña todavía no cumple todos los requisitos.</small>
+        }
+        @let checks = passwordChecks();
+        <ul class="password-rules" aria-label="Requisitos de contraseña">
+          <li [class.valid]="checks.minLength">Mínimo 8 caracteres</li>
+          <li [class.valid]="checks.uppercase">Una letra mayúscula</li>
+          <li [class.valid]="checks.lowercase">Una letra minúscula</li>
+          <li [class.valid]="checks.number">Un número</li>
+          <li [class.valid]="checks.special">Un carácter especial</li>
+        </ul>
       </div>
 
       <div class="field">
-          <label for="password-confirmation">Confirmar contraseña</label>
-          <div class="password-input">
-            <input id="password-confirmation" [type]="showPasswordConfirmation() ? 'text' : 'password'" formControlName="password_confirmation" autocomplete="new-password" />
-            <button class="password-toggle" type="button" (click)="togglePasswordConfirmationVisibility()" [class.is-visible]="showPasswordConfirmation()" [attr.aria-label]="showPasswordConfirmation() ? 'Ocultar confirmación de contraseña' : 'Mostrar confirmación de contraseña'" [attr.aria-pressed]="showPasswordConfirmation()">
-              <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M2.5 12s3.5-6 9.5-6 9.5 6 9.5 6-3.5 6-9.5 6-9.5-6-9.5-6Z"/><circle cx="12" cy="12" r="2.75"/><line class="eye-slash" x1="4" y1="4" x2="20" y2="20"/></svg>
-            </button>
-          </div>
-          @if (registerForm.controls.password_confirmation.touched && registerForm.controls.password_confirmation.invalid) {
-            <small>Confirma tu contraseña.</small>
-          } @else if (registerForm.controls.password_confirmation.dirty && passwordsDoNotMatch()) {
-            <small>Las contraseñas no coinciden.</small>
-          }
+        <label for="password-confirmation">Confirmar contraseña</label>
+        <div class="password-input">
+          <input
+            id="password-confirmation"
+            [type]="showPasswordConfirmation() ? 'text' : 'password'"
+            formControlName="password_confirmation"
+            autocomplete="new-password"
+          />
+          <button
+            class="password-toggle"
+            type="button"
+            (click)="togglePasswordConfirmationVisibility()"
+            [class.is-visible]="showPasswordConfirmation()"
+            [attr.aria-label]="
+              showPasswordConfirmation()
+                ? 'Ocultar confirmación de contraseña'
+                : 'Mostrar confirmación de contraseña'
+            "
+            [attr.aria-pressed]="showPasswordConfirmation()"
+          >
+            <svg aria-hidden="true" viewBox="0 0 24 24">
+              <path d="M2.5 12s3.5-6 9.5-6 9.5 6 9.5 6-3.5 6-9.5 6-9.5-6-9.5-6Z" />
+              <circle cx="12" cy="12" r="2.75" />
+              <line class="eye-slash" x1="4" y1="4" x2="20" y2="20" />
+            </svg>
+          </button>
+        </div>
+        @if (
+          registerForm.controls.password_confirmation.touched &&
+          registerForm.controls.password_confirmation.invalid
+        ) {
+          <small>Confirma tu contraseña.</small>
+        } @else if (registerForm.controls.password_confirmation.dirty && passwordsDoNotMatch()) {
+          <small>Las contraseñas no coinciden.</small>
+        }
       </div>
 
       <button type="submit" [disabled]="submitting() || !token">
         {{ submitting() ? 'Aceptando invitación…' : 'Aceptar invitación' }}
       </button>
 
-      <p class="auth-link">¿Ya activaste tu cuenta? <a routerLink="/iniciar-sesion">Inicia sesión</a></p>
+      <p class="auth-link">
+        ¿Ya activaste tu cuenta? <a routerLink="/iniciar-sesion">Inicia sesión</a>
+      </p>
     </form>
   </section>
 </main>

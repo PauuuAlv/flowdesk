@@ -136,6 +136,7 @@ def get_me(db: Session = Depends(get_db), current_user: User = Depends(get_curre
         id=str(current_user.id),
         tenant_id=str(current_user.tenant_id),
         tenant_name=tenant.name if tenant else "Empresa",
+        tenant_logo_url=tenant.logo_url if tenant else None,
         email=current_user.email,
         full_name=current_user.full_name,
         role=current_user.role_key,
