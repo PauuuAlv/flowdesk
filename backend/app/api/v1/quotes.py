@@ -1,6 +1,7 @@
 import io
 import uuid
 from datetime import date
+from decimal import Decimal, ROUND_HALF_UP
 from pathlib import Path
 from fastapi import APIRouter,Depends,HTTPException,status
 from fastapi.responses import StreamingResponse
@@ -26,6 +27,13 @@ from app.schemas.quote import QuoteItemResponse,QuoteResponse,SaveQuoteRequest,U
 from app.security.permissions import require_permission
 
 router=APIRouter()
+
+
+def _included_tax(amount:Decimal,tax_rate:Decimal)->Decimal:
+    """Obtiene la parte de IVA cuando el importe ya incluye el impuesto."""
+    money=Decimal("0.01")
+    if amount<=0 or tax_rate<=0:return Decimal("0.00")
+    return (amount*tax_rate/(Decimal("100")+tax_rate)).quantize(money,ROUND_HALF_UP)
 
 
 def _get(quote_id:uuid.UUID,tenant_id,db:Session):
@@ -115,8 +123,9 @@ def quote_pdf(quote_id:uuid.UUID,db:Session=Depends(get_db),user:User=Depends(re
         if logo_path and logo_path.exists():
             logo=ImageReader(str(logo_path));source_width,source_height=logo.getSize();max_width,max_height=3.8*cm,1.35*cm
             scale=min(max_width/source_width,max_height/source_height);logo_width,logo_height=source_width*scale,source_height*scale
-            canvas.setFillColor(white);canvas.roundRect(1.5*cm,height-1.75*cm,max_width,1.35*cm,.12*cm,fill=1,stroke=0)
-            canvas.drawImage(logo,1.5*cm+(max_width-logo_width)/2,height-1.75*cm+(1.35*cm-logo_height)/2,width=logo_width,height=logo_height,mask="auto")
+            logo_x=1.5*cm;logo_y=height-1.75*cm+(max_height-logo_height)/2
+            canvas.setFillColor(white);canvas.roundRect(logo_x,logo_y,logo_width,logo_height,.12*cm,fill=1,stroke=0)
+            canvas.drawImage(logo,logo_x,logo_y,width=logo_width,height=logo_height,mask="auto")
         else:
             canvas.setFillColor(white);canvas.setFont("Helvetica-Bold",17);canvas.drawString(1.5*cm,height-1.25*cm,"FLOWDESK")
         canvas.setFillColor(colors.HexColor("#a9c9d8"))
@@ -153,8 +162,13 @@ def quote_pdf(quote_id:uuid.UUID,db:Session=Depends(get_db),user:User=Depends(re
         [Paragraph("Subtotal",body),Paragraph(f"${data.subtotal:,.2f} {data.currency}",right)],
         [Paragraph("Descuento",body),Paragraph(f"-${data.discount:,.2f} {data.currency}",right)],
     ]
-    if data.tax: total_rows.append([Paragraph(f"IVA histórico ({data.tax_rate:,.2f}%)",body),Paragraph(f"${data.tax:,.2f}",right)])
-    total_rows.append([Paragraph("TOTAL",total_style),Paragraph(f"${data.total:,.2f} {data.currency}",total_style)])
+    # Las cotizaciones actuales capturan precios con IVA incluido. Para registros
+    # históricos no volvemos a sumar el impuesto: solo mostramos cuánto IVA ya
+    # está contenido en el importe final.
+    display_total=(data.subtotal-data.discount).quantize(Decimal("0.01"),ROUND_HALF_UP)
+    historical_tax=_included_tax(display_total,data.tax_rate) if data.tax else Decimal("0.00")
+    if historical_tax: total_rows.append([Paragraph(f"IVA incluido ({data.tax_rate:,.2f}%)",body),Paragraph(f"${historical_tax:,.2f} {data.currency}",right)])
+    total_rows.append([Paragraph("TOTAL",total_style),Paragraph(f"${display_total:,.2f} {data.currency}",total_style)])
     totals=Table(total_rows,colWidths=[3.8*cm,4.7*cm])
     total_index=len(total_rows)-1
     totals.setStyle(TableStyle([("BACKGROUND",(0,0),(-1,total_index-1),soft),("BACKGROUND",(0,total_index),(-1,total_index),blue),("BOX",(0,0),(-1,-1),.6,line),("LINEABOVE",(0,total_index),(-1,total_index),1,gold),("LEFTPADDING",(0,0),(-1,-1),11),("RIGHTPADDING",(0,0),(-1,-1),11),("TOPPADDING",(0,0),(-1,-1),7),("BOTTOMPADDING",(0,0),(-1,-1),7)]))
