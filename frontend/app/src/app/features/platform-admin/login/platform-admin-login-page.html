@@ -56,6 +56,9 @@
           <small>Ingresa tu contraseña.</small>
         }
       </div>
+      <div class="form-options">
+        <a routerLink="/administracion-flowdesk/olvide-mi-contrasena">¿Olvidaste tu contraseña?</a>
+      </div>
       <button type="submit" [disabled]="submitting()">
         {{ submitting() ? 'Verificando…' : 'Ingresar' }}
       </button>

@@ -22,17 +22,21 @@
         placeholder="Nombre, código, categoría o marca"
         (input)="setSearch($event)" /></label
     ><label
-      >Tipo<select (change)="setType($event)">
-        <option value="all">Todos</option>
-        <option value="product">Productos</option>
-        <option value="service">Servicios</option>
-      </select></label
+      >Tipo<app-combobox
+        [options]="[{ value: 'all', label: 'Todos' }, { value: 'product', label: 'Productos' }, { value: 'service', label: 'Servicios' }]"
+        [selectedValue]="type()"
+        ariaLabel="Tipo"
+        placeholder="Tipo"
+        (selected)="setType($event)"
+      /></label
     ><label
-      >Estado<select (change)="setStatus($event)">
-        <option value="all">Todos</option>
-        <option value="active">Activos</option>
-        <option value="inactive">Inactivos</option>
-      </select></label
+      >Estado<app-combobox
+        [options]="[{ value: 'all', label: 'Todos' }, { value: 'active', label: 'Activos' }, { value: 'inactive', label: 'Inactivos' }]"
+        [selectedValue]="status()"
+        ariaLabel="Estado"
+        placeholder="Estado"
+        (selected)="setStatus($event)"
+      /></label
     >
   </div>
   @if (loading()) {
@@ -77,7 +81,7 @@
               <td>{{ item.brand_name || 'Sin marca' }}</td>
               <td>{{ item.unit_name }}</td>
               <td>
-                <strong>{{ money(item.base_price) }}</strong>
+                <strong>{{ money(item.base_price, item.currency) }}</strong>
               </td>
               <td>{{ item.tax_rate }}%</td>
               <td>

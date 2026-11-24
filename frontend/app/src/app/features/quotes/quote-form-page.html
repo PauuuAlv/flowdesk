@@ -16,25 +16,23 @@
     <form [formGroup]="form" (ngSubmit)="submit()">
       <div class="card grid">
         <label
-          >Cliente *<select formControlName="client_id">
-            <option value="">Selecciona</option>
-            @for (c of clients(); track c.id) {
-              <option [value]="c.id">{{ c.company_name }}</option>
-            }
-          </select></label
+          >Cliente *<app-combobox
+            formControlName="client_id"
+            [options]="clientOptions()"
+            placeholder="Escribe para buscar un cliente"
+        /></label
         ><label
-          >Oportunidad<select formControlName="opportunity_id">
-            <option value="">Sin oportunidad</option>
-            @for (o of available(); track o.id) {
-              <option [value]="o.id">{{ o.name }}</option>
-            }
-          </select></label
+          >Oportunidad<app-combobox
+            formControlName="opportunity_id"
+            [options]="opportunityOptions()"
+            placeholder="Sin oportunidad"
+        /></label
         ><label
-          >Responsable *<select formControlName="owner_user_id">
-            @for (u of users(); track u.id) {
-              <option [value]="u.id">{{ u.name }}</option>
-            }
-          </select></label
+          >Responsable *<app-combobox
+            formControlName="owner_user_id"
+            [options]="userOptions()"
+            placeholder="Escribe para buscar un responsable"
+        /></label
         ><label>Emisión *<input type="date" formControlName="issue_date" /></label
         ><label>Válida hasta *<input type="date" formControlName="valid_until" /></label
         >
@@ -42,8 +40,21 @@
       <section class="card concepts">
         <div class="title">
           <h2>Conceptos</h2>
-          <button type="button" (click)="add()">Agregar concepto</button>
+          <div class="title-actions">
+            <label class="currency-field"
+              ><span>Moneda</span
+              ><app-combobox
+                formControlName="currency"
+                [options]="currencyOptions"
+                ariaLabel="Moneda de la cotización"
+                placeholder="Moneda"
+            /></label>
+            <button type="button" (click)="add()">Agregar concepto</button>
+          </div>
         </div>
+        @if (currencyNotice()) {
+          <p class="currency-notice" role="status">{{ currencyNotice() }}</p>
+        }
         <div formArrayName="items">
           <div class="row row-head" aria-hidden="true">
             <span>Producto</span><span>Descripción</span><span>Cantidad</span
@@ -51,16 +62,13 @@
           </div>
           @for (row of items.controls; track $index; let i = $index) {
             <div class="row" [formGroupName]="i">
-              <select
+              <app-combobox
                 formControlName="product_id"
-                aria-label="Producto o servicio del catálogo"
-                (change)="selectProduct(i, $event)"
-              >
-                <option value="">Concepto manual</option>
-                @for (product of products(); track product.id) {
-                  <option [value]="product.id">{{ product.sku }} · {{ product.name }}</option>
-                }</select
-              ><input formControlName="description" placeholder="Descripción" /><input
+                ariaLabel="Producto o servicio del catálogo"
+                [options]="productOptions()"
+                placeholder="Concepto manual"
+                (selected)="selectProduct(i, $event)"
+              /><input formControlName="description" placeholder="Descripción" /><input
                 type="number"
                 min=".01"
                 step=".01"

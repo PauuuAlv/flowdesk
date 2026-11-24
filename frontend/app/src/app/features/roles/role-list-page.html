@@ -44,7 +44,9 @@
               }}</span>
               <h2>{{ role.name }}</h2>
             </div>
-            @if (role.is_protected) {
+            @if (isOwnRole(role)) {
+              <span class="protected own-role">Tu rol</span>
+            } @else if (role.is_protected) {
               <span class="protected">Protegido</span>
             }
           </div>
@@ -60,11 +62,13 @@
             </div>
           </dl>
           <div class="card-actions">
-            <a [routerLink]="['/panel/roles', role.id, 'editar']">Ver y editar</a>
+            <a [routerLink]="['/panel/roles', role.id, 'editar']">{{
+              isOwnRole(role) ? 'Ver permisos' : 'Ver y editar'
+            }}</a>
             <button
               type="button"
               (click)="requestDelete(role)"
-              [disabled]="role.is_protected || role.user_count > 0"
+              [disabled]="role.origin === 'template' || role.user_count > 0"
             >
               Eliminar
             </button>

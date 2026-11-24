@@ -22,8 +22,6 @@ import {
   SaaSPlan,
   PlatformAudit,
   PlatformAdminMe,
-  PlatformMember,
-  InvitePlatformMemberRequest,
   UpdateTenantSubscriptionRequest,
 } from '../models/auth.models';
 import { PlanChangeRequest } from '../models/tenant-plan.models';
@@ -49,6 +47,17 @@ export class AuthService {
     return this.http.get<UserMeResponse>(`${this.baseUrl}/me`);
   }
 
+  updateProfile(fullName: string): Observable<UserMeResponse> {
+    return this.http.patch<UserMeResponse>(`${this.baseUrl}/me`, { full_name: fullName });
+  }
+
+  changePassword(currentPassword: string, newPassword: string): Observable<void> {
+    return this.http.post<void>(`${this.baseUrl}/change-password`, {
+      current_password: currentPassword,
+      new_password: newPassword,
+    });
+  }
+
   platformAdminLogin(request: PlatformAdminLoginRequest): Observable<PlatformAdminTokenResponse> {
     return this.http.post<PlatformAdminTokenResponse>('/api/platform-admin/auth/login', request);
   }
@@ -57,12 +66,15 @@ export class AuthService {
     return this.http.get<PlatformAdminMe>('/api/platform-admin/auth/me');
   }
 
-  listPlatformTeam(): Observable<PlatformMember[]> {
-    return this.http.get<PlatformMember[]>('/api/platform-admin/team');
+  updatePlatformProfile(fullName: string): Observable<PlatformAdminMe> {
+    return this.http.patch<PlatformAdminMe>('/api/platform-admin/auth/me', { full_name: fullName });
   }
 
-  invitePlatformMember(request: InvitePlatformMemberRequest): Observable<PlatformMember> {
-    return this.http.post<PlatformMember>('/api/platform-admin/team/invite', request);
+  changePlatformPassword(currentPassword: string, newPassword: string): Observable<void> {
+    return this.http.post<void>('/api/platform-admin/auth/change-password', {
+      current_password: currentPassword,
+      new_password: newPassword,
+    });
   }
 
   acceptPlatformInvitation(token: string, password: string): Observable<PlatformAdminTokenResponse> {
@@ -119,5 +131,13 @@ export class AuthService {
 
   resetPassword(request: ResetPasswordRequest): Observable<ResetPasswordResponse> {
     return this.http.post<ResetPasswordResponse>(`${this.baseUrl}/reset-password`, request);
+  }
+
+  platformForgotPassword(request: ForgotPasswordRequest): Observable<ForgotPasswordResponse> {
+    return this.http.post<ForgotPasswordResponse>('/api/platform-admin/auth/forgot-password', request);
+  }
+
+  platformResetPassword(request: ResetPasswordRequest): Observable<ResetPasswordResponse> {
+    return this.http.post<ResetPasswordResponse>('/api/platform-admin/auth/reset-password', request);
   }
 }

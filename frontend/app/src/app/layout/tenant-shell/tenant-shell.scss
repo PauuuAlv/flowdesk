@@ -12,11 +12,15 @@
   z-index: 30;
   display: flex;
   width: 16.5rem;
+  height: 100vh;
+  height: 100dvh;
   flex-direction: column;
+  overflow: hidden;
   color: #fff;
   background: var(--flowdesk-navy);
 }
 .sidebar-heading {
+  flex-shrink: 0;
   display: flex;
   min-height: 4.75rem;
   align-items: center;
@@ -38,8 +42,24 @@
   font-size: 1.8rem;
   cursor: pointer;
 }
+// El menú ocupa el espacio entre el encabezado y el pie; si no caben todas las
+// opciones, se desplaza verticalmente y el pie queda fijo abajo.
 nav {
+  flex: 1 1 auto;
+  min-height: 0;
   padding: 1.4rem 0.9rem;
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-width: thin;
+  scrollbar-color: rgb(255 255 255 / 25%) transparent;
+}
+nav::-webkit-scrollbar {
+  width: 6px;
+}
+nav::-webkit-scrollbar-thumb {
+  background: rgb(255 255 255 / 25%);
+  border-radius: 3px;
 }
 .nav-label {
   padding: 0 0.7rem;
@@ -71,6 +91,58 @@ nav a.active {
   color: #fff;
   background: rgb(255 255 255 / 11%);
 }
+// Grupo con submenú ("Productos y servicios"): el botón se ve igual que un enlace
+// y sus opciones aparecen debajo, con sangría y una guía vertical.
+.nav-group-toggle {
+  display: flex;
+  width: 100%;
+  min-height: 2.9rem;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.7rem;
+  color: #dce5ea;
+  background: transparent;
+  border: 0;
+  border-radius: 0.55rem;
+  font: inherit;
+  font-size: 0.9rem;
+  font-weight: 650;
+  text-align: left;
+  cursor: pointer;
+}
+.nav-group-toggle:hover,
+.nav-group-toggle.active {
+  color: #fff;
+  background: rgb(255 255 255 / 11%);
+}
+.nav-chevron {
+  margin-left: auto;
+  color: #91a8b6;
+  transition: transform 0.15s ease;
+}
+.nav-group.open .nav-chevron {
+  transform: rotate(180deg);
+}
+.nav-submenu {
+  display: grid;
+  grid-template-rows: 0fr;
+  transition: grid-template-rows 0.2s ease;
+}
+.nav-group.open .nav-submenu {
+  grid-template-rows: 1fr;
+}
+.nav-submenu-inner {
+  min-height: 0;
+  overflow: hidden;
+  margin-left: 1.4rem;
+  padding-left: 0.6rem;
+  border-left: 1px solid rgb(255 255 255 / 14%);
+}
+nav .nav-submenu a {
+  min-height: 2.35rem;
+  padding: 0.5rem 0.7rem;
+  font-size: 0.84rem;
+}
 .nav-icon {
   display: grid;
   width: 1.45rem;
@@ -89,6 +161,7 @@ nav a.active {
   text-transform: uppercase;
 }
 .sidebar-footer {
+  flex-shrink: 0;
   display: grid;
   gap: 0.25rem;
   padding: 1.2rem 1.5rem;

@@ -65,7 +65,7 @@ header a {
   font-weight: 750;
 }
 .filters input,
-.filters select {
+.filters select, .filters app-combobox {
   padding: 0.7rem;
   border: 1px solid var(--flowdesk-border);
   border-radius: 0.4rem;

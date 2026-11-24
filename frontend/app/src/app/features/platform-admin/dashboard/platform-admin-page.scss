@@ -97,8 +97,7 @@ button {
   margin-top: 0.35rem;
   font-size: 1.9rem;
 }
-.tenant-section,
-.create-section {
+.tenant-section {
   margin-top: 2rem;
 }
 .section-heading {
@@ -115,15 +114,12 @@ button {
 .section-heading p {
   margin: 0.35rem 0 0;
 }
-.section-heading a,
-.section-heading .create-company-link {
+.section-heading .new-tenant-button {
   padding: 0.7rem 1rem;
+  font: inherit;
   color: #fff;
   background: var(--flowdesk-navy);
-  border: 0;
   border-radius: 0.45rem;
-  cursor: pointer;
-  font: inherit;
   text-decoration: none;
   font-weight: 750;
 }
@@ -147,7 +143,8 @@ label {
   font-weight: 750;
 }
 input,
-select {
+select,
+app-combobox {
   width: 100%;
   box-sizing: border-box;
   padding: 0.72rem 0.8rem;
@@ -276,29 +273,63 @@ select {
   border: 1px solid var(--flowdesk-border);
   border-radius: 0.75rem;
 }
-.create-section {
-  padding-top: 2rem;
-  border-top: 1px solid var(--flowdesk-border);
-}
-.form-card {
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
   display: grid;
-  grid-template-columns: minmax(0, 1.2fr) minmax(18rem, 0.8fr);
-  gap: 2rem;
-  padding: clamp(1.5rem, 4vw, 2.5rem);
-  background: #fff;
-  border: 1px solid var(--flowdesk-border);
-  border-radius: 1rem;
-  box-shadow: 0 1.5rem 4rem rgb(20 42 56 / 9%);
+  place-items: center;
+  padding: 1rem;
+  background: rgb(15 30 40 / 45%);
 }
-.form-heading {
+.modal {
+  width: min(44rem, 100%);
+  max-height: calc(100vh - 2rem);
+  overflow-y: auto;
+  padding: clamp(1.25rem, 4vw, 2rem);
+  background: #fff;
+  border-radius: 1rem;
+  box-shadow: 0 1.5rem 4rem rgb(15 30 40 / 25%);
+}
+.modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 1rem;
   margin-bottom: 1.5rem;
 }
-.form-heading h2,
+.modal-header h2 {
+  margin: 0;
+  font-size: 1.4rem;
+}
+.modal-header p:last-child {
+  margin: 0.35rem 0 0;
+  color: var(--flowdesk-muted);
+}
+.modal-close {
+  flex: none;
+  width: 2.25rem;
+  height: 2.25rem;
+  color: var(--flowdesk-muted);
+  background: transparent;
+  font-size: 1.5rem;
+  line-height: 1;
+}
+.modal-close:hover:not(:disabled) {
+  color: var(--flowdesk-navy);
+  background: #f1f3f5;
+}
+.modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.75rem;
+  margin-top: 1.5rem;
+}
+.modal-actions .secondary-button {
+  border: 1px solid var(--flowdesk-border);
+}
 .result h3 {
   margin: 0;
-}
-.form-heading p {
-  margin: 0.4rem 0 0;
 }
 .field-grid {
   display: grid;
@@ -313,14 +344,12 @@ select {
   font-size: 0.75rem;
 }
 .primary-button {
-  width: 100%;
   padding: 0.8rem 1rem;
-  margin-top: 1.25rem;
   color: #fff;
   background: var(--flowdesk-navy);
 }
 button:disabled,
-select:disabled {
+select:disabled, app-combobox.is-disabled {
   cursor: wait;
   opacity: 0.65;
 }
@@ -364,8 +393,7 @@ select:disabled {
   .metrics {
     grid-template-columns: 1fr 1fr;
   }
-  .tenant-grid,
-  .form-card {
+  .tenant-grid {
     grid-template-columns: 1fr;
   }
 }
@@ -392,5 +420,8 @@ select:disabled {
   }
   .invitation-row {
     grid-template-columns: 1fr;
+  }
+  .modal-actions {
+    flex-direction: column-reverse;
   }
 }

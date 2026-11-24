@@ -12,6 +12,7 @@ from app.models.user import User
 from app.models.tenant import Tenant
 from app.repositories.user_repository import UserRepository
 from app.repositories.password_reset_repository import PasswordResetRepository
+from app.repositories.tenant_repository import TenantRepository
 from app.schemas.auth import (
     LoginRequest,
     TokenResponse,
@@ -20,6 +21,8 @@ from app.schemas.auth import (
     ForgotPasswordRequest,
     ResetPasswordRequest,
     MessageResponse,
+    UpdateProfileRequest,
+    ChangePasswordRequest,
 )
 from app.schemas.user import UserMeResponse
 from app.security.password import verify_password, hash_password
@@ -45,15 +48,19 @@ def login(payload: LoginRequest, db: Session = Depends(get_db)):
         detail="Invalid email or password",
     )
 
-    tenant = db.query(Tenant).filter(Tenant.id == user.tenant_id).first() if user else None
-    if not user or user.status != "active" or not user.hashed_password or not tenant or not tenant.is_active:
+    if not user or user.status != "active" or not user.hashed_password:
             # Cubre: usuario no existe, todavía está 'invited' (sin password), o 'disabled'.
             raise invalid_credentials
     
     if not user or not verify_password(payload.password, user.hashed_password):
         raise invalid_credentials
 
-    access_token = create_access_token(user_id=user.id, tenant_id=user.tenant_id, role=user.role)
+    # Solo se revela que la empresa está inhabilitada (suscripción suspendida o
+    # cancelada) después de validar la contraseña.
+    if not TenantRepository().is_active(db, user.tenant_id):
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Company disabled")
+
+    access_token = create_access_token(user_id=user.id, tenant_id=user.tenant_id, role=user.role_key)
     refresh_token = create_refresh_token(user_id=user.id, tenant_id=user.tenant_id)
 
     return TokenResponse(access_token=access_token, refresh_token=refresh_token)
@@ -71,12 +78,16 @@ def refresh(payload: RefreshRequest, db: Session = Depends(get_db)):
 
     user_repo = UserRepository(db)
     user = user_repo.get(tenant_id=uuid.UUID(data["tenant_id"]), id=uuid.UUID(data["sub"]))
-    tenant = db.query(Tenant).filter(Tenant.id == user.tenant_id).first() if user else None
-    if not user or not user.is_active or not tenant or not tenant.is_active:
+    if not user or not user.is_active:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="User not found or inactive")
+    if not TenantRepository().is_active(db, user.tenant_id):
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Company disabled")
 
-    # La versión actual reutiliza el refresh token hasta que expire.
-    access_token = create_access_token(user_id=user.id, tenant_id=user.tenant_id, role=user.role)
+    # NOTA: como el refresh token no rota (ver security/jwt.py), aquí solo
+    # emitimos un access_token nuevo y reusamos el mismo refresh_token.
+    # Si más adelante implementan rotación, aquí es donde se generaría
+    # un refresh_token nuevo y se invalidaría el anterior.
+    access_token = create_access_token(user_id=user.id, tenant_id=user.tenant_id, role=user.role_key)
 
     return TokenResponse(access_token=access_token, refresh_token=payload.refresh_token)
 
@@ -94,8 +105,10 @@ def register(payload: RegisterRequest, db: Session = Depends(get_db)):
         detail="Invalid or expired invitation token",
     )
 
-    tenant = db.query(Tenant).filter(Tenant.id == user.tenant_id).first() if user else None
-    if not user or user.status != "invited" or not tenant or not tenant.is_active:
+    if not user or user.status != "invited":
+        raise invalid_token
+
+    if not TenantRepository().is_active(db, user.tenant_id):
         raise invalid_token
 
     if user.invitation_expires_at is None or user.invitation_expires_at < datetime.now(timezone.utc):
@@ -111,7 +124,7 @@ def register(payload: RegisterRequest, db: Session = Depends(get_db)):
     db.commit()
     db.refresh(user)
 
-    access_token = create_access_token(user_id=user.id, tenant_id=user.tenant_id, role=user.role)
+    access_token = create_access_token(user_id=user.id, tenant_id=user.tenant_id, role=user.role_key)
     refresh_token = create_refresh_token(user_id=user.id, tenant_id=user.tenant_id)
 
     return TokenResponse(access_token=access_token, refresh_token=refresh_token)
@@ -120,17 +133,50 @@ def register(payload: RegisterRequest, db: Session = Depends(get_db)):
 def get_me(db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
     """Devuelve la identidad de quien está haciendo la request, a partir
     únicamente del token — nunca de un parámetro que mande el cliente."""
+    return _me_response(db, current_user)
+
+
+@router.patch("/me", response_model=UserMeResponse)
+def update_me(
+    payload: UpdateProfileRequest,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """Cada usuario puede cambiar su propio nombre (no su correo, rol ni estado)."""
+    current_user.full_name = payload.full_name
+    db.commit(); db.refresh(current_user)
+    return _me_response(db, current_user)
+
+
+@router.post("/change-password", status_code=status.HTTP_204_NO_CONTENT)
+def change_password(
+    payload: ChangePasswordRequest,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """Cambio de contraseña con la sesión iniciada: exige la contraseña actual."""
+    if not current_user.hashed_password or not verify_password(payload.current_password, current_user.hashed_password):
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Current password is incorrect")
+    if verify_password(payload.new_password, current_user.hashed_password):
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="New password must be different")
+    current_user.hashed_password = hash_password(payload.new_password)
+    db.commit()
+    logger.info("User %s changed their password", current_user.id)
+
+
+def _me_response(db: Session, current_user: User) -> UserMeResponse:
     tenant = db.query(Tenant).filter(Tenant.id == current_user.tenant_id).first()
     return UserMeResponse(
         id=str(current_user.id),
         tenant_id=str(current_user.tenant_id),
         tenant_name=tenant.name if tenant else "Empresa",
         tenant_logo_url=tenant.logo_url if tenant else None,
+        tenant_currency=(tenant.currency if tenant else None) or "MXN",
         email=current_user.email,
         full_name=current_user.full_name,
-        role=current_user.role,
-        role_id=str(current_user.role_id) if current_user.role_id else None,
-        role_name=current_user.assigned_role.name if current_user.assigned_role else current_user.role.capitalize(),
+        role=current_user.role_key,
+        role_id=str(current_user.role_id),
+        role_name=current_user.assigned_role.name if current_user.assigned_role else None,
         permissions=get_user_permission_codes(current_user),
         status=current_user.status,
     )
@@ -151,7 +197,7 @@ def forgot_password(
     user_repo = UserRepository(db)
     user = user_repo.find_by_email_any_tenant(db, payload.email)
 
-    if not user or user.status != "active":
+    if not user or user.status != "active" or not TenantRepository().is_active(db, user.tenant_id):
         return generic_response  # no seguimos, pero tampoco lo decimos
 
     raw_token = generate_raw_token()
@@ -193,7 +239,7 @@ def reset_password(payload: ResetPasswordRequest, db: Session = Depends(get_db))
 
     user_repo = UserRepository(db)
     user = user_repo.get(tenant_id=reset_row.tenant_id, id=reset_row.user_id)
-    if not user or user.status != "active":
+    if not user or user.status != "active" or not TenantRepository().is_active(db, user.tenant_id):
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Invalid or expired reset token",

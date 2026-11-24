@@ -47,7 +47,7 @@
           <p>Oportunidades abiertas</p>
           <strong>{{ data.metrics.open_opportunities }}</strong>
         </div>
-        <small>{{ money(data.metrics.pipeline_value) }} en proceso</small>
+        <small>{{ totals(data.metrics.pipeline_value) }} en proceso</small>
       </article>
       <article
         class="metric-card activities"
@@ -64,7 +64,7 @@
         <span class="metric-icon" aria-hidden="true">$</span>
         <div>
           <p>Cotizaciones aceptadas</p>
-          <strong>{{ money(data.metrics.accepted_quotes_value) }}</strong>
+          <strong>{{ totals(data.metrics.accepted_quotes_value) }}</strong>
         </div>
         <small>{{ data.metrics.pending_quotes }} pendientes</small>
       </article>
@@ -80,24 +80,28 @@
         </div>
         <div class="pipeline-summary">
           <div>
-            <span>Valor total</span><strong>{{ money(data.metrics.pipeline_value) }}</strong>
+            <span>Valor total</span><strong>{{ totals(data.metrics.pipeline_value) }}</strong>
           </div>
           <div>
             <span>Valor ponderado</span
-            ><strong>{{ money(data.metrics.weighted_pipeline_value) }}</strong>
+            ><strong>{{ totals(data.metrics.weighted_pipeline_value) }}</strong>
           </div>
         </div>
         <div class="pipeline-list">
-          @for (item of data.pipeline; track item.stage) {
+          @for (item of data.pipeline; track item.stage; let i = $index) {
+            <!-- Con varios pipelines, sus etapas se agrupan bajo su nombre. -->
+            @if (hasSeveralPipelines() && (i === 0 || data.pipeline[i - 1].pipeline_id !== item.pipeline_id)) {
+              <p class="pipeline-group">{{ item.pipeline_name }}</p>
+            }
             <div class="pipeline-row">
               <div class="pipeline-meta">
                 <strong>{{ item.stage_name }}</strong
                 ><span>{{ item.count }} oportunidades</span>
               </div>
               <div class="pipeline-bar" aria-hidden="true">
-                <span [style.width.%]="pipelineWidth(item)"></span>
+                <span [style.width.%]="pipelineWidth(item)" [style.background]="item.color"></span>
               </div>
-              <span class="pipeline-value">{{ money(item.value) }}</span>
+              <span class="pipeline-value">{{ totals(item.value) }}</span>
             </div>
           }
         </div>
@@ -165,7 +169,7 @@
                   <td>
                     <span [class]="'status ' + quote.status">{{ quoteStatus(quote.status) }}</span>
                   </td>
-                  <td class="amount">{{ money(quote.total) }}</td>
+                  <td class="amount">{{ money(quote.total, quote.currency) }}</td>
                   <td><a [routerLink]="['/panel/cotizaciones', quote.id]">Ver</a></td>
                 </tr>
               }

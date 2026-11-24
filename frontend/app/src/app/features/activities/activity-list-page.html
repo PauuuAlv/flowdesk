@@ -19,20 +19,21 @@
         placeholder="Actividad, cliente o responsable"
         (input)="setSearch($event)" /></label
     ><label
-      >Tipo<select (change)="setType($event)">
-        <option value="all">Todos</option>
-        <option value="call">Llamadas</option>
-        <option value="email">Correos</option>
-        <option value="meeting">Reuniones</option>
-        <option value="task">Tareas</option>
-      </select></label
+      >Tipo<app-combobox
+        [options]="[{ value: 'all', label: 'Todos' }, { value: 'call', label: 'Llamadas' }, { value: 'email', label: 'Correos' }, { value: 'meeting', label: 'Reuniones' }, { value: 'task', label: 'Tareas' }]"
+        [selectedValue]="type()"
+        ariaLabel="Tipo"
+        placeholder="Tipo"
+        (selected)="setType($event)"
+      /></label
     ><label
-      >Estado<select (change)="setStatus($event)">
-        <option value="all">Todos</option>
-        <option value="pending">Pendientes</option>
-        <option value="completed">Completadas</option>
-        <option value="cancelled">Canceladas</option>
-      </select></label
+      >Estado<app-combobox
+        [options]="[{ value: 'all', label: 'Todos' }, { value: 'pending', label: 'Pendientes' }, { value: 'completed', label: 'Completadas' }, { value: 'cancelled', label: 'Canceladas' }]"
+        [selectedValue]="status()"
+        ariaLabel="Estado"
+        placeholder="Estado"
+        (selected)="setStatus($event)"
+      /></label
     >
   </div>
   @if (loading()) {

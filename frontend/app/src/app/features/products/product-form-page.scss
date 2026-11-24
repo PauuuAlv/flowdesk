@@ -69,6 +69,7 @@ label > span {
 }
 input,
 select,
+app-combobox,
 textarea {
   width: 100%;
   padding: 0.78rem;
@@ -112,6 +113,17 @@ label small {
 .suffix input {
   border: 0;
   border-radius: 0;
+}
+// Moneda del precio: discreta, al final del campo (por defecto la de la empresa).
+.prefix > app-combobox {
+  flex: 0 0 6.25rem;
+  width: 6.25rem;
+  color: var(--flowdesk-navy-light);
+  background: #f4f7f8;
+  border: 0;
+  border-left: 1px solid var(--flowdesk-border);
+  border-radius: 0;
+  font-weight: 700;
 }
 .form-actions {
   display: flex;

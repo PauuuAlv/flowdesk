@@ -40,6 +40,7 @@ describe('OpportunityService', () => {
   it('creates a tenant stage', () => {
     service
       .createStage({
+        pipeline_id: 'pipeline-1',
         name: 'Demostración',
         stage_type: 'normal',
         default_probability: 50,

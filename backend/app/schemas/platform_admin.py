@@ -1,11 +1,16 @@
+import re
+import uuid
 from datetime import datetime
 from typing import Literal
 
-from pydantic import BaseModel, EmailStr, Field
+from pydantic import BaseModel, EmailStr, Field, field_validator
+
+from app.schemas.validators import validate_password_strength
 
 PlanKey = Literal["basic", "professional", "enterprise"]
 SubscriptionStatus = Literal["trial", "active", "suspended", "cancelled"]
-PlatformRole = Literal["superadmin", "viewer"]
+# 'superadmin' | 'operator' | 'viewer' para roles por defecto, 'custom' si no.
+PlatformRoleKey = Literal["superadmin", "operator", "viewer", "custom"]
 
 
 class PlatformAdminLoginRequest(BaseModel):
@@ -22,29 +27,87 @@ class PlatformAdminMeResponse(BaseModel):
     id: str
     email: str
     full_name: str | None
-    role: PlatformRole
+    role: PlatformRoleKey
+    role_id: str
+    role_name: str
+    permissions: list[str]
+    is_owner: bool
 
 
 class InvitePlatformMemberRequest(BaseModel):
     email: EmailStr
     full_name: str = Field(min_length=3, max_length=255)
-    role: Literal["viewer"] = "viewer"
+    role_id: uuid.UUID
+
+
+class UpdatePlatformMemberRoleRequest(BaseModel):
+    role_id: uuid.UUID
+
+
+class UpdatePlatformMemberStatusRequest(BaseModel):
+    is_active: bool
 
 
 class PlatformMemberResponse(BaseModel):
     id: str
     email: str
     full_name: str | None
-    role: PlatformRole
+    role: PlatformRoleKey
+    role_id: str
+    role_name: str
     is_active: bool
+    # Cuenta principal (SUPERADMIN_EMAIL del .env): no se le cambia el rol ni se desactiva.
+    is_owner: bool
     invitation_pending: bool
     created_at: datetime
     invitation_link: str | None = None
 
 
+class UpdatePlatformProfileRequest(BaseModel):
+    """Datos que cada integrante puede cambiar de su propia cuenta."""
+    full_name: str = Field(min_length=2, max_length=120)
+
+    @field_validator("full_name")
+    @classmethod
+    def normalize_full_name(cls, value: str) -> str:
+        value = " ".join(value.split())
+        if len(value) < 2:
+            raise ValueError("Full name must be at least 2 characters long")
+        return value
+
+
+class ChangePlatformPasswordRequest(BaseModel):
+    current_password: str = Field(min_length=1)
+    new_password: str
+
+    @field_validator("new_password")
+    @classmethod
+    def strong_password(cls, value: str) -> str:
+        return validate_password_strength(value)
+
+
+class PlatformForgotPasswordRequest(BaseModel):
+    email: EmailStr
+
+
+class PlatformResetPasswordRequest(BaseModel):
+    token: str = Field(min_length=1)
+    new_password: str
+
+    @field_validator("new_password")
+    @classmethod
+    def strong_password(cls, value: str) -> str:
+        return validate_password_strength(value)
+
+
 class AcceptPlatformInvitationRequest(BaseModel):
     token: str
-    password: str = Field(min_length=8)
+    password: str
+
+    @field_validator("password")
+    @classmethod
+    def strong_password(cls, value: str) -> str:
+        return validate_password_strength(value)
 
 
 class CreateTenantRequest(BaseModel):
@@ -75,7 +138,15 @@ class TenantUsageResponse(BaseModel):
     products: int
 
 
+# --- Gestión de empresas (tenants) desde la administración de plataforma ---
+
+SLUG_PATTERN = re.compile(r"^[a-z0-9]+(?:-[a-z0-9]+)*$")
+
+
 class TenantSaaSResponse(BaseModel):
+    """Respuesta única de empresa para la administración de plataforma:
+    datos generales, administrador principal, plan, suscripción y consumo."""
+
     id: str
     name: str
     slug: str
@@ -93,6 +164,31 @@ class TenantSaaSResponse(BaseModel):
     subscription_started_at: datetime
     subscription_renews_at: datetime | None
     created_at: datetime
+
+
+class UpdateTenantRequest(BaseModel):
+    name: str = Field(min_length=2, max_length=255)
+    slug: str = Field(min_length=2, max_length=100)
+
+    @field_validator("name")
+    @classmethod
+    def normalize_name(cls, value: str) -> str:
+        normalized = " ".join(value.split())
+        if len(normalized) < 2:
+            raise ValueError("Name must have at least 2 characters")
+        return normalized
+
+    @field_validator("slug")
+    @classmethod
+    def validate_slug(cls, value: str) -> str:
+        normalized = value.strip().lower()
+        if not SLUG_PATTERN.match(normalized):
+            raise ValueError("Slug may only contain lowercase letters, numbers and hyphens")
+        return normalized
+
+
+class UpdateTenantStatusRequest(BaseModel):
+    is_active: bool
 
 
 class UpdateTenantSubscriptionRequest(BaseModel):

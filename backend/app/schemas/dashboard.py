@@ -4,22 +4,33 @@ from decimal import Decimal
 from pydantic import BaseModel
 
 
+class MoneyTotal(BaseModel):
+    """Suma de importes de una sola moneda (nunca se mezclan monedas)."""
+    currency: str
+    amount: Decimal
+
+
 class DashboardMetrics(BaseModel):
+    # Moneda de la empresa: siempre es el primer total de cada lista.
+    currency: str = "MXN"
     active_clients: int
     open_opportunities: int
-    pipeline_value: Decimal
-    weighted_pipeline_value: Decimal
+    pipeline_value: list[MoneyTotal]
+    weighted_pipeline_value: list[MoneyTotal]
     pending_activities: int
     overdue_activities: int
     pending_quotes: int
-    accepted_quotes_value: Decimal
+    accepted_quotes_value: list[MoneyTotal]
 
 
 class PipelineStage(BaseModel):
+    pipeline_id: str
+    pipeline_name: str
     stage: str
     stage_name: str
+    color: str
     count: int
-    value: Decimal
+    value: list[MoneyTotal]
 
 
 class DashboardActivity(BaseModel):
@@ -36,6 +47,7 @@ class DashboardQuote(BaseModel):
     folio: str
     client_name: str
     total: Decimal
+    currency: str
     status: str
 
 

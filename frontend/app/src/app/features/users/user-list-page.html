@@ -25,21 +25,23 @@
     /></label>
     <label
       ><span>Estado</span
-      ><select [value]="statusFilter()" (change)="updateStatus($event)">
-        <option value="all">Todos</option>
-        <option value="active">Activos</option>
-        <option value="pending">Pendientes</option>
-        <option value="inactive">Inactivos</option>
-      </select></label
+      ><app-combobox
+        [options]="[{ value: 'all', label: 'Todos' }, { value: 'active', label: 'Activos' }, { value: 'pending', label: 'Pendientes' }, { value: 'inactive', label: 'Inactivos' }]"
+        [selectedValue]="statusFilter()"
+        ariaLabel="Estado"
+        placeholder="Estado"
+        (selected)="updateStatus($event)"
+      /></label
     >
     <label
       ><span>Rol</span
-      ><select [value]="roleFilter()" (change)="updateRoleFilter($event)">
-        <option value="all">Todos los roles</option>
-        @for (role of roles(); track role.id) {
-          <option [value]="role.id">{{ role.name }}</option>
-        }
-      </select></label
+      ><app-combobox
+        [options]="roleFilterOptions()"
+        [selectedValue]="roleFilter()"
+        ariaLabel="Rol"
+        placeholder="Rol"
+        (selected)="updateRoleFilter($event)"
+      /></label
     >
   </section>
 
@@ -87,17 +89,15 @@
           </div>
           <label class="role-select"
             ><span class="sr-only">Rol de {{ user.full_name }}</span
-            ><select
-              [value]="user.role_id"
-              (change)="changeRole(user, $event)"
-              [disabled]="user.status === 'inactive' || !canUpdate"
-            >
-              @for (role of roles(); track role.id) {
-                <option [value]="role.id" [selected]="role.id === user.role_id">
-                  {{ role.name }}
-                </option>
-              }
-            </select></label
+            ><app-combobox
+              #roleCombo
+              [options]="roleOptions()"
+              [selectedValue]="user.role_id"
+              [disabled]="user.status === 'inactive' || !canUpdate || isSelf(user)"
+              [ariaLabel]="'Rol de ' + user.full_name"
+              placeholder="Rol"
+              (selected)="changeRole(user, $event, roleCombo)"
+          /></label
           >
           <span class="status" [class]="'status ' + user.status">{{
             statusLabel(user.status)

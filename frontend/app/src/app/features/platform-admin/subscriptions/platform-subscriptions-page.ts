@@ -4,13 +4,18 @@ import { SaaSPlanKey, SubscriptionStatus, TenantSaaS } from '../../../core/model
 import { AuthService } from '../../../core/services/auth.service';
 import { PlanChangeRequest } from '../../../core/models/tenant-plan.models';
 import { PlatformAccessService } from '../../../core/services/platform-access.service';
+import { Combobox } from '../../../shared/ui/combobox/combobox';
+import { PLAN_OPTIONS, SUBSCRIPTION_STATUS_OPTIONS } from '../platform-options';
 
 @Component({
   selector: 'app-platform-subscriptions-page',
+  imports: [Combobox],
   templateUrl: './platform-subscriptions-page.html',
   styleUrl: './platform-subscriptions-page.scss',
 })
 export class PlatformSubscriptionsPage {
+  protected readonly planChoices = PLAN_OPTIONS;
+  protected readonly statusChoices = SUBSCRIPTION_STATUS_OPTIONS;
   private readonly service = inject(AuthService);
   protected readonly access = inject(PlatformAccessService);
   protected readonly tenants = signal<TenantSaaS[]>([]);

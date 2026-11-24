@@ -3,6 +3,8 @@ from decimal import Decimal,ROUND_HALF_UP
 from typing import Literal
 from pydantic import BaseModel,Field,field_validator,model_validator
 
+from app.core.currencies import CurrencyCode
+
 QuoteStatus=Literal["draft","sent","accepted","rejected","expired"]
 
 
@@ -23,6 +25,8 @@ class SaveQuoteRequest(BaseModel):
     owner_user_id:str
     issue_date:date
     valid_until:date
+    # Sin moneda: al crear se usa la de la empresa; al editar se conserva la actual.
+    currency:CurrencyCode|None=None
     notes:str|None=Field(default=None,max_length=1000)
     items:list[QuoteItemRequest]=Field(min_length=1,max_length=100)
     @field_validator("notes")

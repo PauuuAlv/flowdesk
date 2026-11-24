@@ -18,9 +18,19 @@ depends_on: Union[str, Sequence[str], None] = None
 def upgrade() -> None:
     op.add_column("tenants", sa.Column("billing_email", sa.String(255), nullable=True))
     op.execute("UPDATE tenants SET billing_email = contact_email WHERE billing_email IS NULL")
+    # Esta migración puede correr antes o después de a7c3e9b1d520 (roles por
+    # tenant), que elimina users.role. Se detecta al administrador con la
+    # columna que exista en ese momento.
+    user_columns = {c["name"] for c in sa.inspect(op.get_bind()).get_columns("users")}
+    if "role" in user_columns:
+        admin_filter = "users.role = 'admin'"
+        admin_from = "users"
+    else:
+        admin_filter = "roles.id = users.role_id AND roles.template_key = 'admin'"
+        admin_from = "users, roles"
     op.execute(
-        """UPDATE tenants SET billing_email = users.email FROM users
-        WHERE users.tenant_id = tenants.id AND users.role = 'admin'
+        f"""UPDATE tenants SET billing_email = users.email FROM {admin_from}
+        WHERE users.tenant_id = tenants.id AND {admin_filter}
         AND tenants.billing_email IS NULL"""
     )
     op.create_table(

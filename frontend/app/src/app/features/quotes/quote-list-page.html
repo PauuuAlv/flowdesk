@@ -13,16 +13,13 @@
     <p class="error">{{ error() }}</p>
   }
   <div class="filters">
-    <input type="search" placeholder="Folio o cliente" (input)="setSearch($event)" /><select
-      (change)="setFilter($event)"
-    >
-      <option value="all">Todos los estados</option>
-      <option value="draft">Borradores</option>
-      <option value="sent">Enviadas</option>
-      <option value="accepted">Aceptadas</option>
-      <option value="rejected">Rechazadas</option>
-      <option value="expired">Vencidas</option>
-    </select>
+    <input type="search" placeholder="Folio o cliente" (input)="setSearch($event)" /><app-combobox
+        [options]="[{ value: 'all', label: 'Todos los estados' }, { value: 'draft', label: 'Borradores' }, { value: 'sent', label: 'Enviadas' }, { value: 'accepted', label: 'Aceptadas' }, { value: 'rejected', label: 'Rechazadas' }, { value: 'expired', label: 'Vencidas' }]"
+        [selectedValue]="filter()"
+        ariaLabel="Estado"
+        placeholder="Estado"
+        (selected)="setFilter($event)"
+      />
   </div>
   @if (loading()) {
     <div class="state">Cargando…</div>
@@ -35,7 +32,7 @@
             ><span>{{ q.client_name }}</span>
           </div>
           <span>{{ q.issue_date }} — {{ q.valid_until }}</span
-          ><b>{{ money(q.total) }}</b
+          ><b>{{ money(q.total, q.currency) }}</b
           ><span class="badge" [attr.data-status]="q.status">{{ label(q.status) }}</span>
           <div class="actions">
             <a [routerLink]="['/panel/cotizaciones', q.id]">Ver</a>

@@ -4,9 +4,11 @@ import { Activity, ActivityStatus, ActivityType } from '../../core/models/activi
 import { PERMISSIONS } from '../../core/models/permission.models';
 import { ActivityService } from '../../core/services/activity.service';
 import { SessionService } from '../../core/services/session.service';
+import { Combobox } from '../../shared/ui/combobox/combobox';
+
 @Component({
   selector: 'app-activity-list-page',
-  imports: [RouterLink],
+  imports: [RouterLink, Combobox],
   templateUrl: './activity-list-page.html',
   styleUrl: './activity-list-page.scss',
 })
@@ -53,11 +55,11 @@ export class ActivityListPage {
   protected setSearch(e: Event) {
     this.search.set((e.target as HTMLInputElement).value);
   }
-  protected setStatus(e: Event) {
-    this.status.set((e.target as HTMLSelectElement).value as ActivityStatus | 'all');
+  protected setStatus(value: string) {
+    this.status.set(value as ActivityStatus | 'all');
   }
-  protected setType(e: Event) {
-    this.type.set((e.target as HTMLSelectElement).value as ActivityType | 'all');
+  protected setType(value: string) {
+    this.type.set(value as ActivityType | 'all');
   }
   protected changeStatus(item: Activity, status: ActivityStatus) {
     this.service.updateStatus(item.id, status).subscribe({
@@ -83,6 +85,6 @@ export class ActivityListPage {
     return item.status === 'pending' && new Date(item.scheduled_at) < new Date();
   }
   private has(p: (typeof PERMISSIONS)[keyof typeof PERMISSIONS]) {
-    return this.user?.role === 'admin' || Boolean(this.user?.permissions?.includes(p));
+    return Boolean(this.user?.permissions?.includes(p));
   }
 }

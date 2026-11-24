@@ -8,11 +8,11 @@ from sqlalchemy.orm import Session
 
 from app.core.database import get_db
 from app.models.product import Product
-from app.models.product_catalog import Brand, MeasurementUnit
+from app.models.product_catalog import Brand, MeasurementUnit, ProductCategory
 from app.models.user import User
 from app.schemas.product_catalog import (
-    BrandResponse, CreateBrandRequest, CreateUnitRequest,
-    UnitResponse, UpdateBrandRequest, UpdateUnitRequest,
+    BrandResponse, CategoryResponse, CreateBrandRequest, CreateCategoryRequest, CreateUnitRequest,
+    UnitResponse, UpdateBrandRequest, UpdateCategoryRequest, UpdateUnitRequest,
 )
 from app.security.permissions import require_permission
 
@@ -26,7 +26,7 @@ def _key(value: str) -> str:
 
 
 def _unit(item: MeasurementUnit) -> UnitResponse:
-    return UnitResponse(id=str(item.id), key=item.key, name=item.name, abbreviation=item.abbreviation, is_active=item.is_active, created_at=item.created_at)
+    return UnitResponse(id=str(item.id), key=item.key, name=item.name, abbreviation=item.abbreviation, item_type=item.item_type, is_active=item.is_active, created_at=item.created_at)
 
 
 def _brand(item: Brand) -> BrandResponse:
@@ -34,9 +34,12 @@ def _brand(item: Brand) -> BrandResponse:
 
 
 @router.get("/units", response_model=list[UnitResponse])
-def list_units(search: str = Query(default="", max_length=80), include_inactive: bool = False, db: Session = Depends(get_db), current_user: User = Depends(require_permission("products.view"))):
+def list_units(search: str = Query(default="", max_length=80), include_inactive: bool = False,
+    item_type: str | None = Query(default=None, pattern="^(product|service)$"),
+    db: Session = Depends(get_db), current_user: User = Depends(require_permission("products.view"))):
     query = db.query(MeasurementUnit).filter(MeasurementUnit.tenant_id == current_user.tenant_id)
     if not include_inactive: query = query.filter(MeasurementUnit.is_active.is_(True))
+    if item_type: query = query.filter(MeasurementUnit.item_type == item_type)
     if search.strip(): query = query.filter(MeasurementUnit.name.ilike(f"%{search.strip()}%"))
     return [_unit(item) for item in query.order_by(MeasurementUnit.name).all()]
 
@@ -59,7 +62,10 @@ def update_unit(unit_id: uuid.UUID, payload: UpdateUnitRequest, db: Session = De
     if duplicate: raise HTTPException(status_code=409, detail="Unit already exists")
     if not payload.is_active and db.query(Product).filter(Product.tenant_id == current_user.tenant_id, Product.unit_id == item.id, Product.status == "active").first():
         raise HTTPException(status_code=409, detail="Unit has active products")
-    item.name, item.abbreviation, item.is_active = payload.name, payload.abbreviation, payload.is_active
+    # No se cambia el tipo si la usan productos/servicios del tipo anterior.
+    if payload.item_type != item.item_type and db.query(Product).filter(Product.tenant_id == current_user.tenant_id, Product.unit_id == item.id, Product.item_type != payload.item_type).first():
+        raise HTTPException(status_code=409, detail="Unit is used by items of another type")
+    item.name, item.abbreviation, item.item_type, item.is_active = payload.name, payload.abbreviation, payload.item_type, payload.is_active
     db.commit(); db.refresh(item); return _unit(item)
 
 
@@ -89,3 +95,37 @@ def update_brand(brand_id: uuid.UUID, payload: UpdateBrandRequest, db: Session =
         raise HTTPException(status_code=409, detail="Brand has active products")
     item.name, item.description, item.is_active = payload.name, payload.description, payload.is_active
     db.commit(); db.refresh(item); return _brand(item)
+
+
+# --- Categorías ----------------------------------------------------------------
+def _category(db: Session, item: ProductCategory) -> CategoryResponse:
+    count = db.query(func.count(Product.id)).filter(Product.category_id == item.id).scalar() or 0
+    return CategoryResponse(id=str(item.id), name=item.name, description=item.description, is_active=item.is_active, product_count=count, created_at=item.created_at)
+
+
+@router.get("/categories", response_model=list[CategoryResponse])
+def list_categories(search: str = Query(default="", max_length=80), include_inactive: bool = False, db: Session = Depends(get_db), current_user: User = Depends(require_permission("products.view"))):
+    query = db.query(ProductCategory).filter(ProductCategory.tenant_id == current_user.tenant_id)
+    if not include_inactive: query = query.filter(ProductCategory.is_active.is_(True))
+    if search.strip(): query = query.filter(ProductCategory.name.ilike(f"%{search.strip()}%"))
+    return [_category(db, item) for item in query.order_by(ProductCategory.name).all()]
+
+
+@router.post("/categories", response_model=CategoryResponse, status_code=status.HTTP_201_CREATED)
+def create_category(payload: CreateCategoryRequest, db: Session = Depends(get_db), current_user: User = Depends(require_permission("products.update"))):
+    exists = db.query(ProductCategory).filter(ProductCategory.tenant_id == current_user.tenant_id, func.lower(ProductCategory.name) == payload.name.lower()).first()
+    if exists: raise HTTPException(status_code=409, detail="Category already exists")
+    item = ProductCategory(tenant_id=current_user.tenant_id, is_active=True, **payload.model_dump())
+    db.add(item); db.commit(); db.refresh(item); return _category(db, item)
+
+
+@router.patch("/categories/{category_id}", response_model=CategoryResponse)
+def update_category(category_id: uuid.UUID, payload: UpdateCategoryRequest, db: Session = Depends(get_db), current_user: User = Depends(require_permission("products.update"))):
+    item = db.query(ProductCategory).filter(ProductCategory.id == category_id, ProductCategory.tenant_id == current_user.tenant_id).first()
+    if not item: raise HTTPException(status_code=404, detail="Category not found")
+    duplicate = db.query(ProductCategory).filter(ProductCategory.tenant_id == current_user.tenant_id, func.lower(ProductCategory.name) == payload.name.lower(), ProductCategory.id != item.id).first()
+    if duplicate: raise HTTPException(status_code=409, detail="Category already exists")
+    if not payload.is_active and db.query(Product).filter(Product.tenant_id == current_user.tenant_id, Product.category_id == item.id, Product.status == "active").first():
+        raise HTTPException(status_code=409, detail="Category has active products")
+    item.name, item.description, item.is_active = payload.name, payload.description, payload.is_active
+    db.commit(); db.refresh(item); return _category(db, item)

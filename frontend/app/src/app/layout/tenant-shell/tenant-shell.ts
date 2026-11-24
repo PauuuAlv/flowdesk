@@ -1,7 +1,7 @@
 import { Component, DestroyRef, HostListener, inject, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import { Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
-import { catchError, of, switchMap, timer } from 'rxjs';
+import { NavigationEnd, Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
+import { catchError, filter, of, switchMap, timer } from 'rxjs';
 
 import { PERMISSIONS } from '../../core/models/permission.models';
 import { FlowdeskNotification } from '../../core/models/notification.models';
@@ -27,8 +27,22 @@ export class TenantShell {
   protected readonly notificationsLoading = signal(false);
   protected readonly notifications = signal<FlowdeskNotification[]>([]);
   protected readonly unreadCount = signal(0);
+  /** Submenú de "Productos y servicios" (catálogo, categorías, unidades y marcas). */
+  protected readonly productsOpen = signal(false);
+  protected readonly inProductsSection = signal(false);
 
   constructor() {
+    // Al entrar a una página de la sección, su submenú se despliega solo.
+    const syncSection = (url: string) => {
+      const inside = /^\/panel\/(productos|configuracion\/(categorias|unidades|marcas))(\/|\?|#|$)/.test(url);
+      this.inProductsSection.set(inside);
+      if (inside) this.productsOpen.set(true);
+    };
+    syncSection(this.router.url);
+    this.router.events.pipe(
+      filter((event): event is NavigationEnd => event instanceof NavigationEnd),
+      takeUntilDestroyed(this.destroyRef),
+    ).subscribe((event) => syncSection(event.urlAfterRedirects));
     this.sessionService.userUpdates$.pipe(takeUntilDestroyed(this.destroyRef)).subscribe((user) => this.user = user);
     timer(0, 60_000).pipe(
       switchMap(() => this.notificationsService.list().pipe(catchError(() => of(null)))),
@@ -56,56 +70,60 @@ export class TenantShell {
 
   protected get canManageUsers(): boolean {
     const permissions = this.user?.permissions ?? [];
-    return this.user?.role === 'admin' || permissions.includes(PERMISSIONS.usersInvite);
+    return permissions.includes(PERMISSIONS.usersInvite);
   }
 
   protected get canViewUsers(): boolean {
     const permissions = this.user?.permissions ?? [];
-    return this.user?.role === 'admin' || permissions.includes(PERMISSIONS.usersView);
+    return permissions.includes(PERMISSIONS.usersView);
   }
 
   protected get canViewRoles(): boolean {
     const permissions = this.user?.permissions ?? [];
-    return this.user?.role === 'admin' || permissions.includes(PERMISSIONS.rolesView);
+    return permissions.includes(PERMISSIONS.rolesView);
   }
 
   protected get canViewClients(): boolean {
     const permissions = this.user?.permissions ?? [];
-    return this.user?.role === 'admin' || permissions.includes(PERMISSIONS.clientsView);
+    return permissions.includes(PERMISSIONS.clientsView);
   }
   protected get canViewOpportunities(): boolean {
     const p = this.user?.permissions ?? [];
-    return this.user?.role === 'admin' || p.includes(PERMISSIONS.opportunitiesView);
+    return p.includes(PERMISSIONS.opportunitiesView);
   }
   protected get canManageOpportunityStages(): boolean {
     const p = this.user?.permissions ?? [];
-    return this.user?.role === 'admin' || p.includes(PERMISSIONS.opportunitiesUpdate);
+    return p.includes(PERMISSIONS.opportunitiesUpdate);
   }
   protected get canViewActivities(): boolean {
     const p = this.user?.permissions ?? [];
-    return this.user?.role === 'admin' || p.includes(PERMISSIONS.activitiesView);
+    return p.includes(PERMISSIONS.activitiesView);
   }
   protected get canViewQuotes(): boolean {
     const p = this.user?.permissions ?? [];
-    return this.user?.role === 'admin' || p.includes(PERMISSIONS.quotesView);
+    return p.includes(PERMISSIONS.quotesView);
   }
   protected get canViewSettings(): boolean {
     const p = this.user?.permissions ?? [];
-    return this.user?.role === 'admin' || p.includes(PERMISSIONS.settingsView);
+    return p.includes(PERMISSIONS.settingsView);
   }
   protected get canViewProducts(): boolean {
     const p = this.user?.permissions ?? [];
-    return this.user?.role === 'admin' || p.includes(PERMISSIONS.productsView);
+    return p.includes(PERMISSIONS.productsView);
   }
   protected get canManageProductCatalogs(): boolean {
     const p = this.user?.permissions ?? [];
-    return this.user?.role === 'admin' || p.includes(PERMISSIONS.productsUpdate);
+    return p.includes(PERMISSIONS.productsUpdate);
   }
 
   protected toggleSidebar(): void {
     this.sidebarOpen.update((open) => !open);
     this.profileOpen.set(false);
     this.notificationsOpen.set(false);
+  }
+
+  protected toggleProducts(): void {
+    this.productsOpen.update((open) => !open);
   }
 
   protected closeSidebar(): void {

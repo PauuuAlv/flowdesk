@@ -7,10 +7,11 @@ import { Opportunity, OpportunityAssignee } from '../../core/models/opportunity.
 import { ActivityService } from '../../core/services/activity.service';
 import { ClientService } from '../../core/services/client.service';
 import { OpportunityService } from '../../core/services/opportunity.service';
+import { Combobox, ComboOption } from '../../shared/ui/combobox/combobox';
 
 @Component({
   selector: 'app-activity-form-page',
-  imports: [ReactiveFormsModule, RouterLink],
+  imports: [ReactiveFormsModule, RouterLink, Combobox],
   templateUrl: './activity-form-page.html',
   styleUrl: './activity-form-page.scss',
 })
@@ -40,6 +41,23 @@ export class ActivityFormPage {
   });
   protected readonly availableOpportunities = computed(() =>
     this.opportunities().filter((x) => x.client_id === this.selectedClient() && !x.archived),
+  );
+  // Opciones de los combos filtrables.
+  protected readonly typeOptions: ComboOption[] = [
+    { value: 'call', label: 'Llamada' },
+    { value: 'email', label: 'Correo' },
+    { value: 'meeting', label: 'Reunión' },
+    { value: 'task', label: 'Tarea' },
+  ];
+  protected readonly clientOptions = computed<ComboOption[]>(() =>
+    this.clients().map((client) => ({ value: client.id, label: client.company_name })),
+  );
+  protected readonly opportunityOptions = computed<ComboOption[]>(() => [
+    { value: '', label: 'Sin oportunidad' },
+    ...this.availableOpportunities().map((item) => ({ value: item.id, label: item.name })),
+  ]);
+  protected readonly assigneeOptions = computed<ComboOption[]>(() =>
+    this.assignees().map((user) => ({ value: user.id, label: user.name })),
   );
   constructor() {
     let pending = 3;

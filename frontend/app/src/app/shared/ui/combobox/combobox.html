@@ -1,0 +1,69 @@
+<input
+  #field
+  class="combo-input"
+  type="text"
+  role="combobox"
+  autocomplete="off"
+  spellcheck="false"
+  [attr.id]="inputId()"
+  [attr.aria-label]="ariaLabel()"
+  [attr.aria-expanded]="open()"
+  [attr.aria-controls]="listId"
+  [attr.aria-activedescendant]="open() && filtered().length ? optionId(active()) : null"
+  aria-autocomplete="list"
+  [placeholder]="placeholder()"
+  [value]="text()"
+  [disabled]="isDisabled()"
+  (focus)="onFocus($event)"
+  (click)="!open() && toggle()"
+  (input)="onInput($event)"
+  (keydown)="onKeydown($event)"
+  (blur)="onBlur()"
+/>
+@if (name()) {
+  <input type="hidden" [attr.name]="name()" [value]="value()" />
+}
+<button
+  class="combo-toggle"
+  type="button"
+  tabindex="-1"
+  aria-hidden="true"
+  [disabled]="isDisabled()"
+  (mousedown)="$event.preventDefault()"
+  (click)="toggle()"
+>
+  <svg viewBox="0 0 20 20"><path d="m5 7.5 5 5 5-5" /></svg>
+</button>
+
+@if (open() && panel(); as box) {
+  <ul
+    class="combo-list"
+    role="listbox"
+    [id]="listId"
+    [style.top.px]="box.top"
+    [style.bottom.px]="box.bottom"
+    [style.left.px]="box.left"
+    [style.width.px]="box.width"
+    [style.max-height.px]="box.maxHeight"
+    (mousedown)="$event.preventDefault()"
+  >
+    @for (option of filtered(); track option.value; let i = $index) {
+      <li
+        role="option"
+        [id]="optionId(i)"
+        [class.active]="i === active()"
+        [class.selected]="option.value === value()"
+        [attr.aria-selected]="option.value === value()"
+        (mouseenter)="active.set(i)"
+        (click)="choose(option)"
+      >
+        <span>{{ option.label }}</span>
+        @if (option.hint) {
+          <small>{{ option.hint }}</small>
+        }
+      </li>
+    } @empty {
+      <li class="empty" role="presentation">{{ emptyText() }}</li>
+    }
+  </ul>
+}

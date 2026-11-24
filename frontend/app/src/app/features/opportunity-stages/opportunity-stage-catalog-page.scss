@@ -5,9 +5,52 @@ header { margin-bottom: 28px; } h1 { margin: 6px 0 8px; font-size: clamp(2.2rem,
 .layout { display: grid; grid-template-columns: minmax(280px, 390px) 1fr; gap: 26px; align-items: start; }
 .card, .filters { background: white; border: 1px solid #d7e0e5; border-radius: 18px; box-shadow: 0 12px 30px rgba(16,46,61,.06); }
 .form { padding: 26px; position: sticky; top: 22px; } h2 { margin-top: 0; } label { display: grid; gap: 7px; margin-bottom: 16px; font-weight: 700; }
-input, select { width: 100%; box-sizing: border-box; border: 1px solid #cbd7dd; border-radius: 10px; padding: 13px; font: inherit; background: white; }
+input, select, app-combobox { width: 100%; box-sizing: border-box; border: 1px solid #cbd7dd; border-radius: 10px; padding: 13px; font: inherit; background: white; }
 .two { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }.hint { color: #68757c; font-size: .9rem; }
 .actions, .row-actions { display: flex; gap: 10px; flex-wrap: wrap; } button { border: 0; border-radius: 10px; background: #102e3d; color: white; padding: 12px 18px; font-weight: 800; cursor: pointer; }
 button.secondary, button.link { background: #eaf1f5; color: #174c64; }.filters { padding: 18px; display: grid; grid-template-columns: 1fr auto; gap: 18px; align-items: end; margin-bottom: 16px; }.filters label { margin: 0; }.check { display: flex; align-items: center; }.check input { width: auto; }
 .stage-list { display: grid; gap: 12px; }.stage-list article { display: grid; grid-template-columns: 44px 1fr auto; gap: 16px; align-items: center; padding: 18px; }.position { width: 38px; height: 38px; border-radius: 50%; display: grid; place-items: center; background: #215f7a; color: white; font-weight: 800; }.info h3 { display: inline; margin-right: 10px; }.info p { margin: 8px 0 0; color: #5f6b73; }.badge { display: inline-block; padding: 4px 8px; border-radius: 999px; background: #fff4e5; color: #8c4d06; font-size: .78rem; font-weight: 800; margin-right: 5px; }.badge.muted { background: #e7eaec; color: #5f6b73; }.inactive { opacity: .7; }.message { padding: 14px 16px; border-radius: 10px; }.error { background: #fff0ee; color: #9c281d; }.success { background: #eaf7ef; color: #17643a; }.state { padding: 30px; text-align: center; }
 @media (max-width: 900px) { .stage-page { padding: 24px 16px; }.layout { grid-template-columns: 1fr; }.form { position: static; }.filters { grid-template-columns: 1fr; }.stage-list article { grid-template-columns: 40px 1fr; }.row-actions { grid-column: 1 / -1; } }
+
+// Selector y datos del pipeline elegido.
+// Fila 1: selector y acciones; fila 2: descripción y conteos del pipeline.
+.pipeline-bar { display: grid; grid-template-columns: minmax(220px, 340px) 1fr; grid-template-areas: "select actions" "info info"; gap: 14px 20px; align-items: end; padding: 18px 22px; margin-bottom: 22px; }
+.pipeline-select { grid-area: select; margin: 0; }
+.pipeline-info { grid-area: info; min-width: 0; padding-top: 12px; border-top: 1px solid #e4eaee; }
+.pipeline-info p { margin: 4px 0; color: #5f6b73; }
+.pipeline-info small { color: #68757c; font-weight: 600; }
+.pipeline-badges { min-height: 4px; }
+.pipeline-actions { grid-area: actions; display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 8px; }
+.pipeline-actions button { padding: 10px 14px; font-size: .88rem; }
+button.danger { color: #9c281d; background: #fff0ee; }
+button.danger-solid { background: #b23a2e; }
+.form-scope { margin: -8px 0 16px; }
+.field-error { display: block; margin: -10px 0 12px; color: #9c281d; font-size: .82rem; font-weight: 600; }
+
+.modal-backdrop { position: fixed; inset: 0; z-index: 60; display: grid; place-items: center; padding: 16px; background: rgb(15 30 40 / 45%); }
+.modal { width: min(34rem, 100%); max-height: calc(100vh - 2rem); overflow: auto; box-sizing: border-box; padding: 26px; }
+.modal h2 { margin: 0 0 14px; }
+.modal p { color: #5f6b73; line-height: 1.5; }
+.actions.end { justify-content: flex-end; margin-top: 8px; }
+
+@media (max-width: 900px) {
+  .pipeline-bar { grid-template-columns: 1fr; grid-template-areas: "select" "actions" "info"; }
+  .pipeline-actions { justify-content: flex-start; }
+}
+// En pantallas medianas las acciones pasan debajo del selector para no apretarse.
+@media (max-width: 1280px) {
+  .pipeline-bar { grid-template-columns: minmax(0, 1fr); grid-template-areas: "select" "actions" "info"; align-items: start; }
+  .pipeline-select { max-width: 340px; }
+  .pipeline-actions { justify-content: flex-start; }
+}
+
+// Color de la etapa: paleta, color personalizado y vista previa de la columna.
+.color-field { margin: 0 0 16px; padding: 0; border: 0; }
+.color-field legend { margin-bottom: 8px; padding: 0; font-weight: 700; }
+.swatches { display: flex; flex-wrap: wrap; gap: 8px; }
+.swatch { position: relative; width: 28px; height: 28px; padding: 0; background: var(--swatch); border: 2px solid #fff; border-radius: 50%; box-shadow: 0 0 0 1px #cbd7dd; cursor: pointer; }
+.swatch.selected { box-shadow: 0 0 0 2px #102e3d; }
+.swatch.custom { display: block; margin: 0; overflow: hidden; background: conic-gradient(#ef4444, #f59e0b, #22c55e, #06b6d4, #3b82f6, #8b5cf6, #ec4899, #ef4444); }
+.swatch.custom input { position: absolute; inset: -6px; width: 40px; height: 40px; padding: 0; border: 0; opacity: 0; cursor: pointer; }
+.color-preview { display: grid; gap: 2px; margin-top: 12px; padding: 12px 14px; background: color-mix(in srgb, var(--stage-color) 16%, #f4f6f8); border-top: 4px solid var(--stage-color); border-radius: 10px; }
+.color-preview span { color: #5f6b73; font-size: .82rem; }

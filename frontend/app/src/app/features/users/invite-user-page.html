@@ -45,14 +45,12 @@
         </div>
         <div class="field">
           <label for="invite-role">Rol dentro de la empresa</label>
-          <select id="invite-role" formControlName="role_id">
-            <option value="" disabled>
-              {{ loadingRoles() ? 'Consultando roles…' : 'Selecciona un rol' }}
-            </option>
-            @for (role of roles(); track role.id) {
-              <option [value]="role.id">{{ role.name }}</option>
-            }
-          </select>
+          <app-combobox
+            inputId="invite-role"
+            formControlName="role_id"
+            [options]="roleOptions()"
+            [placeholder]="loadingRoles() ? 'Consultando roles…' : 'Escribe para buscar un rol'"
+          />
           <span class="field-help">Los permisos del usuario dependerán del rol seleccionado.</span>
           @if (inviteForm.controls.role_id.touched && inviteForm.controls.role_id.invalid) {
             <small>Selecciona un rol.</small>

@@ -1,14 +1,11 @@
 import uuid
-from typing import Literal
-
 from pydantic import BaseModel, EmailStr, Field
 
 
 class InviteUserRequest(BaseModel):
     email: EmailStr
     full_name: str | None = None
-    # Los administradores de plataforma se gestionan fuera de los tenants.
-    role: Literal["admin", "member"] = "member"
+    # Rol del tenant que tendra el invitado. Si no se manda, se usa "Miembro".
     role_id: uuid.UUID | None = None
 
 
@@ -26,6 +23,8 @@ class UserMeResponse(BaseModel):
     tenant_id: str
     tenant_name: str
     tenant_logo_url: str | None = None
+    # Moneda predeterminada de la empresa (Configuración) para formularios nuevos.
+    tenant_currency: str = "MXN"
     email: str
     full_name: str | None
     role: str

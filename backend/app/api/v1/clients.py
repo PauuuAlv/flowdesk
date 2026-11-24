@@ -15,6 +15,7 @@ from app.schemas.client import (
     UpdateClientStatusRequest,
 )
 from app.security.permissions import require_permission
+from app.services.contact_service import ContactService
 from app.services.saas_limits import ensure_tenant_capacity
 
 router = APIRouter()
@@ -78,6 +79,8 @@ def create_client(
     )
     db.add(client)
     try:
+        db.flush()
+        ContactService(db).sync_primary_from_client(current_user.tenant_id, client)
         db.commit()
     except IntegrityError:
         db.rollback()
@@ -109,6 +112,7 @@ def update_client(
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Client email already exists")
     for field, value in payload.model_dump().items():
         setattr(client, field, value)
+    ContactService(db).sync_primary_from_client(current_user.tenant_id, client)
     try:
         db.commit()
     except IntegrityError:

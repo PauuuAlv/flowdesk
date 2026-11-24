@@ -1,7 +1,7 @@
 import { HttpErrorResponse } from '@angular/common/http';
 import { Component, inject, signal } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
-import { RouterLink } from '@angular/router';
+import { ActivatedRoute, RouterLink } from '@angular/router';
 
 import { AuthService } from '../../../core/services/auth.service';
 
@@ -14,6 +14,9 @@ import { AuthService } from '../../../core/services/auth.service';
 export class ForgotPasswordPage {
   private readonly formBuilder = inject(FormBuilder);
   private readonly authService = inject(AuthService);
+  /** true en /administracion-flowdesk/olvide-mi-contrasena (cuentas de plataforma). */
+  protected readonly isPlatform = inject(ActivatedRoute).snapshot.data['audience'] === 'platform';
+  protected readonly loginLink = this.isPlatform ? '/administracion-flowdesk/iniciar-sesion' : '/iniciar-sesion';
   protected readonly submitting = signal(false);
   protected readonly errorMessage = signal('');
   protected readonly successMessage = signal('');
@@ -30,7 +33,11 @@ export class ForgotPasswordPage {
     }
 
     this.submitting.set(true);
-    this.authService.forgotPassword(this.forgotPasswordForm.getRawValue()).subscribe({
+    const request = this.forgotPasswordForm.getRawValue();
+    const call = this.isPlatform
+      ? this.authService.platformForgotPassword(request)
+      : this.authService.forgotPassword(request);
+    call.subscribe({
       next: () => {
         this.submitting.set(false);
         this.successMessage.set(

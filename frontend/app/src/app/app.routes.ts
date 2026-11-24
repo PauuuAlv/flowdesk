@@ -217,6 +217,12 @@ export const routes: Routes = [
         loadComponent: () => import('./features/product-catalogs/product-catalog-settings-page').then((c) => c.ProductCatalogSettingsPage),
       },
       {
+        path: 'configuracion/categorias',
+        canActivate: [updateProductsGuard],
+        data: { catalog: 'categories' },
+        loadComponent: () => import('./features/product-catalogs/product-catalog-settings-page').then((c) => c.ProductCatalogSettingsPage),
+      },
+      {
         path: 'configuracion/empresa',
         canActivate: [viewCompanySettingsGuard],
         loadComponent: () =>
@@ -269,6 +275,23 @@ export const routes: Routes = [
     loadComponent: () =>
       import('./features/platform-admin/login/platform-admin-login-page').then(
         (component) => component.PlatformAdminLoginPage,
+      ),
+  },
+  {
+    // Mismas páginas de recuperación que las empresas, apuntando a las cuentas de plataforma.
+    path: 'administracion-flowdesk/olvide-mi-contrasena',
+    data: { audience: 'platform' },
+    loadComponent: () =>
+      import('./features/auth/forgot-password/forgot-password-page').then(
+        (component) => component.ForgotPasswordPage,
+      ),
+  },
+  {
+    path: 'administracion-flowdesk/restablecer-contrasena',
+    data: { audience: 'platform' },
+    loadComponent: () =>
+      import('./features/auth/reset-password/reset-password-page').then(
+        (component) => component.ResetPasswordPage,
       ),
   },
   {
@@ -342,6 +365,13 @@ export const routes: Routes = [
         loadComponent: () =>
           import('./features/platform-admin/team/platform-team-page').then(
             (component) => component.PlatformTeamPage,
+          ),
+      },
+      {
+        path: 'perfil',
+        loadComponent: () =>
+          import('./features/platform-admin/profile/platform-profile-page').then(
+            (component) => component.PlatformProfilePage,
           ),
       },
     ],

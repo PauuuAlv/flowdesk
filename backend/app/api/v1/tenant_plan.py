@@ -67,7 +67,7 @@ def request_plan_change(
     db: Session = Depends(get_db),
     current_user: User = Depends(require_permission("settings.view")),
 ):
-    if current_user.role != "admin":
+    if current_user.role_key != "admin":
         raise HTTPException(status_code=403, detail="Only tenant administrators can request plan changes")
     tenant = db.query(Tenant).filter(Tenant.id == current_user.tenant_id).first()
     if not tenant:

@@ -6,13 +6,24 @@
       <p>Visualiza el avance de cada negociación y el valor de tu pipeline.</p>
     </div>
     @if (canCreate) {
-      <a routerLink="/panel/oportunidades/nueva">Nueva oportunidad</a>
+      <a routerLink="/panel/oportunidades/nueva" [queryParams]="{ pipeline: pipelineId() }">Nueva oportunidad</a>
     }
   </header>
   @if (error()) {
     <p class="error" role="alert">{{ error() }}</p>
   }
   <div class="filters">
+    @if (pipelines().length > 1) {
+      <label class="pipeline-filter"
+        ><span>Pipeline</span
+        ><app-combobox
+          [options]="pipelineOptions()"
+          [selectedValue]="pipelineId()"
+          ariaLabel="Pipeline"
+          placeholder="Pipeline"
+          (selected)="choosePipeline($event)"
+      /></label>
+    }
     <label class="search"
       ><span>Buscar</span
       ><input
@@ -33,81 +44,96 @@
       <h2>Aún no hay oportunidades</h2>
       <p>Crea la primera negociación vinculada a un cliente.</p>
       @if (canCreate) {
-        <a routerLink="/panel/oportunidades/nueva">Crear oportunidad</a>
+        <a routerLink="/panel/oportunidades/nueva" [queryParams]="{ pipeline: pipelineId() }">Crear oportunidad</a>
       }
     </div>
   } @else {
     <div class="board">
       @for (stage of stages(); track stage.key) {
-        <section class="column">
+        <section
+          class="column"
+          [style.--stage-color]="stage.color"
+          [class.drop-target]="dropTarget() === stage.key"
+          [class.drop-available]="dragging() && canDropOn(stage)"
+          [class.drop-blocked]="dragging() && !canDropOn(stage) && dragging()!.stage !== stage.key"
+          (dragover)="onDragOver($event, stage)"
+          (dragleave)="onDragLeave($event, stage)"
+          (drop)="onDrop($event, stage)"
+        >
           <div class="column-title">
             <div>
               <h2>{{ stage.name }}</h2>
               <small>{{ byStage(stage.key).length }} oportunidades</small>
             </div>
-            <strong>{{ money(total(stage.key)) }}</strong>
+            <strong class="stage-totals">
+              @for (total of stageTotals(stage.key); track total.currency) {
+                <span>{{ money(total.amount, total.currency) }}</span>
+              }
+            </strong>
           </div>
           <div class="cards">
             @for (item of byStage(stage.key); track item.id + '-' + item.stage) {
-              <article [class.archived]="item.archived">
+              <article
+                [class.archived]="item.archived"
+                [class.expanded]="isExpanded(item.id)"
+                [class.draggable]="canDrag(item)"
+                [class.is-dragging]="dragging()?.id === item.id"
+                [attr.draggable]="canDrag(item) ? 'true' : null"
+                [attr.title]="canDrag(item) ? 'Arrastra la tarjeta a otra etapa' : null"
+                (dragstart)="onDragStart($event, item)"
+                (dragend)="onDragEnd()"
+              >
                 <div class="card-top">
-                  <span>{{ item.probability }}%</span><strong>{{ money(item.amount) }}</strong>
+                  <button
+                    class="card-menu-trigger"
+                    type="button"
+                    draggable="false"
+                    aria-haspopup="menu"
+                    [attr.aria-expanded]="menuItem()?.id === item.id"
+                    [attr.aria-label]="'Acciones de ' + item.name"
+                    (click)="toggleMenu($event, item)"
+                  >
+                    ⋯
+                  </button>
+                  <span class="probability">{{ item.probability }}%</span
+                  ><strong>{{ money(item.amount, item.currency) }}</strong>
                 </div>
                 <h3>{{ item.name }}</h3>
                 <p>{{ item.client_name }}</p>
-                @if (item.archived) {
-                  <span class="badge">Archivada</span>
-                }
-                <dl>
-                  <div>
-                    <dt>Responsable</dt>
-                    <dd>{{ item.owner_name }}</dd>
-                  </div>
-                  <div>
-                    <dt>Cierre</dt>
-                    <dd>{{ item.expected_close_date || 'Sin fecha' }}</dd>
-                  </div>
-                  @if (item.loss_reason) {
-                    <div>
-                      <dt>Motivo</dt>
-                      <dd>{{ item.loss_reason }}</dd>
-                    </div>
-                  }
-                </dl>
-                @if (!item.archived) {
-                  @if (canUpdate && stageType(item.stage) === 'normal') {
-                    <select
-                      [value]="item.stage"
-                      (change)="changeStage(item, $event)"
-                      aria-label="Cambiar etapa"
-                    >
-                      @for (option of openStages(); track option.key) {
-                        <option [value]="option.key" [selected]="option.key === item.stage">
-                          {{ option.name }}
-                        </option>
-                      }
-                    </select>
-                  }
-                  <div class="actions">
-                    <button type="button" (click)="openHistory(item)">Historial</button>
-                    @if (canUpdate) {
-                      <a [routerLink]="['/panel/oportunidades', item.id, 'editar']">Editar</a>
+                <!-- Detalles plegados: se despliegan con la esquina doblada (como un pósit). -->
+                <div class="card-details" [attr.id]="'detalles-' + item.id" [attr.inert]="isExpanded(item.id) ? null : ''">
+                  <div class="card-details-inner">
+                    @if (item.archived) {
+                      <span class="badge">Archivada</span>
                     }
-                    @if (canClose && stageType(item.stage) === 'normal') {
-                      @for (finalStage of closingStages('won'); track finalStage.id) {
-                        <button class="won" type="button" (click)="openClose(item, finalStage)">{{ finalStage.name }}</button>
+                    <dl>
+                      <div>
+                        <dt>Responsable</dt>
+                        <dd>{{ item.owner_name }}</dd>
+                      </div>
+                      <div>
+                        <dt>Cierre</dt>
+                        <dd>{{ item.expected_close_date || 'Sin fecha' }}</dd>
+                      </div>
+                      @if (item.loss_reason) {
+                        <div>
+                          <dt>Motivo</dt>
+                          <dd>{{ item.loss_reason }}</dd>
+                        </div>
                       }
-                      @for (finalStage of closingStages('lost'); track finalStage.id) {
-                        <button class="lost" type="button" (click)="openClose(item, finalStage)">{{ finalStage.name }}</button>
-                      }
-                    }
-                    @if (canArchive) {
-                      <button type="button" (click)="archive(item)">Archivar</button>
-                    }
+                    </dl>
                   </div>
-                } @else if (canArchive) {
-                  <button class="restore" type="button" (click)="restore(item)">Restaurar</button>
-                }
+                </div>
+                <button
+                  class="card-fold"
+                  type="button"
+                  draggable="false"
+                  [attr.aria-expanded]="isExpanded(item.id)"
+                  [attr.aria-controls]="'detalles-' + item.id"
+                  [attr.aria-label]="(isExpanded(item.id) ? 'Ocultar detalles de ' : 'Ver detalles de ') + item.name"
+                  [attr.title]="isExpanded(item.id) ? 'Ocultar detalles' : 'Ver detalles'"
+                  (click)="toggleDetails($event, item.id)"
+                ></button>
               </article>
             } @empty {
               <p class="empty">Sin oportunidades</p>
@@ -133,12 +159,11 @@
       <form (submit)="submitClose($event)">
         @if (closingStage()!.stage_type === 'lost') {
           <label
-            >Motivo de pérdida<select name="loss_reason" required>
-              <option value="">Selecciona un motivo</option>
-              @for (reason of lossReasons; track reason.key) {
-                <option [value]="reason.key">{{ reason.label }}</option>
-              }
-            </select></label
+            >Motivo de pérdida<app-combobox
+              name="loss_reason"
+              [options]="lossReasonOptions"
+              placeholder="Escribe para buscar un motivo"
+          /></label
           ><label
             >Detalle opcional<textarea
               name="loss_detail"
@@ -187,5 +212,37 @@
       </div> }
       <div class="modal-actions"><button type="button" class="primary" (click)="closeHistory()">Cerrar</button></div>
     </section>
+  </div>
+}
+@if (menuItem(); as item) {
+  <!-- Acciones de la tarjeta: un solo menú, ubicado junto al botón ⋯ que lo abrió. -->
+  <div
+    class="card-menu"
+    role="menu"
+    [attr.aria-label]="'Acciones de ' + item.name"
+    [style.top.px]="menuPosition().top"
+    [style.left.px]="menuPosition().left"
+    (click)="$event.stopPropagation()"
+  >
+    <button role="menuitem" type="button" (click)="closeMenu(); openHistory(item)">Historial</button>
+    @if (!item.archived) {
+      @if (canUpdate) {
+        <a role="menuitem" [routerLink]="['/panel/oportunidades', item.id, 'editar']" (click)="closeMenu()">Editar</a>
+      }
+      @if (canClose && stageType(item.stage) === 'normal') {
+        <p class="menu-label">Cerrar como</p>
+        @for (finalStage of closingStages('won'); track finalStage.id) {
+          <button role="menuitem" class="won" type="button" (click)="closeMenu(); openClose(item, finalStage)">{{ finalStage.name }}</button>
+        }
+        @for (finalStage of closingStages('lost'); track finalStage.id) {
+          <button role="menuitem" class="lost" type="button" (click)="closeMenu(); openClose(item, finalStage)">{{ finalStage.name }}</button>
+        }
+      }
+      @if (canArchive) {
+        <button role="menuitem" class="separated" type="button" (click)="closeMenu(); archive(item)">Archivar</button>
+      }
+    } @else if (canArchive) {
+      <button role="menuitem" class="separated" type="button" (click)="closeMenu(); restore(item)">Restaurar</button>
+    }
   </div>
 }

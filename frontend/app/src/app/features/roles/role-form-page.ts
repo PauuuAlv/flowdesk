@@ -4,6 +4,7 @@ import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 
 import { PermissionCode, PERMISSION_MODULES } from '../../core/models/permission.models';
 import { AccessControlService } from '../../core/services/access-control.service';
+import { SessionService } from '../../core/services/session.service';
 import { atLeastOnePermissionValidator } from '../../core/validators/role.validator';
 
 @Component({
@@ -17,6 +18,7 @@ export class RoleFormPage {
   private readonly accessControl = inject(AccessControlService);
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
+  private readonly ownRoleId = inject(SessionService).getUser()?.role_id ?? null;
 
   protected readonly permissionModules = PERMISSION_MODULES;
   protected readonly roleId = this.route.snapshot.paramMap.get('roleId');
@@ -25,6 +27,8 @@ export class RoleFormPage {
   protected readonly saving = signal(false);
   protected readonly errorMessage = signal('');
   protected readonly protectedRole = signal(false);
+  /** Nadie puede modificar el rol que tiene asignado: se muestra en solo lectura. */
+  protected readonly ownRole = Boolean(this.roleId) && this.roleId === this.ownRoleId;
   private readonly allPermissionCodes = PERMISSION_MODULES.reduce<PermissionCode[]>(
     (codes, module) => [...codes, ...module.permissions.map((permission) => permission.code)],
     [],
@@ -75,6 +79,7 @@ export class RoleFormPage {
 
   protected submit(): void {
     this.errorMessage.set('');
+    if (this.ownRole) return;
     if (this.roleForm.invalid) {
       this.roleForm.markAllAsTouched();
       return;
@@ -99,9 +104,13 @@ export class RoleFormPage {
         error: (error: Error) => {
           this.saving.set(false);
           this.errorMessage.set(
-            error.message === 'DUPLICATE_ROLE'
-              ? 'Ya existe un rol con ese nombre en tu empresa.'
-              : 'No fue posible guardar el rol. Intenta nuevamente.',
+            error.message === 'DUPLICATE_PERMISSIONS'
+              ? `El rol ${String(error.cause)} ya tiene exactamente estos permisos. Usa ese rol o ajusta los permisos.`
+              : error.message === 'OWN_ROLE'
+              ? 'No puedes modificar el rol que tienes asignado.'
+              : error.message === 'DUPLICATE_ROLE'
+                ? 'Ya existe un rol con ese nombre en tu empresa.'
+                : 'No fue posible guardar el rol. Intenta nuevamente.',
           );
         },
       });
@@ -114,10 +123,12 @@ export class RoleFormPage {
         role.permissions.forEach((permission) =>
           this.permissionControls[permission].setValue(true),
         );
+        if (role.origin === 'template') this.roleForm.controls.name.disable();
         if (role.is_protected) {
           this.protectedRole.set(true);
-          this.roleForm.controls.name.disable();
+          this.roleForm.controls.permissions.disable();
         }
+        if (this.ownRole) this.roleForm.disable();
         this.loading.set(false);
       },
       error: () => {

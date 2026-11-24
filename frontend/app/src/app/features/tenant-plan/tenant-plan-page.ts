@@ -1,14 +1,15 @@
-import { Component, inject, signal } from '@angular/core';
+import { Component, computed, inject, signal } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 
 import { SaaSPlanKey } from '../../core/models/auth.models';
 import { TenantPlan } from '../../core/models/tenant-plan.models';
 import { SessionService } from '../../core/services/session.service';
 import { TenantPlanService } from '../../core/services/tenant-plan.service';
+import { Combobox, ComboOption } from '../../shared/ui/combobox/combobox';
 
 @Component({
   selector: 'app-tenant-plan-page',
-  imports: [ReactiveFormsModule],
+  imports: [ReactiveFormsModule, Combobox],
   templateUrl: './tenant-plan-page.html',
   styleUrl: './tenant-plan-page.scss',
 })
@@ -25,6 +26,14 @@ export class TenantPlanPage {
   protected readonly form = this.fb.nonNullable.group({
     requested_plan_key: ['' as SaaSPlanKey, Validators.required],
     note: ['', Validators.maxLength(500)],
+  });
+  /** Planes a los que se puede cambiar (todos menos el actual). */
+  protected readonly planOptions = computed<ComboOption[]>(() => {
+    const plan = this.data();
+    if (!plan) return [];
+    return plan.plans
+      .filter((option) => option.key !== plan.plan_key)
+      .map((option) => ({ value: option.key, label: option.name, hint: `${this.number(option.max_users)} usuarios` }));
   });
 
   constructor() { this.load(); }

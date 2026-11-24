@@ -11,6 +11,7 @@ export class SessionService {
   private readonly refreshTokenKey = 'flowdesk.refresh_token';
   private readonly userKey = 'flowdesk.user';
   private readonly platformAdminTokenKey = 'flowdesk.platform_admin.access_token';
+  private readonly platformAdminEmailKey = 'flowdesk.platform_admin.email';
 
   saveTokens(tokens: TokenResponse): void {
     localStorage.setItem(this.accessTokenKey, tokens.access_token);
@@ -50,8 +51,17 @@ export class SessionService {
     return localStorage.getItem(this.platformAdminTokenKey);
   }
 
+  savePlatformAdminEmail(email: string): void {
+    localStorage.setItem(this.platformAdminEmailKey, email);
+  }
+
+  getPlatformAdminEmail(): string | null {
+    return localStorage.getItem(this.platformAdminEmailKey);
+  }
+
   clearPlatformAdmin(): void {
     localStorage.removeItem(this.platformAdminTokenKey);
+    localStorage.removeItem(this.platformAdminEmailKey);
   }
 
   clear(): void {

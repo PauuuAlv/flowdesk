@@ -28,11 +28,13 @@
     </label>
     <label>
       <span>Estado</span>
-      <select (change)="updateStatusFilter($event)">
-        <option value="all">Todos</option>
-        <option value="active">Activos</option>
-        <option value="inactive">Inactivos</option>
-      </select>
+      <app-combobox
+        [options]="[{ value: 'all', label: 'Todos' }, { value: 'active', label: 'Activos' }, { value: 'inactive', label: 'Inactivos' }]"
+        [selectedValue]="statusFilter()"
+        ariaLabel="Estado"
+        placeholder="Estado"
+        (selected)="updateStatusFilter($event)"
+      />
     </label>
   </div>
 

@@ -107,10 +107,8 @@
         <div class="grid thirds">
           <label
             ><span>Moneda *</span
-            ><select formControlName="currency">
-              <option value="MXN">MXN — Peso mexicano</option>
-              <option value="USD">USD — Dólar estadounidense</option>
-            </select></label
+            ><app-combobox formControlName="currency" [options]="currencyOptions" placeholder="Selecciona una moneda"
+            /><small class="hint">Predeterminada en oportunidades, cotizaciones y productos nuevos.</small></label
           ><label
             ><span>IVA predeterminado *</span>
             <div class="suffix">

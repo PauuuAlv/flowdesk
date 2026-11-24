@@ -23,6 +23,8 @@ export interface UserMeResponse {
   tenant_id: string;
   tenant_name?: string;
   tenant_logo_url?: string | null;
+  /** Moneda predeterminada de la empresa (Configuración). */
+  tenant_currency?: string;
   email: string;
   full_name: string | null;
   role: string;
@@ -42,15 +44,28 @@ export interface PlatformAdminTokenResponse {
   access_token: string;
   token_type: string;
 }
-export type PlatformRole = 'superadmin' | 'viewer';
+/** 'superadmin' | 'operator' | 'viewer' para roles por defecto, 'custom' si no. */
+export type PlatformRoleKey = 'superadmin' | 'operator' | 'viewer' | 'custom';
 export interface PlatformAdminMe {
   id: string;
   email: string;
   full_name: string | null;
-  role: PlatformRole;
+  role: PlatformRoleKey;
+  role_id: string;
+  role_name: string;
+  permissions: string[];
+  is_owner: boolean;
 }
-export interface PlatformMember extends PlatformAdminMe {
+export interface PlatformMember {
+  id: string;
+  email: string;
+  full_name: string | null;
+  role: PlatformRoleKey;
+  role_id: string;
+  role_name: string;
   is_active: boolean;
+  /** Cuenta principal (SUPERADMIN_EMAIL del .env): no se le cambia el rol ni se desactiva. */
+  is_owner: boolean;
   invitation_pending: boolean;
   created_at: string;
   invitation_link?: string | null;
@@ -58,7 +73,7 @@ export interface PlatformMember extends PlatformAdminMe {
 export interface InvitePlatformMemberRequest {
   email: string;
   full_name: string;
-  role: 'viewer';
+  role_id: string;
 }
 
 export interface CreateTenantRequest {
@@ -137,13 +152,12 @@ export interface CreateTenantResponse {
   invitation_link: string;
 }
 
-export type TenantUserRole = 'admin' | 'member';
+export type TenantUserRole = 'admin' | 'member' | 'viewer' | 'custom';
 
 export interface InviteUserRequest {
   email: string;
   full_name: string;
-  role: TenantUserRole;
-  role_id?: string;
+  role_id: string;
 }
 
 export interface InviteUserResponse {

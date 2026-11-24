@@ -72,6 +72,8 @@ export class LoginPage {
   private getErrorMessage(error: HttpErrorResponse): string {
     if (error.status === 0)
       return 'No fue posible conectar con el servidor. Intenta nuevamente más tarde.';
+    if (error.status === 403 && error.error?.detail === 'Company disabled')
+      return 'Tu empresa está inhabilitada. Contacta al administrador de Flowdesk.';
     if (error.status === 401)
       return 'Correo o contraseña incorrectos. Verifica tus datos e intenta de nuevo.';
     return 'No fue posible iniciar sesión. Intenta nuevamente.';

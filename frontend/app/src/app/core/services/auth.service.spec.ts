@@ -148,7 +148,7 @@ describe('AuthService', () => {
     const requestBody = {
       full_name: 'Daniel Ramírez',
       email: 'daniel@example.com',
-      role: 'member' as const,
+      role_id: 'role-member-id',
     };
 
     service.inviteUser(requestBody).subscribe((response) => {
@@ -163,7 +163,7 @@ describe('AuthService', () => {
     request.flush({
       user_id: 'user-id',
       email: requestBody.email,
-      role: requestBody.role,
+      role: 'member',
       invitation_link: 'http://localhost/accept-invite?token=user-token',
     });
   });

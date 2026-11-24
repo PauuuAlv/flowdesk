@@ -5,10 +5,11 @@ import { Client, ClientStatus } from '../../core/models/client.models';
 import { PERMISSIONS } from '../../core/models/permission.models';
 import { ClientService } from '../../core/services/client.service';
 import { SessionService } from '../../core/services/session.service';
+import { Combobox } from '../../shared/ui/combobox/combobox';
 
 @Component({
   selector: 'app-client-list-page',
-  imports: [RouterLink],
+  imports: [RouterLink, Combobox],
   templateUrl: './client-list-page.html',
   styleUrl: './client-list-page.scss',
 })
@@ -61,8 +62,8 @@ export class ClientListPage {
     this.search.set((event.target as HTMLInputElement).value);
   }
 
-  protected updateStatusFilter(event: Event): void {
-    this.statusFilter.set((event.target as HTMLSelectElement).value as ClientStatus | 'all');
+  protected updateStatusFilter(value: string): void {
+    this.statusFilter.set(value as ClientStatus | 'all');
   }
 
   protected requestStatusChange(client: Client): void {
@@ -107,6 +108,6 @@ export class ClientListPage {
   }
 
   private hasPermission(permission: (typeof PERMISSIONS)[keyof typeof PERMISSIONS]): boolean {
-    return this.user?.role === 'admin' || Boolean(this.user?.permissions?.includes(permission));
+    return Boolean(this.user?.permissions?.includes(permission));
   }
 }

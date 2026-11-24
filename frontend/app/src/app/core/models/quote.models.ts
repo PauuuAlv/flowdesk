@@ -43,6 +43,7 @@ export interface SaveQuoteRequest {
   owner_user_id: string;
   issue_date: string;
   valid_until: string;
+  currency?: string;
   notes: string | null;
   items: Array<{
     product_id: string | null;

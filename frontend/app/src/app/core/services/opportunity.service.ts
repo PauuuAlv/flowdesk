@@ -6,6 +6,8 @@ import {
   Opportunity,
   OpportunityAssignee,
   OpportunityStageCatalog,
+  Pipeline,
+  SavePipelineRequest,
   OpportunityStageHistory,
   SaveOpportunityStageRequest,
   OpportunityStage,
@@ -24,10 +26,21 @@ export class OpportunityService {
   assignees(): Observable<OpportunityAssignee[]> {
     return this.http.get<OpportunityAssignee[]>('/api/opportunities/assignees');
   }
-  stages(includeInactive = false, search = ''): Observable<OpportunityStageCatalog[]> {
+  stages(includeInactive = false, search = '', pipelineId?: string): Observable<OpportunityStageCatalog[]> {
     return this.http.get<OpportunityStageCatalog[]>('/api/opportunity-stages', {
-      params: { include_inactive: includeInactive, search },
+      params: { include_inactive: includeInactive, search, ...(pipelineId ? { pipeline_id: pipelineId } : {}) },
     });
+  }
+  pipelines(includeInactive = false): Observable<Pipeline[]> {
+    return this.http.get<Pipeline[]>('/api/pipelines', { params: { include_inactive: includeInactive } });
+  }
+  savePipeline(body: SavePipelineRequest, id?: string): Observable<Pipeline> {
+    return id
+      ? this.http.patch<Pipeline>(`/api/pipelines/${id}`, body)
+      : this.http.post<Pipeline>('/api/pipelines', body);
+  }
+  deletePipeline(id: string): Observable<void> {
+    return this.http.delete<void>(`/api/pipelines/${id}`);
   }
   createStage(body: SaveOpportunityStageRequest): Observable<OpportunityStageCatalog> {
     return this.http.post<OpportunityStageCatalog>('/api/opportunity-stages', body);

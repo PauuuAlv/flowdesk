@@ -25,6 +25,9 @@ export class ResetPasswordPage {
   protected readonly showPassword = signal(false);
   protected readonly showPasswordConfirmation = signal(false);
   protected readonly token = this.route.snapshot.queryParamMap.get('token') ?? '';
+  /** true en /administracion-flowdesk/restablecer-contrasena (cuentas de plataforma). */
+  protected readonly isPlatform = this.route.snapshot.data['audience'] === 'platform';
+  protected readonly loginLink = this.isPlatform ? '/administracion-flowdesk/iniciar-sesion' : '/iniciar-sesion';
   protected readonly resetPasswordForm = this.formBuilder.nonNullable.group({
     new_password: ['', [Validators.required, strongPasswordValidator]],
     password_confirmation: ['', Validators.required],
@@ -66,7 +69,11 @@ export class ResetPasswordPage {
     }
 
     this.submitting.set(true);
-    this.authService.resetPassword({ token: this.token, new_password }).subscribe({
+    const request = { token: this.token, new_password };
+    const call = this.isPlatform
+      ? this.authService.platformResetPassword(request)
+      : this.authService.resetPassword(request);
+    call.subscribe({
       next: () => {
         this.submitting.set(false);
         this.successMessage.set('La contraseña fue actualizada correctamente.');
@@ -82,6 +89,7 @@ export class ResetPasswordPage {
   private getErrorMessage(error: HttpErrorResponse): string {
     if (error.status === 0)
       return 'No fue posible conectar con el servidor. Intenta nuevamente más tarde.';
+    if (error.status === 422) return 'La contraseña no cumple todos los requisitos de seguridad.';
     return 'El enlace es inválido o venció. Solicita uno nuevo e intenta nuevamente.';
   }
 }

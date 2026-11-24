@@ -4,14 +4,20 @@ from typing import Literal
 
 from pydantic import BaseModel, Field, field_validator, model_validator
 
+from app.core.currencies import CurrencyCode
+
 OpportunityStage = str
 
 
 class OpportunityPayload(BaseModel):
     client_id: str
+    # Sin pipeline se usa el predeterminado de la empresa. La etapa debe ser de ese pipeline.
+    pipeline_id: str | None = None
     owner_user_id: str
     name: str = Field(min_length=3, max_length=140)
     amount: Decimal = Field(ge=0, max_digits=14, decimal_places=2)
+    # Sin moneda: al crear se usa la de la empresa; al editar se conserva la actual.
+    currency: CurrencyCode | None = None
     stage: str = Field(min_length=1, max_length=50)
     probability: int = Field(ge=0, le=100)
     expected_close_date: date | None = None
@@ -63,12 +69,15 @@ class CloseOpportunityRequest(BaseModel):
 
 class OpportunityResponse(BaseModel):
     id: str
+    pipeline_id: str
+    pipeline_name: str
     client_id: str
     client_name: str
     owner_user_id: str
     owner_name: str
     name: str
     amount: Decimal
+    currency: str
     stage: OpportunityStage
     probability: int
     expected_close_date: date | None

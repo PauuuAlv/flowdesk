@@ -1,0 +1,122 @@
+<section class="contacts-card">
+  <header class="contacts-heading">
+    <div>
+      <h2>Contactos</h2>
+      <p>Personas con las que das seguimiento dentro de este cliente.</p>
+    </div>
+    @if (canEdit() && editing() === null) {
+      <button type="button" class="primary-action" (click)="startCreate()">Agregar contacto</button>
+    }
+  </header>
+
+  @if (errorMessage()) {
+    <p class="message error" role="alert">{{ errorMessage() }}</p>
+  }
+
+  @if (editing() !== null) {
+    <form class="contact-form" [formGroup]="form" (ngSubmit)="submit()" novalidate>
+      <div class="form-grid">
+        <label class="field">
+          <span>Nombre *</span>
+          <input formControlName="full_name" placeholder="Ej: Daniela Ramírez" autocomplete="name" />
+          @if (form.controls.full_name.touched && form.controls.full_name.invalid) {
+            <small>Ingresa un nombre de al menos 2 caracteres.</small>
+          }
+        </label>
+        <label class="field">
+          <span>Puesto</span>
+          <input formControlName="job_title" placeholder="Ej: Gerente de compras" />
+        </label>
+        <label class="field">
+          <span>Correo electrónico</span>
+          <input type="email" formControlName="email" placeholder="Ej: compras@empresa.com" />
+          @if (form.controls.email.touched && form.controls.email.invalid) {
+            <small>Ingresa un correo válido.</small>
+          }
+        </label>
+        <label class="field">
+          <span>Teléfono</span>
+          <input type="tel" formControlName="phone" placeholder="Ej: +52 771 123 4567" />
+          @if (form.controls.phone.touched && form.controls.phone.invalid) {
+            <small>Utiliza únicamente números y símbolos telefónicos.</small>
+          }
+        </label>
+        <label class="checkbox full-width">
+          <input type="checkbox" formControlName="is_primary" />
+          <span>Contacto principal</span>
+        </label>
+      </div>
+      <div class="form-actions">
+        <button type="button" class="secondary" (click)="cancelEdit()">Cancelar</button>
+        <button type="submit" [disabled]="saving()">
+          {{ saving() ? 'Guardando…' : 'Guardar contacto' }}
+        </button>
+      </div>
+    </form>
+  }
+
+  @if (loading()) {
+    <div class="loading" aria-label="Cargando contactos"><i></i><i></i></div>
+  } @else if (contacts().length === 0) {
+    <p class="empty">Este cliente aún no tiene contactos registrados.</p>
+  } @else {
+    <ul class="contact-list">
+      @for (contact of contacts(); track contact.id) {
+        <li>
+          <div class="contact-info">
+            <strong>
+              {{ contact.full_name }}
+              @if (contact.is_primary) {
+                <span class="badge">Principal</span>
+              }
+            </strong>
+            @if (contact.job_title) {
+              <span>{{ contact.job_title }}</span>
+            }
+            <span class="meta">
+              @if (contact.email) {
+                <a [href]="'mailto:' + contact.email">{{ contact.email }}</a>
+              }
+              @if (contact.phone) {
+                <a [href]="'tel:' + contact.phone">{{ contact.phone }}</a>
+              }
+            </span>
+          </div>
+          @if (canEdit()) {
+            <div class="contact-actions">
+              @if (!contact.is_primary) {
+                <button type="button" [disabled]="saving()" (click)="makePrimary(contact)">
+                  Hacer principal
+                </button>
+              }
+              <button type="button" [disabled]="saving()" (click)="startEdit(contact)">Editar</button>
+              <button type="button" class="danger" [disabled]="saving()" (click)="contactToDelete.set(contact)">
+                Eliminar
+              </button>
+            </div>
+          }
+        </li>
+      }
+    </ul>
+  }
+</section>
+
+@if (contactToDelete(); as contact) {
+  <div class="modal-backdrop" (click)="contactToDelete.set(null)">
+    <div class="modal" role="dialog" aria-modal="true" (click)="$event.stopPropagation()">
+      <h3>¿Eliminar a {{ contact.full_name }}?</h3>
+      <p>
+        Esta acción no se puede deshacer.
+        @if (contact.is_primary) {
+          Otro contacto pasará a ser el principal.
+        }
+      </p>
+      <div class="form-actions">
+        <button type="button" class="secondary" (click)="contactToDelete.set(null)">Cancelar</button>
+        <button type="button" class="danger-solid" [disabled]="saving()" (click)="confirmDelete()">
+          Eliminar
+        </button>
+      </div>
+    </div>
+  </div>
+}
