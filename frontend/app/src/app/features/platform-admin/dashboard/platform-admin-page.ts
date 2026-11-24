@@ -1,7 +1,7 @@
 import { HttpErrorResponse } from '@angular/common/http';
-import { Component, computed, inject, signal } from '@angular/core';
+import { Component, computed, effect, inject, signal } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
-import { RouterLink } from '@angular/router';
+import { ActivatedRoute, RouterLink } from '@angular/router';
 
 import {
   CreateTenantResponse,
@@ -21,7 +21,16 @@ import { PlatformAccessService } from '../../../core/services/platform-access.se
 export class PlatformAdminPage {
   private readonly formBuilder = inject(FormBuilder);
   private readonly authService = inject(AuthService);
+  private readonly route = inject(ActivatedRoute);
   protected readonly access = inject(PlatformAccessService);
+  private readonly scrollToCreateForm = effect(() => {
+    const shouldFocus =
+      this.route.snapshot.data['focusCreateTenant'] === true ||
+      this.route.snapshot.fragment === 'crear-empresa';
+    if (!this.access.canManage() || !shouldFocus) return;
+
+    setTimeout(() => this.scrollToCreateSection());
+  });
 
   protected readonly submitting = signal(false);
   protected readonly errorMessage = signal('');
@@ -109,6 +118,12 @@ export class PlatformAdminPage {
   }
   protected setStatusFilter(event: Event) {
     this.statusFilter.set((event.target as HTMLSelectElement).value as SubscriptionStatus | 'all');
+  }
+  protected scrollToCreateSection(): void {
+    document.getElementById('crear-empresa')?.scrollIntoView({
+      behavior: 'smooth',
+      block: 'start',
+    });
   }
   protected updateTenant(
     tenant: TenantSaaS,

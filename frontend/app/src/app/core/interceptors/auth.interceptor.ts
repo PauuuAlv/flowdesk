@@ -38,7 +38,12 @@ export const authInterceptor: HttpInterceptorFn = (request, next) => {
       catchError((error: HttpErrorResponse) => {
         if (error.status === 401) {
           sessionService.clearPlatformAdmin();
-          void router.navigate(['/administracion-flowdesk/iniciar-sesion']);
+          void router.navigate(['/administracion-flowdesk/iniciar-sesion'], {
+            queryParams: {
+              returnUrl: router.url,
+              sesion: 'expirada',
+            },
+          });
         }
         return throwError(() => error);
       }),

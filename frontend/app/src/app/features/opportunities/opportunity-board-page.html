@@ -48,7 +48,7 @@
             <strong>{{ money(total(stage.key)) }}</strong>
           </div>
           <div class="cards">
-            @for (item of byStage(stage.key); track item.id) {
+            @for (item of byStage(stage.key); track item.id + '-' + item.stage) {
               <article [class.archived]="item.archived">
                 <div class="card-top">
                   <span>{{ item.probability }}%</span><strong>{{ money(item.amount) }}</strong>
@@ -82,7 +82,9 @@
                       aria-label="Cambiar etapa"
                     >
                       @for (option of openStages(); track option.key) {
-                        <option [value]="option.key">{{ option.name }}</option>
+                        <option [value]="option.key" [selected]="option.key === item.stage">
+                          {{ option.name }}
+                        </option>
                       }
                     </select>
                   }

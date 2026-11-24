@@ -302,6 +302,14 @@ export const routes: Routes = [
           ),
       },
       {
+        path: 'empresas/nueva',
+        data: { focusCreateTenant: true },
+        loadComponent: () =>
+          import('./features/platform-admin/dashboard/platform-admin-page').then(
+            (component) => component.PlatformAdminPage,
+          ),
+      },
+      {
         path: 'empresas/:tenantId',
         loadComponent: () =>
           import('./features/platform-admin/tenant-detail/platform-tenant-detail-page').then(

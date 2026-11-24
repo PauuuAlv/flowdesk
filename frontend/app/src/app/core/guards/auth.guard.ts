@@ -29,13 +29,15 @@ export const authGuard: CanActivateFn = (_route, state) => {
   );
 };
 
-export const platformAdminGuard: CanActivateFn = () => {
+export const platformAdminGuard: CanActivateFn = (_route, state) => {
   const sessionService = inject(SessionService);
   const router = inject(Router);
 
   return sessionService.getPlatformAdminToken()
     ? true
-    : router.createUrlTree(['/administracion-flowdesk/iniciar-sesion']);
+    : router.createUrlTree(['/administracion-flowdesk/iniciar-sesion'], {
+        queryParams: { returnUrl: state.url },
+      });
 };
 
 export const inviteUsersGuard: CanActivateFn = () => {

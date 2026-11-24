@@ -1,7 +1,7 @@
 import { HttpErrorResponse } from '@angular/common/http';
 import { Component, inject, signal } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
-import { Router, RouterLink } from '@angular/router';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 
 import { AuthService } from '../../../core/services/auth.service';
 import { SessionService } from '../../../core/services/session.service';
@@ -17,6 +17,7 @@ export class PlatformAdminLoginPage {
   private readonly authService = inject(AuthService);
   private readonly sessionService = inject(SessionService);
   private readonly router = inject(Router);
+  private readonly route = inject(ActivatedRoute);
 
   protected readonly submitting = signal(false);
   protected readonly errorMessage = signal('');
@@ -25,6 +26,12 @@ export class PlatformAdminLoginPage {
     email: ['', [Validators.required, Validators.email]],
     password: ['', Validators.required],
   });
+
+  constructor() {
+    if (this.route.snapshot.queryParamMap.get('sesion') === 'expirada') {
+      this.errorMessage.set('Tu sesión de administración expiró. Inicia sesión nuevamente.');
+    }
+  }
 
   protected togglePasswordVisibility(): void {
     this.showPassword.update((visible) => !visible);
@@ -42,7 +49,12 @@ export class PlatformAdminLoginPage {
       next: (tokens) => {
         this.sessionService.savePlatformAdminToken(tokens);
         this.submitting.set(false);
-        void this.router.navigate(['/administracion-flowdesk']);
+        const returnUrl = this.route.snapshot.queryParamMap.get('returnUrl');
+        void this.router.navigateByUrl(
+          returnUrl?.startsWith('/administracion-flowdesk')
+            ? returnUrl
+            : '/administracion-flowdesk',
+        );
       },
       error: (error: HttpErrorResponse) => {
         this.submitting.set(false);

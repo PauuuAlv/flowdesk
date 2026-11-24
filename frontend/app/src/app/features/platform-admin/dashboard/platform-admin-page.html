@@ -14,7 +14,11 @@
           <h2>Empresas registradas</h2>
           <p>Los límites se aplican automáticamente al crear usuarios, clientes y productos.</p>
         </div>
-        @if (access.canManage()) { <a href="#crear-empresa">Nueva empresa</a> }
+        @if (access.canManage()) {
+          <button class="create-company-link" type="button" (click)="scrollToCreateSection()">
+            Nueva empresa
+          </button>
+        }
       </div>
       <div class="filters">
         <label

@@ -115,11 +115,15 @@ button {
 .section-heading p {
   margin: 0.35rem 0 0;
 }
-.section-heading a {
+.section-heading a,
+.section-heading .create-company-link {
   padding: 0.7rem 1rem;
   color: #fff;
   background: var(--flowdesk-navy);
+  border: 0;
   border-radius: 0.45rem;
+  cursor: pointer;
+  font: inherit;
   text-decoration: none;
   font-weight: 750;
 }
