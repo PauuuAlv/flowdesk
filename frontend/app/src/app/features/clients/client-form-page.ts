@@ -3,15 +3,23 @@ import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 
 import { ClientStatus, SaveClientRequest } from '../../core/models/client.models';
+import { PERMISSIONS } from '../../core/models/permission.models';
 import { ClientService } from '../../core/services/client.service';
+import { SessionService } from '../../core/services/session.service';
+import { Combobox, ComboOption } from '../../shared/ui/combobox/combobox';
+import { ClientContacts } from './client-contacts';
 
 @Component({
   selector: 'app-client-form-page',
-  imports: [ReactiveFormsModule, RouterLink],
+  imports: [ReactiveFormsModule, RouterLink, ClientContacts, Combobox],
   templateUrl: './client-form-page.html',
   styleUrl: './client-form-page.scss',
 })
 export class ClientFormPage {
+  protected readonly statusOptions: ComboOption[] = [
+    { value: 'active', label: 'Activo' },
+    { value: 'inactive', label: 'Inactivo' },
+  ];
   private readonly formBuilder = inject(FormBuilder);
   private readonly clientService = inject(ClientService);
   private readonly route = inject(ActivatedRoute);
@@ -21,6 +29,9 @@ export class ClientFormPage {
   protected readonly loading = signal(Boolean(this.clientId));
   protected readonly saving = signal(false);
   protected readonly errorMessage = signal('');
+  protected readonly canEditContacts = Boolean(
+    inject(SessionService).getUser()?.permissions?.includes(PERMISSIONS.clientsUpdate),
+  );
 
   protected readonly form = this.formBuilder.nonNullable.group({
     company_name: ['', [Validators.required, Validators.minLength(2), Validators.maxLength(120)]],
@@ -62,6 +73,11 @@ export class ClientFormPage {
         );
       },
     });
+  }
+
+  /** El contacto principal se administra en la sección de contactos. */
+  protected syncPrimaryContact(fullName: string): void {
+    this.form.controls.contact_name.setValue(fullName);
   }
 
   private loadClient(clientId: string): void {

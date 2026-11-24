@@ -3,13 +3,16 @@ import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { PERMISSIONS } from '../../core/models/permission.models';
 import { CompanySettingsService } from '../../core/services/company-settings.service';
 import { SessionService } from '../../core/services/session.service';
+import { Combobox } from '../../shared/ui/combobox/combobox';
+import { CURRENCY_OPTIONS } from '../../core/models/currency.models';
 @Component({
   selector: 'app-company-settings-page',
-  imports: [ReactiveFormsModule],
+  imports: [ReactiveFormsModule, Combobox],
   templateUrl: './company-settings-page.html',
   styleUrl: './company-settings-page.scss',
 })
 export class CompanySettingsPage {
+  protected readonly currencyOptions = CURRENCY_OPTIONS;
   private readonly fb = inject(FormBuilder);
   private readonly service = inject(CompanySettingsService);
   private readonly session = inject(SessionService);
@@ -153,7 +156,8 @@ export class CompanySettingsPage {
           this.success.set('La configuración de la empresa se guardó correctamente.');
           const user = this.session.getUser();
           if (user) {
-            this.session.saveUser({ ...user, tenant_name: x.name });
+            // La moneda es la predeterminada de los formularios nuevos.
+            this.session.saveUser({ ...user, tenant_name: x.name, tenant_currency: x.currency });
           }
         },
         error: () => {

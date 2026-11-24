@@ -12,6 +12,12 @@
     <section class="form-card loading-card" aria-busy="true"><i></i><i></i><i></i></section>
   } @else {
     <form [formGroup]="roleForm" (ngSubmit)="submit()" novalidate>
+      @if (ownRole) {
+        <div class="message info" role="status">
+          Este es el rol que tienes asignado. Puedes consultar sus permisos, pero no modificarlo:
+          pide a otro usuario con permiso para editar roles que haga el cambio.
+        </div>
+      }
       @if (errorMessage()) {
         <div class="message error" role="alert">{{ errorMessage() }}</div>
       }
@@ -69,7 +75,7 @@
               <div class="module-copy">
                 <h3>{{ module.label }}</h3>
                 <p>{{ module.description }}</p>
-                <button type="button" (click)="toggleModule(moduleIndex)">
+                <button type="button" [disabled]="ownRole || protectedRole()" (click)="toggleModule(moduleIndex)">
                   {{ moduleSelected(moduleIndex) ? 'Quitar todos' : 'Seleccionar todos' }}
                 </button>
               </div>
@@ -94,10 +100,14 @@
       </section>
 
       <div class="form-actions">
-        <a routerLink="/panel/roles">Cancelar</a
-        ><button type="submit" [disabled]="saving()">
-          {{ saving() ? 'Guardando…' : editing ? 'Guardar cambios' : 'Crear rol' }}
-        </button>
+        @if (ownRole) {
+          <a routerLink="/panel/roles">Volver</a>
+        } @else {
+          <a routerLink="/panel/roles">Cancelar</a
+          ><button type="submit" [disabled]="saving()">
+            {{ saving() ? 'Guardando…' : editing ? 'Guardar cambios' : 'Crear rol' }}
+          </button>
+        }
       </div>
     </form>
   }

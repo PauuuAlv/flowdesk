@@ -10,9 +10,13 @@ import { OpportunityService } from '../../core/services/opportunity.service';
 import { QuoteService } from '../../core/services/quote.service';
 import { ProductService } from '../../core/services/product.service';
 import { CompanySettingsService } from '../../core/services/company-settings.service';
+import { Combobox, ComboOption } from '../../shared/ui/combobox/combobox';
+import { CURRENCY_OPTIONS, DEFAULT_CURRENCY, formatMoney } from '../../core/models/currency.models';
+import { SessionService } from '../../core/services/session.service';
+import { HttpErrorResponse } from '@angular/common/http';
 @Component({
   selector: 'app-quote-form-page',
-  imports: [ReactiveFormsModule, RouterLink],
+  imports: [ReactiveFormsModule, RouterLink, Combobox],
   templateUrl: './quote-form-page.html',
   styleUrl: './quote-form-page.scss',
 })
@@ -30,7 +34,12 @@ export class QuoteFormPage {
   opportunities = signal<Opportunity[]>([]);
   users = signal<OpportunityAssignee[]>([]);
   products = signal<Product[]>([]);
-  currency = signal('MXN');
+  private session = inject(SessionService);
+  private readonly companyCurrency = this.session.getUser()?.tenant_currency || DEFAULT_CURRENCY;
+  currencyOptions = CURRENCY_OPTIONS;
+  /** Moneda de la cotización (todos sus importes y conceptos del catálogo). */
+  currency = signal(this.companyCurrency);
+  currencyNotice = signal('');
   selectedClient = signal('');
   loading = signal(true);
   saving = signal(false);
@@ -41,12 +50,33 @@ export class QuoteFormPage {
     owner_user_id: ['', Validators.required],
     issue_date: [new Date().toISOString().slice(0, 10), Validators.required],
     valid_until: ['', Validators.required],
+    // Por defecto la moneda de la empresa; se puede cambiar junto a los conceptos.
+    currency: [this.companyCurrency, Validators.required],
     notes: ['', Validators.maxLength(1000)],
     items: this.fb.array([this.item()]),
   });
   available = computed(() =>
     this.opportunities().filter((x) => x.client_id === this.selectedClient() && !x.archived),
   );
+  // Opciones de los combos filtrables.
+  clientOptions = computed<ComboOption[]>(() =>
+    this.clients().map((client) => ({ value: client.id, label: client.company_name })),
+  );
+  opportunityOptions = computed<ComboOption[]>(() => [
+    { value: '', label: 'Sin oportunidad' },
+    ...this.available().map((item) => ({ value: item.id, label: item.name })),
+  ]);
+  userOptions = computed<ComboOption[]>(() =>
+    this.users().map((user) => ({ value: user.id, label: user.name })),
+  );
+  /** Se busca por nombre o por SKU; "Concepto manual" deja escribir la descripción libre. */
+  productOptions = computed<ComboOption[]>(() => [
+    { value: '', label: 'Concepto manual' },
+    // Solo productos en la moneda de la cotización: no se mezclan monedas.
+    ...this.products()
+      .filter((product) => product.currency === this.currency())
+      .map((product) => ({ value: product.id, label: product.name, hint: product.sku })),
+  ]);
   get items() {
     return this.form.controls.items as FormArray;
   }
@@ -107,7 +137,6 @@ export class QuoteFormPage {
     });
     this.settingsService.get().subscribe({
       next: (x) => {
-        this.currency.set(x.currency);
         if (!this.id) {
           const issue = new Date(`${this.form.controls.issue_date.value}T12:00:00`);
           issue.setDate(issue.getDate() + x.quote_validity_days);
@@ -118,6 +147,15 @@ export class QuoteFormPage {
         done();
       },
       error: () => this.fail(),
+    });
+    this.form.controls.currency.valueChanges.subscribe((code) => this.onCurrencyChange(code));
+    // En una cotización nueva, al elegir una oportunidad se adopta su moneda.
+    this.form.controls.opportunity_id.valueChanges.subscribe((id) => {
+      if (this.id || !id) return;
+      const opportunity = this.opportunities().find((item) => item.id === id);
+      if (opportunity && opportunity.currency !== this.form.controls.currency.value) {
+        this.form.controls.currency.setValue(opportunity.currency);
+      }
     });
     this.form.controls.client_id.valueChanges.subscribe((v) => {
       this.selectedClient.set(v);
@@ -139,8 +177,7 @@ export class QuoteFormPage {
   remove(i: number) {
     if (this.items.length > 1) this.items.removeAt(i);
   }
-  selectProduct(i: number, event: Event) {
-    const id = (event.target as HTMLSelectElement).value;
+  selectProduct(i: number, id: string) {
     const product = this.products().find((x) => x.id === id);
     if (product)
       this.items
@@ -174,15 +211,39 @@ export class QuoteFormPage {
     this.saving.set(true);
     this.service.save(body, this.id ?? undefined).subscribe({
       next: () => void this.router.navigate(['/panel/cotizaciones']),
-      error: () => {
-        this.error.set('No fue posible guardar la cotización.');
+      error: (e: HttpErrorResponse) => {
+        const detail = e.error?.detail;
+        this.error.set(
+          detail?.code === 'PRODUCT_CURRENCY_MISMATCH'
+            ? `El producto ${detail.product} está en ${detail.product_currency} y la cotización en ${detail.quote_currency}. Cambia la moneda o usa un concepto manual.`
+            : 'No fue posible guardar la cotización.',
+        );
         this.saving.set(false);
       },
     });
   }
   money(v: number) {
-    return new Intl.NumberFormat('es-MX', { style: 'currency', currency: this.currency() }).format(
-      v,
+    return formatMoney(v, this.currency());
+  }
+  /**
+   * Al cambiar la moneda, los conceptos ligados a productos de otra moneda pasan
+   * a ser conceptos manuales (se conservan descripción y precio para revisarlos).
+   */
+  private onCurrencyChange(code: string) {
+    this.currency.set(code);
+    let unlinked = 0;
+    for (const row of this.items.controls) {
+      const productId = row.get('product_id')?.value;
+      const product = productId ? this.products().find((x) => x.id === productId) : null;
+      if (product && product.currency !== code) {
+        row.patchValue({ product_id: '' });
+        unlinked++;
+      }
+    }
+    this.currencyNotice.set(
+      unlinked
+        ? `La cotización ahora está en ${code}. ${unlinked === 1 ? 'Un concepto quedó' : unlinked + ' conceptos quedaron'} como concepto manual porque su producto está en otra moneda; revisa su precio.`
+        : '',
     );
   }
   private load(id: string) {
@@ -210,6 +271,8 @@ export class QuoteFormPage {
           valid_until: q.valid_until,
           notes: q.notes ?? '',
         });
+        this.form.controls.currency.setValue(q.currency, { emitEvent: false });
+        this.currency.set(q.currency);
         this.selectedClient.set(q.client_id);
         this.form.controls.opportunity_id.setValue(q.opportunity_id ?? '');
         this.loading.set(false);

@@ -1,0 +1,101 @@
+<section class="profile-page">
+  <header>
+    <p class="eyebrow">Cuenta de plataforma</p>
+    <h1>Mi perfil</h1>
+    <p>Consulta tu información y administra la seguridad de tu acceso.</p>
+  </header>
+
+  <section class="card" aria-labelledby="personal-title">
+    <div class="card-copy">
+      <h2 id="personal-title">Información personal</h2>
+      <p>Tu correo y tu rol solo los puede cambiar quien administra el equipo de plataforma.</p>
+    </div>
+    <form [formGroup]="profileForm" (ngSubmit)="saveProfile()" novalidate>
+      @if (profileMessage(); as message) {
+        <p class="message" [class.error]="message.type === 'error'" role="status">{{ message.text }}</p>
+      }
+      <label>
+        <span>Nombre completo</span>
+        <input formControlName="full_name" autocomplete="name" maxlength="120" />
+        @if (profileForm.controls.full_name.touched && profileForm.controls.full_name.invalid) {
+          <small class="field-error">Ingresa un nombre de 2 a 120 caracteres.</small>
+        }
+      </label>
+      <dl>
+        <div>
+          <dt>Correo</dt>
+          <dd>{{ access.member()?.email }}</dd>
+        </div>
+        <div>
+          <dt>Rol</dt>
+          <dd>
+            {{ access.member()?.role_name || 'Sin rol' }}
+            @if (access.member()?.is_owner) {
+              <em class="badge">Cuenta principal</em>
+            }
+          </dd>
+        </div>
+      </dl>
+      <div class="actions">
+        <button type="submit" [disabled]="savingProfile() || profileForm.pristine">
+          {{ savingProfile() ? 'Guardando…' : 'Guardar cambios' }}
+        </button>
+      </div>
+    </form>
+  </section>
+
+  <section class="card" id="seguridad" aria-labelledby="security-title">
+    <div class="card-copy">
+      <h2 id="security-title">Seguridad</h2>
+      <p>Para cambiar tu contraseña confirma primero la actual.</p>
+    </div>
+    <form [formGroup]="passwordForm" (ngSubmit)="changePassword()" novalidate>
+      @if (passwordMessage(); as message) {
+        <p class="message" [class.error]="message.type === 'error'" role="status">{{ message.text }}</p>
+      }
+      <label>
+        <span>Contraseña actual</span>
+        <input
+          [type]="showPasswords() ? 'text' : 'password'"
+          formControlName="current_password"
+          autocomplete="current-password"
+        />
+      </label>
+      <label>
+        <span>Nueva contraseña</span>
+        <input
+          [type]="showPasswords() ? 'text' : 'password'"
+          formControlName="new_password"
+          autocomplete="new-password"
+        />
+      </label>
+      <ul class="checks" aria-label="Requisitos de la contraseña">
+        <li [class.ok]="checks().minLength">Mínimo 8 caracteres</li>
+        <li [class.ok]="checks().uppercase">Una mayúscula</li>
+        <li [class.ok]="checks().lowercase">Una minúscula</li>
+        <li [class.ok]="checks().number">Un número</li>
+        <li [class.ok]="checks().special">Un carácter especial</li>
+      </ul>
+      <label>
+        <span>Confirmar nueva contraseña</span>
+        <input
+          [type]="showPasswords() ? 'text' : 'password'"
+          formControlName="confirmation"
+          autocomplete="new-password"
+        />
+        @if (mismatch()) {
+          <small class="field-error">Las contraseñas no coinciden.</small>
+        }
+      </label>
+      <label class="toggle">
+        <input type="checkbox" [checked]="showPasswords()" (change)="showPasswords.set(!showPasswords())" />
+        Mostrar contraseñas
+      </label>
+      <div class="actions">
+        <button type="submit" [disabled]="savingPassword()">
+          {{ savingPassword() ? 'Cambiando…' : 'Cambiar contraseña' }}
+        </button>
+      </div>
+    </form>
+  </section>
+</section>

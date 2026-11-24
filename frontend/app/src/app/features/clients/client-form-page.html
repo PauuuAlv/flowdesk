@@ -49,6 +49,9 @@
             @if (form.controls.contact_name.touched && form.controls.contact_name.invalid) {
               <small>Ingresa el nombre del contacto.</small>
             }
+            @if (clientId) {
+              <span class="field-hint">Se actualiza al cambiar el contacto principal abajo.</span>
+            }
           </label>
           <label class="field">
             <span>Correo electrónico *</span>
@@ -77,10 +80,7 @@
           @if (clientId) {
             <label class="field">
               <span>Estado</span>
-              <select formControlName="status">
-                <option value="active">Activo</option>
-                <option value="inactive">Inactivo</option>
-              </select>
+              <app-combobox formControlName="status" [options]="statusOptions" placeholder="Selecciona un estado" />
             </label>
           }
           <label class="field full-width">
@@ -104,5 +104,13 @@
         </button>
       </div>
     </form>
+
+    @if (clientId) {
+      <app-client-contacts
+        [clientId]="clientId"
+        [canEdit]="canEditContacts"
+        (primaryChanged)="syncPrimaryContact($event)"
+      />
+    }
   }
 </section>

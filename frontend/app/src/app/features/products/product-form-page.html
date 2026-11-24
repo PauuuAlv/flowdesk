@@ -33,28 +33,45 @@
           </label>
           <label
             ><span>Tipo *</span
-            ><select formControlName="item_type">
-              <option value="product">Producto</option>
-              <option value="service">Servicio</option>
-            </select></label
+            ><app-combobox formControlName="item_type" [options]="typeOptions" placeholder="Selecciona un tipo"
+            /></label
           >
           <label
             ><span>Unidad *</span
-            ><select formControlName="unit_id">
-              @for (unit of units(); track unit.id) { <option [value]="unit.id">{{ unit.name }} ({{ unit.abbreviation }}){{ unit.is_active ? '' : ' · Inactiva' }}</option> }
-            </select></label
+            ><app-combobox
+              formControlName="unit_id"
+              [options]="unitOptions()"
+              placeholder="Escribe para buscar una unidad"
+            />
+            @if (!availableUnits().length) {
+              <small>No hay unidades de {{ form.controls.item_type.value === 'product' ? 'producto' : 'servicio' }}. Regístralas en Unidades de medida.</small>
+            }</label
           >
-          <label><span>Marca</span><select formControlName="brand_id"><option value="">Sin marca</option>
-            @for (brand of brands(); track brand.id) { <option [value]="brand.id">{{ brand.name }}{{ brand.is_active ? '' : ' · Inactiva' }}</option> }
-          </select></label>
+          <label
+            ><span>Marca</span
+            ><app-combobox
+              formControlName="brand_id"
+              [options]="brandOptions()"
+              placeholder="Sin marca"
+          /></label>
           <label
             ><span>Categoría</span
-            ><input formControlName="category" placeholder="Ej: Suscripciones" /></label
+            ><app-combobox
+              formControlName="category_id"
+              [options]="categoryOptions()"
+              placeholder="Sin categoría"
+          /></label
           ><label
             ><span>Precio base *</span>
             <div class="prefix">
               <span>$</span
-              ><input type="number" min="0" step=".01" formControlName="base_price" /></div></label
+              ><input type="number" min="0" step=".01" formControlName="base_price" /><app-combobox
+                class="currency"
+                formControlName="currency"
+                [options]="currencyOptions"
+                ariaLabel="Moneda del precio"
+                placeholder="Moneda"
+              /></div></label
           ><label
             ><span>IVA *</span>
             <div class="suffix">
@@ -66,10 +83,8 @@
           @if (id) {
             <label
               ><span>Estado</span
-              ><select formControlName="status">
-                <option value="active">Activo</option>
-                <option value="inactive">Inactivo</option>
-              </select></label
+              ><app-combobox formControlName="status" [options]="statusOptions" placeholder="Selecciona un estado"
+              /></label
             >
           }
           <label class="full"

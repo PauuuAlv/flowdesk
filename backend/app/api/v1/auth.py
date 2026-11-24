@@ -21,6 +21,8 @@ from app.schemas.auth import (
     ForgotPasswordRequest,
     ResetPasswordRequest,
     MessageResponse,
+    UpdateProfileRequest,
+    ChangePasswordRequest,
 )
 from app.schemas.user import UserMeResponse
 from app.security.password import verify_password, hash_password
@@ -131,12 +133,45 @@ def register(payload: RegisterRequest, db: Session = Depends(get_db)):
 def get_me(db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
     """Devuelve la identidad de quien está haciendo la request, a partir
     únicamente del token — nunca de un parámetro que mande el cliente."""
+    return _me_response(db, current_user)
+
+
+@router.patch("/me", response_model=UserMeResponse)
+def update_me(
+    payload: UpdateProfileRequest,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """Cada usuario puede cambiar su propio nombre (no su correo, rol ni estado)."""
+    current_user.full_name = payload.full_name
+    db.commit(); db.refresh(current_user)
+    return _me_response(db, current_user)
+
+
+@router.post("/change-password", status_code=status.HTTP_204_NO_CONTENT)
+def change_password(
+    payload: ChangePasswordRequest,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """Cambio de contraseña con la sesión iniciada: exige la contraseña actual."""
+    if not current_user.hashed_password or not verify_password(payload.current_password, current_user.hashed_password):
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Current password is incorrect")
+    if verify_password(payload.new_password, current_user.hashed_password):
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="New password must be different")
+    current_user.hashed_password = hash_password(payload.new_password)
+    db.commit()
+    logger.info("User %s changed their password", current_user.id)
+
+
+def _me_response(db: Session, current_user: User) -> UserMeResponse:
     tenant = db.query(Tenant).filter(Tenant.id == current_user.tenant_id).first()
     return UserMeResponse(
         id=str(current_user.id),
         tenant_id=str(current_user.tenant_id),
         tenant_name=tenant.name if tenant else "Empresa",
         tenant_logo_url=tenant.logo_url if tenant else None,
+        tenant_currency=(tenant.currency if tenant else None) or "MXN",
         email=current_user.email,
         full_name=current_user.full_name,
         role=current_user.role_key,

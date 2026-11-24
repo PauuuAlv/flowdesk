@@ -181,6 +181,14 @@ h1 {
   display: grid;
   gap: 1rem;
 }
+.pipeline-group {
+  margin: 0.4rem 0 -0.4rem;
+  color: var(--flowdesk-copper);
+  font-size: 0.68rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
 .pipeline-row {
   display: grid;
   grid-template-columns: 8rem minmax(5rem, 1fr) 7rem;

@@ -1,15 +1,16 @@
 import { HttpErrorResponse } from '@angular/common/http';
-import { Component, inject, signal } from '@angular/core';
+import { Component, computed, inject, signal } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 
 import { InviteUserResponse } from '../../core/models/auth.models';
 import { TenantRole } from '../../core/models/access-control.models';
 import { AccessControlService } from '../../core/services/access-control.service';
 import { AuthService } from '../../core/services/auth.service';
+import { Combobox, ComboOption } from '../../shared/ui/combobox/combobox';
 
 @Component({
   selector: 'app-invite-user-page',
-  imports: [ReactiveFormsModule],
+  imports: [ReactiveFormsModule, Combobox],
   templateUrl: './invite-user-page.html',
   styleUrl: './invite-user-page.scss',
 })
@@ -24,6 +25,9 @@ export class InviteUserPage {
   protected readonly copied = signal(false);
   protected readonly roles = signal<TenantRole[]>([]);
   protected readonly loadingRoles = signal(true);
+  protected readonly roleOptions = computed<ComboOption[]>(() =>
+    this.roles().map((role) => ({ value: role.id, label: role.name })),
+  );
   protected readonly inviteForm = this.formBuilder.nonNullable.group({
     full_name: ['', [Validators.required, Validators.minLength(3)]],
     email: ['', [Validators.required, Validators.email]],

@@ -22,7 +22,15 @@ export class AccessControlService {
       : this.http.post<TenantRole>('/api/roles', request);
     return response.pipe(
       catchError((error: HttpErrorResponse) =>
-        throwError(() => new Error(error.status === 409 ? 'DUPLICATE_ROLE' : 'SAVE_ROLE_FAILED')),
+        throwError(() => {
+          const detail = error.error?.detail;
+          if (error.status !== 409) return new Error('SAVE_ROLE_FAILED');
+          // Ya existe otro rol con exactamente los mismos permisos.
+          if (detail?.code === 'duplicate_permissions') {
+            return new Error('DUPLICATE_PERMISSIONS', { cause: detail.role_name });
+          }
+          return new Error(String(detail ?? '').includes('own role') ? 'OWN_ROLE' : 'DUPLICATE_ROLE');
+        }),
       ),
     );
   }

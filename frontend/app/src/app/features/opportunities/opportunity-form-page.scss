@@ -1,3 +1,5 @@
+@use '../../shared/ui/money-input' as money;
+
 :host {
   display: block;
 }
@@ -25,6 +27,10 @@ h1 {
   color: var(--flowdesk-navy);
   font-size: clamp(2rem, 5vw, 3.2rem);
   letter-spacing: -0.04em;
+}
+// Pipeline al que pertenece la oportunidad, a continuación del título.
+.pipeline-name {
+  color: var(--flowdesk-copper);
 }
 header p:last-child {
   color: var(--flowdesk-muted);
@@ -60,6 +66,7 @@ header > a {
 }
 .grid input,
 .grid select,
+.grid app-combobox,
 .grid textarea {
   width: 100%;
   padding: 0.75rem;
@@ -105,3 +112,5 @@ header > a {
     grid-column: auto;
   }
 }
+
+@include money.styles('.grid');

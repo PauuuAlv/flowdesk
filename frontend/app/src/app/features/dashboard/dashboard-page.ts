@@ -4,6 +4,7 @@ import { DashboardPipelineStage, DashboardSummary } from '../../core/models/dash
 import { PERMISSIONS } from '../../core/models/permission.models';
 import { DashboardService } from '../../core/services/dashboard.service';
 import { SessionService } from '../../core/services/session.service';
+import { formatMoney, formatTotals, MoneyTotal } from '../../core/models/currency.models';
 
 @Component({
   selector: 'app-dashboard-page',
@@ -18,8 +19,12 @@ export class DashboardPage {
   protected readonly summary = signal<DashboardSummary | null>(null);
   protected readonly loading = signal(true);
   protected readonly error = signal('');
+  /** Las etapas se agrupan por pipeline solo cuando la empresa usa más de uno. */
+  protected readonly hasSeveralPipelines = computed(
+    () => new Set(this.summary()?.pipeline.map((x) => x.pipeline_id) ?? []).size > 1,
+  );
   protected readonly maxPipelineValue = computed(() =>
-    Math.max(...(this.summary()?.pipeline.map((x) => Number(x.value)) ?? []), 1),
+    Math.max(...(this.summary()?.pipeline.map((x) => this.primaryAmount(x)) ?? []), 1),
   );
   protected readonly canCreateClient = this.has(PERMISSIONS.clientsCreate);
   protected readonly canCreateOpportunity = this.has(PERMISSIONS.opportunitiesCreate);
@@ -42,20 +47,24 @@ export class DashboardPage {
       },
     });
   }
-  protected money(value: number) {
-    return new Intl.NumberFormat('es-MX', {
-      style: 'currency',
-      currency: 'MXN',
-      maximumFractionDigits: 2,
-    }).format(value);
+  protected money(value: number, currency: string) {
+    return formatMoney(value, currency);
+  }
+  /** Totales por moneda: la de la empresa primero ("$100.00 MXN · $5.00 USD"). */
+  protected totals(values: MoneyTotal[]) {
+    return formatTotals(values);
   }
   protected date(value: string) {
     return new Intl.DateTimeFormat('es-MX', { dateStyle: 'medium', timeStyle: 'short' }).format(
       new Date(value),
     );
   }
+  /** Importe en la moneda de la empresa (el primero de la lista); define el largo de la barra. */
+  private primaryAmount(item: DashboardPipelineStage): number {
+    return Number(item.value[0]?.amount ?? 0);
+  }
   protected pipelineWidth(item: DashboardPipelineStage) {
-    return Math.max((Number(item.value) / this.maxPipelineValue()) * 100, item.count ? 7 : 0);
+    return Math.max((this.primaryAmount(item) / this.maxPipelineValue()) * 100, item.count ? 7 : 0);
   }
   protected activityType(type: string) {
     return { call: 'Llamada', email: 'Correo', meeting: 'Reunión', task: 'Tarea' }[type] ?? type;

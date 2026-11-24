@@ -6,10 +6,11 @@ import { MemberStatus, TenantMember, TenantRole } from '../../core/models/access
 import { AccessControlService } from '../../core/services/access-control.service';
 import { PERMISSIONS } from '../../core/models/permission.models';
 import { SessionService } from '../../core/services/session.service';
+import { Combobox, ComboOption } from '../../shared/ui/combobox/combobox';
 
 @Component({
   selector: 'app-user-list-page',
-  imports: [RouterLink],
+  imports: [RouterLink, Combobox],
   templateUrl: './user-list-page.html',
   styleUrls: ['./user-list-page.scss', './user-list-page.states.scss'],
 })
@@ -20,6 +21,13 @@ export class UserListPage {
 
   protected readonly users = signal<TenantMember[]>([]);
   protected readonly roles = signal<TenantRole[]>([]);
+  protected readonly roleFilterOptions = computed<ComboOption[]>(() => [
+    { value: 'all', label: 'Todos los roles' },
+    ...this.roles().map((role) => ({ value: role.id, label: role.name })),
+  ]);
+  protected readonly roleOptions = computed<ComboOption[]>(() =>
+    this.roles().map((role) => ({ value: role.id, label: role.name })),
+  );
   protected readonly loading = signal(true);
   protected readonly errorMessage = signal('');
   protected readonly successMessage = signal('');
@@ -70,16 +78,16 @@ export class UserListPage {
     this.search.set((event.target as HTMLInputElement).value);
   }
 
-  protected updateStatus(event: Event): void {
-    this.statusFilter.set((event.target as HTMLSelectElement).value as MemberStatus | 'all');
+  protected updateStatus(value: string): void {
+    this.statusFilter.set(value as MemberStatus | 'all');
   }
 
-  protected updateRoleFilter(event: Event): void {
-    this.roleFilter.set((event.target as HTMLSelectElement).value);
+  protected updateRoleFilter(value: string): void {
+    this.roleFilter.set(value);
   }
 
-  protected changeRole(user: TenantMember, event: Event): void {
-    const roleId = (event.target as HTMLSelectElement).value;
+  protected changeRole(user: TenantMember, roleId: string, combo: Combobox): void {
+    if (roleId === user.role_id) return;
     this.successMessage.set('');
     this.accessControl.updateMemberRole(user.id, roleId).subscribe({
       next: (updated) => {
@@ -94,6 +102,7 @@ export class UserListPage {
             ? 'No es posible cambiar ese rol: la empresa debe conservar al menos un Administrador activo y no puedes cambiar tu propio rol.'
             : 'No fue posible actualizar el rol del usuario.',
         );
+        combo.writeValue(user.role_id); // vuelve a mostrar el rol que conserva
         this.loadData();
       },
     });

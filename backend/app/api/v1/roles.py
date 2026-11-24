@@ -28,6 +28,20 @@ def _role_or_404(db: Session, tenant_id, role_id: uuid.UUID) -> Role:
     return role
 
 
+def _ensure_unique_permissions(db: Session, tenant_id, codes, exclude_role_id=None) -> None:
+    """Evita dos roles con exactamente el mismo acceso y distinto nombre."""
+    target = set(codes)
+    query = db.query(Role).filter(Role.tenant_id == tenant_id)
+    if exclude_role_id:
+        query = query.filter(Role.id != exclude_role_id)
+    for existing in query.all():
+        if set(existing.permission_codes) == target:
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail={"code": "duplicate_permissions", "role_name": existing.name},
+            )
+
+
 def _serialize_role(db: Session, role: Role) -> TenantRoleResponse:
     user_count = (
         db.query(func.count(User.id))
@@ -80,6 +94,7 @@ def create_role(
     db: Session = Depends(get_db),
     current_user: User = Depends(require_permission("roles.create")),
 ):
+    _ensure_unique_permissions(db, current_user.tenant_id, payload.permissions)
     role = Role(
         id=uuid.uuid4(),
         tenant_id=current_user.tenant_id,
@@ -117,6 +132,12 @@ def update_role(
     current_user: User = Depends(require_permission("roles.update")),
 ):
     role = _role_or_404(db, current_user.tenant_id, role_id)
+    # Nadie puede modificar el rol que tiene asignado (evita auto-otorgarse permisos).
+    if role.id == current_user.role_id:
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="You cannot edit your own role")
+    # El rol protegido siempre tiene todos los permisos; no se compara.
+    if not role.is_protected:
+        _ensure_unique_permissions(db, current_user.tenant_id, payload.permissions, exclude_role_id=role.id)
 
     # Los roles por defecto conservan su nombre (se identifican por template_key).
     if role.origin != "template":

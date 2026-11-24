@@ -1,7 +1,7 @@
 import { HttpErrorResponse } from '@angular/common/http';
-import { Component, computed, inject, signal } from '@angular/core';
+import { Component, HostListener, computed, inject, signal } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
-import { RouterLink } from '@angular/router';
+import { ActivatedRoute, RouterLink } from '@angular/router';
 
 import {
   CreateTenantResponse,
@@ -11,14 +11,24 @@ import {
 } from '../../../core/models/auth.models';
 import { AuthService } from '../../../core/services/auth.service';
 import { PlatformAccessService } from '../../../core/services/platform-access.service';
+import { Combobox, ComboOption } from '../../../shared/ui/combobox/combobox';
+import { PLAN_OPTIONS, SUBSCRIPTION_STATUS_OPTIONS } from '../platform-options';
 
 @Component({
   selector: 'app-platform-admin-page',
-  imports: [ReactiveFormsModule, RouterLink],
+  imports: [ReactiveFormsModule, RouterLink, Combobox],
   templateUrl: './platform-admin-page.html',
   styleUrl: './platform-admin-page.scss',
 })
 export class PlatformAdminPage {
+  protected readonly planOptions: ComboOption[] = [
+    { value: 'basic', label: 'Básico', hint: '5 usuarios' },
+    { value: 'professional', label: 'Profesional', hint: '20 usuarios' },
+    { value: 'enterprise', label: 'Empresarial', hint: '500 usuarios' },
+  ];
+  // Combos de cada tarjeta de empresa.
+  protected readonly planChoices = PLAN_OPTIONS;
+  protected readonly statusChoices = SUBSCRIPTION_STATUS_OPTIONS;
   private readonly formBuilder = inject(FormBuilder);
   private readonly authService = inject(AuthService);
   protected readonly access = inject(PlatformAccessService);
@@ -48,8 +58,48 @@ export class PlatformAdminPage {
     plan_key: ['basic' as SaaSPlanKey, Validators.required],
   });
 
+  protected readonly createModalOpen = signal(false);
+  protected readonly createError = signal('');
+
   constructor() {
     this.loadTenants();
+
+    // Al llegar con #seccion-crear-empresa (p. ej. desde la vista general), abrir el modal.
+    if (inject(ActivatedRoute).snapshot.fragment === 'seccion-crear-empresa') {
+      this.openCreateModal();
+    }
+  }
+
+  protected openCreateModal(): void {
+    if (!this.access.canManage()) return;
+    this.resetCreateForm();
+    this.createModalOpen.set(true);
+  }
+
+  protected closeCreateModal(): void {
+    if (this.submitting()) return;
+    this.createModalOpen.set(false);
+    this.resetCreateForm();
+  }
+
+  protected startAnotherTenant(): void {
+    this.resetCreateForm();
+  }
+
+  protected onBackdropClick(event: MouseEvent): void {
+    if (event.target === event.currentTarget) this.closeCreateModal();
+  }
+
+  @HostListener('document:keydown.escape')
+  protected onEscape(): void {
+    if (this.createModalOpen()) this.closeCreateModal();
+  }
+
+  private resetCreateForm(): void {
+    this.createError.set('');
+    this.createdTenant.set(null);
+    this.copied.set(false);
+    this.tenantForm.reset();
   }
 
   protected generateSlug(): void {
@@ -67,7 +117,7 @@ export class PlatformAdminPage {
 
   protected submit(): void {
     if (!this.access.canManage()) return;
-    this.errorMessage.set('');
+    this.createError.set('');
     this.createdTenant.set(null);
     this.copied.set(false);
 
@@ -87,7 +137,7 @@ export class PlatformAdminPage {
       },
       error: (error: HttpErrorResponse) => {
         this.submitting.set(false);
-        this.errorMessage.set(this.getErrorMessage(error));
+        this.createError.set(this.getErrorMessage(error));
       },
     });
   }
@@ -100,20 +150,21 @@ export class PlatformAdminPage {
       await navigator.clipboard.writeText(invitationLink);
       this.copied.set(true);
     } catch {
-      this.errorMessage.set('No fue posible copiar el enlace. Selecciónalo y cópialo manualmente.');
+      this.createError.set('No fue posible copiar el enlace. Selecciónalo y cópialo manualmente.');
     }
   }
 
   protected setSearch(event: Event) {
     this.search.set((event.target as HTMLInputElement).value);
   }
-  protected setStatusFilter(event: Event) {
-    this.statusFilter.set((event.target as HTMLSelectElement).value as SubscriptionStatus | 'all');
+  protected setStatusFilter(value: string) {
+    this.statusFilter.set(value as SubscriptionStatus | 'all');
   }
   protected updateTenant(
     tenant: TenantSaaS,
     plan_key: SaaSPlanKey,
     subscription_status: SubscriptionStatus,
+    revert?: () => void,
   ): void {
     if (!this.access.canManage()) return;
     this.updatingTenant.set(tenant.id);
@@ -134,21 +185,18 @@ export class PlatformAdminPage {
         error: () => {
           this.errorMessage.set('No fue posible actualizar la suscripción de la empresa.');
           this.updatingTenant.set(null);
+          revert?.(); // el combo vuelve a mostrar el valor que se conserva
         },
       });
   }
-  protected changePlan(tenant: TenantSaaS, event: Event) {
-    this.updateTenant(
-      tenant,
-      (event.target as HTMLSelectElement).value as SaaSPlanKey,
-      tenant.subscription_status,
+  protected changePlan(tenant: TenantSaaS, plan: string, combo: Combobox) {
+    this.updateTenant(tenant, plan as SaaSPlanKey, tenant.subscription_status, () =>
+      combo.writeValue(tenant.plan_key),
     );
   }
-  protected changeStatus(tenant: TenantSaaS, event: Event) {
-    this.updateTenant(
-      tenant,
-      tenant.plan_key,
-      (event.target as HTMLSelectElement).value as SubscriptionStatus,
+  protected changeStatus(tenant: TenantSaaS, status: string, combo: Combobox) {
+    this.updateTenant(tenant, tenant.plan_key, status as SubscriptionStatus, () =>
+      combo.writeValue(tenant.subscription_status),
     );
   }
 

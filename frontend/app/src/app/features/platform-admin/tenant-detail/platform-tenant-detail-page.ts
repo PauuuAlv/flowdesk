@@ -7,16 +7,20 @@ import { SaaSPlanKey, SubscriptionStatus, TenantSaaS } from '../../../core/model
 import { AuthService } from '../../../core/services/auth.service';
 import { PlatformAccessService } from '../../../core/services/platform-access.service';
 import { TenantAdminService } from '../../../core/services/tenant-admin.service';
+import { Combobox } from '../../../shared/ui/combobox/combobox';
+import { PLAN_OPTIONS, SUBSCRIPTION_STATUS_OPTIONS } from '../platform-options';
 
 type TenantDialog = 'edit' | 'toggle' | 'delete' | null;
 
 @Component({
   selector: 'app-platform-tenant-detail-page',
-  imports: [ReactiveFormsModule, RouterLink],
+  imports: [ReactiveFormsModule, RouterLink, Combobox],
   templateUrl: './platform-tenant-detail-page.html',
   styleUrl: './platform-tenant-detail-page.scss',
 })
 export class PlatformTenantDetailPage {
+  protected readonly planChoices = PLAN_OPTIONS;
+  protected readonly statusChoices = SUBSCRIPTION_STATUS_OPTIONS;
   private readonly service = inject(AuthService);
   private readonly tenantAdmin = inject(TenantAdminService);
   private readonly router = inject(Router);
@@ -56,7 +60,7 @@ export class PlatformTenantDetailPage {
     this.load();
   }
 
-  protected update(plan: SaaSPlanKey, status: SubscriptionStatus): void {
+  protected update(plan: SaaSPlanKey, status: SubscriptionStatus, revert?: () => void): void {
     if (!this.access.canManage()) return;
     const tenant = this.tenant();
     if (!tenant) return;
@@ -76,18 +80,21 @@ export class PlatformTenantDetailPage {
         error: () => {
           this.error.set('No fue posible actualizar la suscripción.');
           this.saving.set(false);
+          revert?.(); // el combo vuelve a mostrar el valor que se conserva
         },
       });
   }
-  protected changePlan(event: Event): void {
+  protected changePlan(plan: string, combo: Combobox): void {
     const tenant = this.tenant();
     if (tenant)
-      this.update((event.target as HTMLSelectElement).value as SaaSPlanKey, tenant.subscription_status);
+      this.update(plan as SaaSPlanKey, tenant.subscription_status, () => combo.writeValue(tenant.plan_key));
   }
-  protected changeStatus(event: Event): void {
+  protected changeStatus(status: string, combo: Combobox): void {
     const tenant = this.tenant();
     if (tenant)
-      this.update(tenant.plan_key, (event.target as HTMLSelectElement).value as SubscriptionStatus);
+      this.update(tenant.plan_key, status as SubscriptionStatus, () =>
+        combo.writeValue(tenant.subscription_status),
+      );
   }
   protected percent(value: number, max: number): number {
     return Math.min(100, Math.round((value / Math.max(1, max)) * 100));

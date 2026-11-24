@@ -1,4 +1,5 @@
 from datetime import datetime, timedelta, timezone
+import logging
 import uuid
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Response, status
@@ -15,9 +16,11 @@ from app.models.product import Product
 from app.models.quote import Quote
 from app.models.platform_audit import PlatformAuditLog
 from app.models.platform_admin import PlatformAdmin
+from app.models.platform_role import PlatformRole
 from app.models.plan_change_request import PlanChangeRequest
 from app.models.tenant import Tenant
 from app.core.permissions import ADMIN_ROLE_KEY
+from app.core.platform_permissions import SUPERADMIN_ROLE_KEY
 from app.core.plans import get_plan
 from app.models.role import Role
 from app.repositories.platform_admin_repository import PlatformAdminRepository
@@ -38,11 +41,18 @@ from app.schemas.platform_admin import (
     InvitePlatformMemberRequest,
     PlatformMemberResponse,
     AcceptPlatformInvitationRequest,
+    UpdatePlatformMemberRoleRequest,
+    UpdatePlatformMemberStatusRequest,
+    UpdatePlatformProfileRequest,
+    ChangePlatformPasswordRequest,
+    PlatformForgotPasswordRequest,
+    PlatformResetPasswordRequest,
 )
+from app.schemas.auth import MessageResponse
 from app.schemas.tenant_plan import PlanChangeRequestResponse, ResolvePlanChangeRequest
 from app.security.jwt import create_platform_admin_token
 from app.security.password import hash_password, verify_password
-from app.security.platform_admin_auth import get_current_platform_admin, require_platform_superadmin
+from app.security.platform_admin_auth import get_current_platform_admin, require_platform_permission
 from app.security.tokens import generate_raw_token, hash_token
 from app.services.access_control import (
     create_default_roles,
@@ -50,8 +60,10 @@ from app.services.access_control import (
     create_product_catalog_templates,
 )
 from app.services.email import EmailService, get_email_service
+from app.services.platform_access import count_active_superadmins
 
 router = APIRouter()
+logger = logging.getLogger("flowdesk.platform_admin")
 
 # Estados de suscripción con los que la empresa puede operar.
 ACTIVE_SUBSCRIPTION_STATUSES = ("trial", "active")
@@ -108,7 +120,12 @@ def platform_admin_login(payload: PlatformAdminLoginRequest, db: Session = Depen
         status_code=status.HTTP_401_UNAUTHORIZED,
         detail="Invalid email or password",
     )
-    if not admin or not admin.hashed_password or not verify_password(payload.password, admin.hashed_password):
+    if (
+        not admin
+        or not admin.is_active
+        or not admin.hashed_password
+        or not verify_password(payload.password, admin.hashed_password)
+    ):
         raise invalid_credentials
 
     token = create_platform_admin_token(admin_id=admin.id)
@@ -116,9 +133,121 @@ def platform_admin_login(payload: PlatformAdminLoginRequest, db: Session = Depen
 
 
 @router.get("/auth/me", response_model=PlatformAdminMeResponse)
-def platform_admin_me(admin=Depends(get_current_platform_admin)):
+def platform_admin_me(admin: PlatformAdmin = Depends(get_current_platform_admin)):
+    """Identidad y permisos de la cuenta de plataforma que hace la request."""
+    return _me_response(admin)
+
+
+@router.patch("/auth/me", response_model=PlatformAdminMeResponse)
+def update_platform_profile(
+    payload: UpdatePlatformProfileRequest,
+    db: Session = Depends(get_db),
+    admin: PlatformAdmin = Depends(get_current_platform_admin),
+):
+    """Cada integrante puede cambiar su propio nombre (no su correo, rol ni estado)."""
+    previous = admin.full_name
+    admin.full_name = payload.full_name
+    if previous != payload.full_name:
+        db.add(PlatformAuditLog(
+            platform_admin_id=admin.id, action="platform_profile.updated",
+            description=f"{admin.email} actualizó su nombre.",
+            details={"before": previous, "after": payload.full_name},
+        ))
+    db.commit(); db.refresh(admin)
+    return _me_response(admin)
+
+
+@router.post("/auth/change-password", status_code=status.HTTP_204_NO_CONTENT)
+def change_platform_password(
+    payload: ChangePlatformPasswordRequest,
+    db: Session = Depends(get_db),
+    admin: PlatformAdmin = Depends(get_current_platform_admin),
+):
+    """Cambio de contraseña con la sesión iniciada: exige la contraseña actual."""
+    if not admin.hashed_password or not verify_password(payload.current_password, admin.hashed_password):
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Current password is incorrect")
+    if verify_password(payload.new_password, admin.hashed_password):
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="New password must be different")
+    admin.hashed_password = hash_password(payload.new_password)
+    db.add(PlatformAuditLog(
+        platform_admin_id=admin.id, action="platform_profile.password_changed",
+        description=f"{admin.email} cambió su contraseña.",
+        details={},
+    ))
+    db.commit()
+    return Response(status_code=status.HTTP_204_NO_CONTENT)
+
+
+@router.post("/auth/forgot-password", response_model=MessageResponse)
+def platform_forgot_password(
+    payload: PlatformForgotPasswordRequest,
+    db: Session = Depends(get_db),
+    email_service: EmailService = Depends(get_email_service),
+):
+    """SIEMPRE responde el mismo mensaje, exista o no la cuenta, para no
+    revelar qué correos pertenecen al equipo de plataforma."""
+    generic_response = MessageResponse(
+        message="If that email is registered, we've sent password reset instructions."
+    )
+    admin = PlatformAdminRepository().find_by_email(db, payload.email)
+    # Solo cuentas activas que ya definieron contraseña (una invitación pendiente
+    # se completa con su propio enlace).
+    if not admin or not admin.is_active or not admin.hashed_password:
+        return generic_response
+
+    raw_token = generate_raw_token()
+    admin.password_reset_token_hash = hash_token(raw_token)
+    admin.password_reset_expires_at = datetime.now(timezone.utc) + timedelta(
+        hours=settings.RESET_PASSWORD_TOKEN_EXPIRE_HOURS
+    )
+    db.commit()
+
+    reset_link = f"{settings.FRONTEND_URL}/administracion-flowdesk/restablecer-contrasena?token={raw_token}"
+    try:
+        email_service.send_password_reset(
+            recipient=admin.email, recipient_name=admin.full_name, reset_url=reset_link,
+        )
+    except Exception:
+        logger.exception("Platform password reset email delivery failed")
+    return generic_response
+
+
+@router.post("/auth/reset-password", response_model=MessageResponse)
+def platform_reset_password(payload: PlatformResetPasswordRequest, db: Session = Depends(get_db)):
+    admin = db.query(PlatformAdmin).filter(
+        PlatformAdmin.password_reset_token_hash == hash_token(payload.token)
+    ).first()
+    if (
+        not admin
+        or not admin.is_active
+        or not admin.password_reset_expires_at
+        or admin.password_reset_expires_at < datetime.now(timezone.utc)
+    ):
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid or expired reset token")
+
+    admin.hashed_password = hash_password(payload.new_password)
+    # El enlace es de un solo uso.
+    admin.password_reset_token_hash = None
+    admin.password_reset_expires_at = None
+    db.add(PlatformAuditLog(
+        platform_admin_id=admin.id, action="platform_profile.password_reset",
+        description=f"{admin.email} restableció su contraseña con un enlace de recuperación.",
+        details={},
+    ))
+    db.commit()
+    return MessageResponse(message="Password updated successfully.")
+
+
+def _me_response(admin: PlatformAdmin) -> PlatformAdminMeResponse:
     return PlatformAdminMeResponse(
-        id=str(admin.id), email=admin.email, full_name=admin.full_name, role=admin.role
+        id=str(admin.id),
+        email=admin.email,
+        full_name=admin.full_name,
+        role=admin.role_key,
+        role_id=str(admin.role_id),
+        role_name=admin.assigned_role.name,
+        permissions=admin.permission_codes,
+        is_owner=admin.is_owner,
     )
 
 
@@ -127,60 +256,208 @@ def accept_platform_invitation(payload: AcceptPlatformInvitationRequest, db: Ses
     admin = db.query(PlatformAdmin).filter(
         PlatformAdmin.invitation_token_hash == hash_token(payload.token)
     ).first()
-    if not admin or not admin.invitation_expires_at or admin.invitation_expires_at < datetime.now(timezone.utc):
+    if (
+        not admin
+        or not admin.is_active  # una invitación de una cuenta desactivada ya no sirve
+        or not admin.invitation_expires_at
+        or admin.invitation_expires_at < datetime.now(timezone.utc)
+    ):
         raise HTTPException(status_code=400, detail="Invalid or expired invitation")
     admin.hashed_password = hash_password(payload.password)
     admin.invitation_token_hash = None
     admin.invitation_expires_at = None
-    admin.is_active = True
     db.commit(); db.refresh(admin)
     return PlatformAdminTokenResponse(access_token=create_platform_admin_token(admin.id))
+
+
+# --- Equipo de plataforma ---------------------------------------------------
+
+def _serialize_member(member: PlatformAdmin, invitation_link: str | None = None) -> PlatformMemberResponse:
+    return PlatformMemberResponse(
+        id=str(member.id),
+        email=member.email,
+        full_name=member.full_name,
+        role=member.role_key,
+        role_id=str(member.role_id),
+        role_name=member.assigned_role.name if member.assigned_role else "Sin rol",
+        is_active=member.is_active,
+        is_owner=member.is_owner,
+        invitation_pending=member.hashed_password is None,
+        created_at=member.created_at,
+        invitation_link=invitation_link,
+    )
+
+
+def _member_or_404(db: Session, member_id: uuid.UUID) -> PlatformAdmin:
+    member = db.query(PlatformAdmin).filter(PlatformAdmin.id == member_id).first()
+    if not member:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Platform member not found")
+    return member
+
+
+def _platform_role_or_404(db: Session, role_id: uuid.UUID) -> PlatformRole:
+    role = db.query(PlatformRole).filter(PlatformRole.id == role_id).first()
+    if not role:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Platform role not found")
+    return role
+
+
+def _issue_platform_invitation(member: PlatformAdmin) -> str:
+    raw_token = generate_raw_token()
+    member.invitation_token_hash = hash_token(raw_token)
+    member.invitation_expires_at = datetime.now(timezone.utc) + timedelta(
+        days=settings.INVITATION_TOKEN_EXPIRE_DAYS
+    )
+    return f"{settings.FRONTEND_URL}/administracion-flowdesk/aceptar-invitacion?token={raw_token}"
+
+
+def _is_active_superadmin(member: PlatformAdmin) -> bool:
+    return (
+        member.role_key == SUPERADMIN_ROLE_KEY
+        and member.is_active
+        and member.hashed_password is not None
+    )
 
 
 @router.get("/team", response_model=list[PlatformMemberResponse])
 def list_platform_team(
     db: Session = Depends(get_db),
-    _admin=Depends(require_platform_superadmin),
+    _admin=Depends(require_platform_permission("platform.team.view")),
 ):
-    return [PlatformMemberResponse(
-        id=str(item.id), email=item.email, full_name=item.full_name, role=item.role,
-        is_active=item.is_active, invitation_pending=item.hashed_password is None,
-        created_at=item.created_at,
-    ) for item in db.query(PlatformAdmin).order_by(PlatformAdmin.created_at.asc()).all()]
+    members = db.query(PlatformAdmin).order_by(PlatformAdmin.created_at.asc()).all()
+    return [_serialize_member(item) for item in members]
 
 
 @router.post("/team/invite", response_model=PlatformMemberResponse, status_code=status.HTTP_201_CREATED)
 def invite_platform_member(
     payload: InvitePlatformMemberRequest,
     db: Session = Depends(get_db),
-    admin=Depends(require_platform_superadmin),
+    admin: PlatformAdmin = Depends(require_platform_permission("platform.team.invite")),
     email_service: EmailService = Depends(get_email_service),
 ):
+    """Invita a una persona al equipo con cualquier rol de plataforma, incluido
+    Superadministrador (puede haber varios)."""
     if db.query(PlatformAdmin).filter(func.lower(PlatformAdmin.email) == payload.email.lower()).first():
         raise HTTPException(status_code=409, detail="Platform account already exists")
-    raw_token = generate_raw_token()
+    role = _platform_role_or_404(db, payload.role_id)
     member = PlatformAdmin(
-        email=payload.email.lower(), full_name=payload.full_name.strip(), role=payload.role,
-        hashed_password=None, is_active=True, invitation_token_hash=hash_token(raw_token),
-        invitation_expires_at=datetime.now(timezone.utc) + timedelta(days=settings.INVITATION_TOKEN_EXPIRE_DAYS),
+        email=payload.email.lower(), full_name=payload.full_name.strip(), role_id=role.id,
+        hashed_password=None, is_active=True,
     )
+    invitation_link = _issue_platform_invitation(member)
     db.add(member); db.flush()
     db.add(PlatformAuditLog(
         platform_admin_id=admin.id, action="platform_member.invited",
-        description=f"Se invitó a {member.email} como cuenta de consulta.",
-        details={"member_id": str(member.id), "role": member.role},
+        description=f"Se invitó a {member.email} al equipo de plataforma como {role.name}.",
+        details={"member_id": str(member.id), "role_id": str(role.id), "role": role.name},
     ))
     db.commit(); db.refresh(member)
-    invitation_link = f"{settings.FRONTEND_URL}/administracion-flowdesk/aceptar-invitacion?token={raw_token}"
     email_service.send_invitation(
         recipient=member.email, recipient_name=member.full_name,
         invitation_url=invitation_link, tenant_name="Equipo de administración de Flowdesk",
     )
-    return PlatformMemberResponse(
-        id=str(member.id), email=member.email, full_name=member.full_name, role=member.role,
-        is_active=member.is_active, invitation_pending=True, created_at=member.created_at,
-        invitation_link=invitation_link,
+    return _serialize_member(member, invitation_link)
+
+
+@router.patch("/team/{member_id}/role", response_model=PlatformMemberResponse)
+def update_platform_member_role(
+    member_id: uuid.UUID,
+    payload: UpdatePlatformMemberRoleRequest,
+    db: Session = Depends(get_db),
+    admin: PlatformAdmin = Depends(require_platform_permission("platform.team.update")),
+):
+    member = _member_or_404(db, member_id)
+    if member.is_owner:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="The platform owner account cannot be modified",
+        )
+    if member.id == admin.id:
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="You cannot change your own role")
+    role = _platform_role_or_404(db, payload.role_id)
+    if member.role_id == role.id:
+        return _serialize_member(member)
+    # Nunca dejar a la plataforma sin al menos un Superadministrador activo.
+    if (
+        _is_active_superadmin(member)
+        and role.template_key != SUPERADMIN_ROLE_KEY
+        and count_active_superadmins(db, exclude_admin_id=member.id) == 0
+    ):
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Platform must keep at least one superadmin")
+    before = member.assigned_role.name
+    member.role_id = role.id
+    db.add(PlatformAuditLog(
+        platform_admin_id=admin.id, action="platform_member.role_changed",
+        description=f"Se cambió el rol de {member.email} de {before} a {role.name}.",
+        details={"member_id": str(member.id), "before": before, "after": role.name},
+    ))
+    db.commit()
+    db.refresh(member)
+    return _serialize_member(member)
+
+
+@router.patch("/team/{member_id}/status", response_model=PlatformMemberResponse)
+def update_platform_member_status(
+    member_id: uuid.UUID,
+    payload: UpdatePlatformMemberStatusRequest,
+    db: Session = Depends(get_db),
+    admin: PlatformAdmin = Depends(require_platform_permission("platform.team.update")),
+):
+    """Activa o desactiva una cuenta. Una cuenta desactivada no puede iniciar
+    sesión y sus tokens ya emitidos dejan de servir."""
+    member = _member_or_404(db, member_id)
+    if member.is_owner:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="The platform owner account cannot be modified",
+        )
+    if member.id == admin.id:
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="You cannot disable your own account")
+    if member.is_active == payload.is_active:
+        return _serialize_member(member)
+    if (
+        not payload.is_active
+        and _is_active_superadmin(member)
+        and count_active_superadmins(db, exclude_admin_id=member.id) == 0
+    ):
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Platform must keep at least one superadmin")
+    member.is_active = payload.is_active
+    db.add(PlatformAuditLog(
+        platform_admin_id=admin.id,
+        action="platform_member.activated" if payload.is_active else "platform_member.deactivated",
+        description=f"Se {'activó' if payload.is_active else 'desactivó'} la cuenta de {member.email}.",
+        details={"member_id": str(member.id)},
+    ))
+    db.commit()
+    db.refresh(member)
+    return _serialize_member(member)
+
+
+@router.post("/team/{member_id}/resend-invitation", response_model=PlatformMemberResponse)
+def resend_platform_invitation(
+    member_id: uuid.UUID,
+    db: Session = Depends(get_db),
+    admin: PlatformAdmin = Depends(require_platform_permission("platform.team.invite")),
+    email_service: EmailService = Depends(get_email_service),
+):
+    member = _member_or_404(db, member_id)
+    if member.hashed_password is not None:
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Invitation is not pending")
+    if not member.is_active:
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Platform member is disabled")
+    invitation_link = _issue_platform_invitation(member)
+    db.add(PlatformAuditLog(
+        platform_admin_id=admin.id, action="platform_member.invitation_resent",
+        description=f"Se generó una nueva invitación para {member.email}.",
+        details={"member_id": str(member.id)},
+    ))
+    db.commit()
+    db.refresh(member)
+    email_service.send_invitation(
+        recipient=member.email, recipient_name=member.full_name,
+        invitation_url=invitation_link, tenant_name="Equipo de administración de Flowdesk",
     )
+    return _serialize_member(member, invitation_link)
 
 
 @router.post(
@@ -191,7 +468,7 @@ def invite_platform_member(
 def create_tenant(
     payload: CreateTenantRequest,
     db: Session = Depends(get_db),
-    admin=Depends(require_platform_superadmin),  # protegido: solo superadministrador
+    admin=Depends(require_platform_permission("platform.tenants.create")),
     email_service: EmailService = Depends(get_email_service),
 ):
     tenant_repo = TenantRepository()
@@ -259,7 +536,7 @@ def create_tenant(
 @router.get("/tenants", response_model=list[TenantSaaSResponse])
 def list_tenants(
     db: Session = Depends(get_db),
-    _admin=Depends(get_current_platform_admin),
+    _admin=Depends(require_platform_permission("platform.tenants.view")),
 ):
     tenants = db.query(Tenant).order_by(Tenant.created_at.desc()).all()
     return [_serialize_tenant(db, tenant) for tenant in tenants]
@@ -276,7 +553,7 @@ def _tenant_or_404(db: Session, tenant_id: uuid.UUID) -> Tenant:
 def get_tenant(
     tenant_id: uuid.UUID,
     db: Session = Depends(get_db),
-    _admin=Depends(get_current_platform_admin),
+    _admin=Depends(require_platform_permission("platform.tenants.view")),
 ):
     return _serialize_tenant(db, _tenant_or_404(db, tenant_id))
 
@@ -286,7 +563,7 @@ def update_tenant(
     tenant_id: uuid.UUID,
     payload: UpdateTenantRequest,
     db: Session = Depends(get_db),
-    admin=Depends(require_platform_superadmin),
+    admin=Depends(require_platform_permission("platform.tenants.update")),
 ):
     """Edita el nombre y el identificador (slug) de la empresa."""
     tenant = _tenant_or_404(db, tenant_id)
@@ -316,7 +593,7 @@ def update_tenant_status(
     tenant_id: uuid.UUID,
     payload: UpdateTenantStatusRequest,
     db: Session = Depends(get_db),
-    admin=Depends(require_platform_superadmin),
+    admin=Depends(require_platform_permission("platform.tenants.update")),
 ):
     """Atajo para habilitar/inhabilitar: inhabilitar equivale a suspender la
     suscripción y bloquea el acceso de todos sus usuarios (login, refresh y
@@ -345,7 +622,7 @@ def delete_tenant(
     tenant_id: uuid.UUID,
     confirm_slug: str = Query(..., description="Identificador de la empresa, para confirmar"),
     db: Session = Depends(get_db),
-    admin=Depends(require_platform_superadmin),
+    admin=Depends(require_platform_permission("platform.tenants.delete")),
 ):
     """Elimina la empresa y TODOS sus datos de forma permanente. Se exige el
     slug como confirmación para evitar borrados accidentales. La bitácora de
@@ -370,7 +647,7 @@ def delete_tenant(
 @router.get("/plans", response_model=list[SaaSPlanResponse])
 def list_plans(
     db: Session = Depends(get_db),
-    _admin=Depends(get_current_platform_admin),
+    _admin=Depends(require_platform_permission("platform.plans.view")),
 ):
     from app.core.plans import PLAN_TEMPLATES
 
@@ -392,7 +669,7 @@ def list_plans(
 @router.get("/audit", response_model=list[PlatformAuditResponse])
 def list_platform_audit(
     db: Session = Depends(get_db),
-    _admin=Depends(get_current_platform_admin),
+    _admin=Depends(require_platform_permission("platform.audit.view")),
 ):
     items = db.query(PlatformAuditLog).order_by(PlatformAuditLog.created_at.desc()).limit(250).all()
     tenants = {item.id: item.name for item in db.query(Tenant).all()}
@@ -415,7 +692,7 @@ def list_platform_audit(
 @router.get("/subscription-requests", response_model=list[PlanChangeRequestResponse])
 def list_subscription_requests(
     db: Session = Depends(get_db),
-    _admin=Depends(get_current_platform_admin),
+    _admin=Depends(require_platform_permission("platform.subscriptions.view")),
 ):
     items = db.query(PlanChangeRequest).order_by(PlanChangeRequest.created_at.desc()).all()
     result = []
@@ -438,7 +715,7 @@ def resolve_subscription_request(
     request_id: uuid.UUID,
     payload: ResolvePlanChangeRequest,
     db: Session = Depends(get_db),
-    admin=Depends(require_platform_superadmin),
+    admin=Depends(require_platform_permission("platform.subscriptions.resolve")),
 ):
     item = db.query(PlanChangeRequest).filter(PlanChangeRequest.id == request_id).first()
     if not item:
@@ -477,7 +754,7 @@ def update_tenant_subscription(
     tenant_id: uuid.UUID,
     payload: UpdateTenantSubscriptionRequest,
     db: Session = Depends(get_db),
-    admin=Depends(require_platform_superadmin),
+    admin=Depends(require_platform_permission("platform.tenants.update")),
 ):
     tenant = _tenant_or_404(db, tenant_id)
     old_plan_key = tenant.plan_key

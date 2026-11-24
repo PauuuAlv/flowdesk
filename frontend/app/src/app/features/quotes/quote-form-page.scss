@@ -60,6 +60,7 @@ header > a {
 }
 input,
 select,
+app-combobox,
 textarea {
   width: 100%;
   padding: 0.7rem;
@@ -78,6 +79,37 @@ textarea {
   border-radius: 0.4rem;
   color: #fff;
   background: var(--flowdesk-navy);
+}
+.title-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.75rem;
+}
+// Moneda de la cotización: discreta, junto a "Agregar concepto".
+.currency-field {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  color: var(--flowdesk-muted);
+  font-size: 0.75rem;
+  font-weight: 750;
+}
+.currency-field app-combobox {
+  width: 6.25rem;
+  padding: 0.45rem 0.6rem;
+  color: var(--flowdesk-navy-light);
+  background: #f6f8fa;
+  font-weight: 700;
+}
+.currency-notice {
+  margin: 0.75rem 0 0;
+  padding: 0.65rem 0.8rem;
+  color: #7a4b00;
+  background: #fff6e0;
+  border-radius: 0.45rem;
+  font-size: 0.8rem;
 }
 .row {
   display: grid;
@@ -150,6 +182,7 @@ textarea {
     display: none;
   }
   .row select,
+  .row app-combobox,
   .row input:first-of-type {
     grid-column: 1/-1;
   }

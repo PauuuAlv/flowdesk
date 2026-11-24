@@ -79,7 +79,8 @@ h1 {
 }
 .field input,
 .field textarea,
-.field select {
+.field select,
+.field app-combobox {
   width: 100%;
   padding: 0.75rem 0.85rem;
   color: var(--flowdesk-ink);
@@ -104,6 +105,10 @@ h1 {
 }
 .full-width {
   grid-column: 1/-1;
+}
+.field-hint {
+  color: var(--flowdesk-muted);
+  font-size: 0.72rem;
 }
 .field-meta {
   display: flex;

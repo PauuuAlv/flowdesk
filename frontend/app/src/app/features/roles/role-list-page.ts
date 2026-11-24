@@ -3,6 +3,7 @@ import { RouterLink } from '@angular/router';
 
 import { TenantRole } from '../../core/models/access-control.models';
 import { AccessControlService } from '../../core/services/access-control.service';
+import { SessionService } from '../../core/services/session.service';
 
 @Component({
   selector: 'app-role-list-page',
@@ -12,6 +13,7 @@ import { AccessControlService } from '../../core/services/access-control.service
 })
 export class RoleListPage {
   private readonly accessControl = inject(AccessControlService);
+  private readonly ownRoleId = inject(SessionService).getUser()?.role_id ?? null;
 
   protected readonly roles = signal<TenantRole[]>([]);
   protected readonly loading = signal(true);
@@ -37,6 +39,11 @@ export class RoleListPage {
         this.errorMessage.set('No fue posible consultar los roles. Intenta nuevamente.');
       },
     });
+  }
+
+  /** Nadie puede modificar el rol que tiene asignado. */
+  protected isOwnRole(role: TenantRole): boolean {
+    return role.id === this.ownRoleId;
   }
 
   protected requestDelete(role: TenantRole): void {

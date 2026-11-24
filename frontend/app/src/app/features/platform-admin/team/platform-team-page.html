@@ -1,5 +1,266 @@
-<section class="page"><header><p>SEGURIDAD DE PLATAFORMA</p><h1>Equipo de plataforma</h1><span>Cada integrante utiliza una cuenta individual. Las cuentas de consulta no pueden modificar información.</span></header>
-  @if(error()){<div class="message error">{{error()}}</div>}@if(created();as member){<div class="message success"><strong>Invitación generada para {{member.email}}</strong><div><input readonly [value]="member.invitation_link"/><button (click)="copy()">Copiar enlace</button></div><small>El enlace también fue enviado por correo y es personal, temporal y de un solo uso.</small></div>}
-  <div class="layout"><section class="card"><h2>Integrantes con acceso</h2><p>El superadministrador conserva el control total; las demás cuentas son de lectura.</p>@if(loading()){<div>Cargando…</div>}@else{<div class="members">@for(member of members();track member.id){<article><div class="avatar">{{(member.full_name||member.email).slice(0,2).toUpperCase()}}</div><div><strong>{{member.full_name||'Sin nombre'}}</strong><span>{{member.email}}</span></div><div><b>{{role(member.role)}}</b><span>{{member.invitation_pending?'Invitación pendiente':member.is_active?'Cuenta activa':'Cuenta inactiva'}}</span></div><small>{{date(member.created_at)}}</small></article>}</div>}</section>
-    <form class="card invite" [formGroup]="form" (ngSubmit)="submit()"><h2>Invitar cuenta de consulta</h2><p>Podrá ver el panel, empresas, planes, suscripciones y auditoría, pero no realizar cambios.</p><label>Nombre completo<input formControlName="full_name" placeholder="Ej: María Hernández"/></label><label>Correo electrónico<input type="email" formControlName="email" placeholder="Ej: soporte@armsystem.com.mx"/></label><label>Nivel de acceso<select formControlName="role"><option value="viewer">Consulta de plataforma</option></select></label><button [disabled]="sending()">{{sending()?'Enviando…':'Enviar invitación'}}</button></form></div>
+<section class="page">
+  <header class="page-heading">
+    <div>
+      <p class="eyebrow">Seguridad de plataforma</p>
+      <h1>Equipo de plataforma</h1>
+      <span>Cada integrante usa una cuenta individual. Lo que puede hacer lo define su rol y los permisos de ese rol.</span>
+    </div>
+    <div class="heading-actions">
+      @if (tab() === 'members' && access.can(P.teamInvite)) {
+        <button type="button" class="primary" (click)="openInvite()">Invitar integrante</button>
+      }
+      @if (tab() === 'roles' && access.can(P.rolesCreate)) {
+        <button type="button" class="primary" (click)="openRoleEditor(null)">Nuevo rol</button>
+      }
+    </div>
+  </header>
+
+  @if (access.can(P.teamView) && access.can(P.rolesView)) {
+    <nav class="tabs" aria-label="Secciones del equipo">
+      <button type="button" [class.active]="tab() === 'members'" (click)="setTab('members')">
+        Integrantes <span>{{ stats().total }}</span>
+      </button>
+      <button type="button" [class.active]="tab() === 'roles'" (click)="setTab('roles')">
+        Roles y permisos <span>{{ roles().length }}</span>
+      </button>
+    </nav>
+  }
+
+  @if (error()) { <div class="message error" role="alert">{{ error() }}</div> }
+  @if (success()) { <div class="message success" role="status">{{ success() }}</div> }
+  @if (invitation(); as member) {
+    <div class="message invite-result" role="status">
+      <strong>Invitación generada para {{ member.email }} · {{ member.role_name }}</strong>
+      <div class="link-row">
+        <input readonly [value]="member.invitation_link" aria-label="Enlace de invitación" />
+        <button type="button" (click)="copyInvitation()">{{ copied() ? 'Copiado' : 'Copiar enlace' }}</button>
+      </div>
+      <small>El enlace también se envió por correo. Es personal, temporal y de un solo uso.</small>
+      <button type="button" class="link close" (click)="invitation.set(null)">Cerrar</button>
+    </div>
+  }
+
+  @if (loading()) {
+    <div class="card skeleton" aria-label="Cargando"><i></i><i></i><i></i></div>
+  } @else if (tab() === 'members') {
+    <!-- ====================== INTEGRANTES ====================== -->
+    <section class="stats" aria-label="Resumen del equipo">
+      <article><span>Integrantes</span><strong>{{ stats().total }}</strong></article>
+      <article><span>Cuentas activas</span><strong>{{ stats().active }}</strong></article>
+      <article><span>Invitaciones pendientes</span><strong>{{ stats().pending }}</strong></article>
+      <article><span>Superadministradores activos</span><strong>{{ stats().superadmins }}</strong></article>
+    </section>
+
+    <div class="filters">
+      <label><span>Buscar</span><input type="search" placeholder="Nombre, correo o rol" (input)="setSearch($event)" /></label>
+      <label>
+        <span>Estado</span>
+        <app-combobox
+        [options]="[{ value: 'all', label: 'Todos' }, { value: 'active', label: 'Activas' }, { value: 'pending', label: 'Invitación pendiente' }, { value: 'inactive', label: 'Desactivadas' }]"
+        [selectedValue]="memberFilter()"
+        ariaLabel="Estado"
+        placeholder="Estado"
+        (selected)="setMemberFilter($event)"
+      />
+      </label>
+    </div>
+
+    <section class="card">
+      @if (!filteredMembers().length) {
+        <p class="empty">No hay integrantes que coincidan con los filtros.</p>
+      } @else {
+        <div class="members">
+          @for (member of filteredMembers(); track member.id) {
+            <article [class.inactive]="!member.is_active">
+              <div class="avatar" aria-hidden="true">{{ initials(member) }}</div>
+              <div class="identity">
+                <strong>{{ member.full_name || 'Sin nombre' }} @if (isSelf(member)) { <em>(tú)</em> }</strong>
+                <span>{{ member.email }}</span>
+                @if (member.is_owner) { <span class="owner" title="Cuenta creada con las variables del .env: no se le puede cambiar el rol ni desactivar.">Cuenta principal</span> }
+              </div>
+              <div class="role">
+                @if (canEdit(member)) {
+                  <label>
+                    <span class="sr-only">Rol de {{ member.full_name || member.email }}</span>
+                    <app-combobox
+                      #roleCombo
+                      [options]="roleSelectOptions().length ? roleSelectOptions() : [{ value: member.role_id, label: member.role_name }]"
+                      [selectedValue]="member.role_id"
+                      [disabled]="busyMember() === member.id"
+                      [ariaLabel]="'Rol de ' + (member.full_name || member.email)"
+                      placeholder="Rol"
+                      (selected)="changeRole(member, $event, roleCombo)"
+                    />
+                  </label>
+                } @else {
+                  <b [class.super]="member.role === 'superadmin'">{{ member.role_name }}</b>
+                }
+              </div>
+              <span [class]="'state ' + memberState(member)">{{ memberStateLabel(member) }}</span>
+              <div class="actions">
+                @if (member.invitation_pending && member.is_active && access.can(P.teamInvite)) {
+                  <button type="button" class="link" [disabled]="busyMember() === member.id" (click)="resendInvitation(member)">Reenviar invitación</button>
+                }
+                @if (canEdit(member)) {
+                  <button type="button" class="link" [class.danger-link]="member.is_active" (click)="memberToToggle.set(member)">
+                    {{ member.is_active ? 'Desactivar' : 'Activar' }}
+                  </button>
+                }
+                <small>Desde {{ date(member.created_at) }}</small>
+              </div>
+            </article>
+          }
+        </div>
+      }
+    </section>
+  } @else {
+    <!-- ====================== ROLES ====================== -->
+    <p class="intro">
+      Los roles iniciales no se pueden eliminar. <strong>Superadministrador</strong> siempre tiene todos los
+      permisos y la plataforma debe conservar al menos una cuenta activa con ese rol; puede haber varias.
+    </p>
+    <div class="role-grid">
+      @for (role of roles(); track role.id) {
+        <article class="role-card" [class.protected]="role.is_protected">
+          <div class="role-top">
+            <span class="origin" [class.custom]="role.origin === 'custom'">{{ roleOriginLabel(role) }}</span>
+            @if (role.is_protected) { <span class="badge">Protegido</span> }
+          </div>
+          <h2>{{ role.name }}</h2>
+          <p>{{ role.description }}</p>
+          <ul class="summary">
+            @for (line of permissionSummary(role); track line) { <li>{{ line }}</li> }
+          </ul>
+          <footer>
+            <span>{{ role.permissions.length }} permisos · {{ role.member_count }} {{ role.member_count === 1 ? 'integrante' : 'integrantes' }}</span>
+            <div>
+              @if (isOwnRole(role)) {
+                <span class="own-role" title="No puedes modificar el rol que tienes asignado">Tu rol</span>
+              } @else if (access.can(P.rolesUpdate)) {
+                <button type="button" class="link" (click)="openRoleEditor(role)">Editar</button>
+              }
+              @if (access.can(P.rolesDelete)) {
+                <button
+                  type="button"
+                  class="link danger-link"
+                  [disabled]="role.origin === 'template' || role.member_count > 0"
+                  [title]="role.origin === 'template' ? 'Los roles iniciales no se eliminan' : role.member_count > 0 ? 'Reasigna a sus integrantes antes de eliminarlo' : ''"
+                  (click)="roleToDelete.set(role)"
+                >Eliminar</button>
+              }
+            </div>
+          </footer>
+        </article>
+      }
+    </div>
+  }
 </section>
+
+<!-- ====================== DIÁLOGOS ====================== -->
+
+@if (inviteOpen()) {
+  <div class="modal-backdrop" role="presentation">
+    <section class="dialog" role="dialog" aria-modal="true" aria-labelledby="invite-title">
+      <h2 id="invite-title">Invitar integrante</h2>
+      <p>Recibirá un enlace para definir su contraseña. Su acceso dependerá del rol que elijas.</p>
+      <form [formGroup]="inviteForm" (ngSubmit)="submitInvite()" novalidate>
+        @if (inviteError()) { <p class="message error">{{ inviteError() }}</p> }
+        <label>Nombre completo<input formControlName="full_name" placeholder="Ej: María Hernández" autocomplete="name" /></label>
+        @if (inviteForm.controls.full_name.touched && inviteForm.controls.full_name.invalid) { <small class="field-error">Ingresa el nombre (mínimo 3 caracteres).</small> }
+        <label>Correo electrónico<input type="email" formControlName="email" placeholder="Ej: soporte@armsystem.com.mx" autocomplete="email" /></label>
+        @if (inviteForm.controls.email.touched && inviteForm.controls.email.invalid) { <small class="field-error">Ingresa un correo válido.</small> }
+        <label>
+          Rol
+          <app-combobox formControlName="role_id" [options]="roleSelectOptions()" placeholder="Escribe para buscar un rol" />
+        </label>
+        @if (!roles().length) {
+          <small class="field-error">No tienes permiso para consultar los roles de plataforma.</small>
+        } @else if (inviteForm.controls.role_id.touched && inviteForm.controls.role_id.invalid) {
+          <small class="field-error">Selecciona el rol del integrante.</small>
+        }
+        <div class="dialog-actions">
+          <button type="button" class="secondary" (click)="closeDialogs()">Cancelar</button>
+          <button type="submit" class="primary" [disabled]="sending()">{{ sending() ? 'Enviando…' : 'Enviar invitación' }}</button>
+        </div>
+      </form>
+    </section>
+  </div>
+}
+
+@if (memberToToggle(); as member) {
+  <div class="modal-backdrop" role="presentation">
+    <section class="dialog" role="dialog" aria-modal="true" aria-labelledby="toggle-title">
+      <h2 id="toggle-title">{{ member.is_active ? 'Desactivar' : 'Activar' }} cuenta</h2>
+      @if (member.is_active) {
+        <p><strong>{{ member.full_name || member.email }}</strong> ya no podrá iniciar sesión y su sesión abierta se cerrará. Puedes reactivarla cuando quieras.</p>
+      } @else {
+        <p><strong>{{ member.full_name || member.email }}</strong> podrá volver a iniciar sesión con el rol {{ member.role_name }}.</p>
+      }
+      @if (dialogError()) { <p class="message error">{{ dialogError() }}</p> }
+      <div class="dialog-actions">
+        <button type="button" class="secondary" (click)="closeDialogs()">Cancelar</button>
+        <button type="button" [class]="member.is_active ? 'danger' : 'primary'" [disabled]="processing()" (click)="confirmToggleMember()">
+          {{ processing() ? 'Guardando…' : (member.is_active ? 'Desactivar' : 'Activar') }}
+        </button>
+      </div>
+    </section>
+  </div>
+}
+
+@if (roleToDelete(); as role) {
+  <div class="modal-backdrop" role="presentation">
+    <section class="dialog" role="dialog" aria-modal="true" aria-labelledby="delete-role-title">
+      <h2 id="delete-role-title">Eliminar rol</h2>
+      <p>Se eliminará el rol <strong>{{ role.name }}</strong>. Esta acción no se puede deshacer.</p>
+      @if (dialogError()) { <p class="message error">{{ dialogError() }}</p> }
+      <div class="dialog-actions">
+        <button type="button" class="secondary" (click)="closeDialogs()">Cancelar</button>
+        <button type="button" class="danger" [disabled]="processing()" (click)="confirmDeleteRole()">{{ processing() ? 'Eliminando…' : 'Eliminar rol' }}</button>
+      </div>
+    </section>
+  </div>
+}
+
+@if (roleEditorOpen()) {
+  <div class="modal-backdrop" role="presentation">
+    <section class="dialog wide" role="dialog" aria-modal="true" aria-labelledby="role-title">
+      <h2 id="role-title">{{ editingRole() ? 'Editar rol' : 'Nuevo rol de plataforma' }}</h2>
+      <form [formGroup]="roleForm" (ngSubmit)="saveRole()" novalidate>
+        @if (roleError()) { <p class="message error">{{ roleError() }}</p> }
+        <div class="role-fields">
+          <label>Nombre del rol<input formControlName="name" maxlength="50" placeholder="Ej: Soporte" /></label>
+          <label>Descripción<input formControlName="description" maxlength="160" placeholder="Ej: Atiende las solicitudes de las empresas." /></label>
+        </div>
+        @if (roleForm.controls.name.touched && roleForm.controls.name.invalid) { <small class="field-error">El nombre debe tener entre 3 y 50 caracteres.</small> }
+        @if (roleForm.controls.description.touched && roleForm.controls.description.invalid) { <small class="field-error">La descripción debe tener entre 10 y 160 caracteres.</small> }
+        @if (editingRole()?.is_protected) {
+          <p class="help">Superadministrador está protegido: conserva su nombre y siempre tiene todos los permisos.</p>
+        } @else if (editingRole()?.origin === 'template') {
+          <p class="help">Es un rol inicial: puedes ajustar su descripción y permisos, pero no su nombre.</p>
+        }
+        <div class="matrix">
+          @for (module of modules; track module.key) {
+            <fieldset [disabled]="editingRole()?.is_protected">
+              <legend>
+                <span><strong>{{ module.label }}</strong><small>{{ module.description }}</small></span>
+                <button type="button" class="link" (click)="toggleModule(module.key)">{{ moduleFullySelected(module.key) ? 'Quitar todo' : 'Seleccionar todo' }}</button>
+              </legend>
+              <div class="checks">
+                @for (permission of module.permissions; track permission.code) {
+                  <label class="check">
+                    <input type="checkbox" [checked]="isSelected(permission.code)" (change)="togglePermission(permission.code)" />
+                    {{ permission.label }}
+                  </label>
+                }
+              </div>
+            </fieldset>
+          }
+        </div>
+        <div class="dialog-actions">
+          <button type="button" class="secondary" (click)="closeDialogs()">Cancelar</button>
+          <button type="submit" class="primary" [disabled]="savingRole()">{{ savingRole() ? 'Guardando…' : 'Guardar rol' }}</button>
+        </div>
+      </form>
+    </section>
+  </div>
+}

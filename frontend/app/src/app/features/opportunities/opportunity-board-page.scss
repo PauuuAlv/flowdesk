@@ -69,6 +69,22 @@ header a,
   border: 1px solid var(--flowdesk-border);
   border-radius: 0.45rem;
 }
+// Pipeline del tablero (solo aparece si la empresa tiene más de uno activo).
+.pipeline-filter {
+  display: grid;
+  flex: 0 0 15rem;
+  gap: 0.3rem;
+  font-size: 0.75rem;
+  font-weight: 700;
+}
+.pipeline-filter app-combobox {
+  padding: 0.75rem;
+  border: 1px solid var(--flowdesk-border);
+  border-radius: 0.45rem;
+  font-size: 0.88rem;
+  font-weight: 700;
+  color: var(--flowdesk-navy);
+}
 .archived-filter {
   display: flex;
   align-items: center;
@@ -86,9 +102,38 @@ header a,
   padding-bottom: 1rem;
 }
 .column {
+  // Fondo: tono suave del color de la etapa (configurable en "Pipelines y etapas").
+  // También lo usa la esquina doblada de las tarjetas.
+  --column-bg: color-mix(in srgb, var(--stage-color, #94a3b8) 14%, #eef1f4);
   padding: 0.75rem;
-  background: #e9edf0;
+  background: var(--column-bg);
+  border: 2px dashed transparent;
   border-radius: 0.75rem;
+  // Franja superior con el color completo de la etapa.
+  box-shadow: inset 0 4px 0 var(--stage-color, #94a3b8);
+  transition: background 0.12s ease, border-color 0.12s ease, opacity 0.12s ease;
+}
+// Arrastrar y soltar: columnas donde se puede soltar, la que está bajo el cursor
+// y las que no admiten la tarjeta (sin permiso o etapa inactiva).
+.column.drop-available {
+  border-color: #b8c7d1;
+}
+.column.drop-target {
+  --column-bg: color-mix(in srgb, var(--stage-color, #94a3b8) 26%, #eef1f4);
+  background: var(--column-bg);
+  border-color: var(--flowdesk-navy-light);
+}
+.column.drop-blocked {
+  opacity: 0.55;
+}
+article.draggable {
+  cursor: grab;
+}
+article.draggable:active {
+  cursor: grabbing;
+}
+article.is-dragging {
+  opacity: 0.45;
 }
 .column-title {
   display: flex;
@@ -106,12 +151,25 @@ header a,
 .column-title strong {
   font-size: 0.75rem;
 }
+// Un total por moneda, uno debajo de otro (la moneda de la empresa primero).
+.stage-totals {
+  display: grid;
+  justify-items: end;
+  gap: 0.1rem;
+  white-space: nowrap;
+}
+.stage-totals span + span {
+  color: var(--flowdesk-muted);
+  font-size: 0.68rem;
+}
 .cards {
   display: grid;
   gap: 0.65rem;
 }
 article {
+  position: relative;
   padding: 0.85rem;
+  overflow: hidden;
   background: #fff;
   border: 1px solid var(--flowdesk-border);
   border-radius: 0.6rem;
@@ -122,22 +180,140 @@ article h3 {
 }
 article > p {
   margin: 0;
+  padding-right: 1rem; // deja libre la esquina doblada
   color: var(--flowdesk-muted);
   font-size: 0.75rem;
 }
+// Detalles plegados: se abren/cierran animando la altura.
+.card-details {
+  display: grid;
+  grid-template-rows: 0fr;
+  transition: grid-template-rows 0.2s ease;
+}
+article.expanded .card-details {
+  grid-template-rows: 1fr;
+}
+.card-details-inner {
+  min-height: 0;
+  overflow: hidden;
+}
+.card-details-inner > .badge {
+  margin-top: 0.6rem;
+}
+// Esquina inferior derecha doblada (como un pósit): al hacer clic despliega los detalles.
+// La parte "recortada" usa el color de la columna para que parezca doblada.
+.card-fold {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  width: 1.15rem;
+  height: 1.15rem;
+  padding: 0;
+  background: linear-gradient(315deg, var(--column-bg) 50%, #d5dee4 50%);
+  border: 0;
+  border-top-left-radius: 0.3rem;
+  box-shadow: -1px -1px 2px rgb(20 42 56 / 14%);
+  cursor: pointer;
+  transition: width 0.15s ease, height 0.15s ease, background 0.15s ease;
+}
+.card-fold:hover,
+.card-fold:focus-visible {
+  width: 1.45rem;
+  height: 1.45rem;
+  outline: none;
+}
+article.expanded .card-fold {
+  background: linear-gradient(315deg, var(--column-bg) 50%, #e8b57a 50%);
+}
 .card-top {
   display: flex;
-  justify-content: space-between;
+  align-items: center;
+  gap: 0.4rem;
   font-size: 0.7rem;
 }
-.card-top span {
+.card-top strong {
+  margin-left: auto;
+}
+.card-top .probability {
   color: var(--flowdesk-copper);
   font-weight: 800;
+}
+// Botón ⋯ (esquina superior izquierda) que abre el menú de acciones.
+.card-menu-trigger {
+  display: grid;
+  width: 1.6rem;
+  height: 1.6rem;
+  place-items: center;
+  padding: 0;
+  color: var(--flowdesk-muted);
+  background: transparent;
+  border: 0;
+  border-radius: 0.35rem;
+  font-size: 1rem;
+  font-weight: 800;
+  line-height: 1;
+  cursor: pointer;
+}
+.card-menu-trigger:hover,
+.card-menu-trigger[aria-expanded='true'] {
+  color: var(--flowdesk-navy);
+  background: var(--flowdesk-bg);
+}
+.card-menu {
+  position: fixed;
+  z-index: 70;
+  display: grid;
+  width: 13rem;
+  padding: 0.35rem;
+  background: #fff;
+  border: 1px solid var(--flowdesk-border);
+  border-radius: 0.6rem;
+  box-shadow: 0 0.9rem 2.2rem rgb(20 42 56 / 18%);
+}
+.card-menu a,
+.card-menu button {
+  display: block;
+  width: 100%;
+  padding: 0.55rem 0.65rem;
+  color: var(--flowdesk-ink);
+  background: transparent;
+  border: 0;
+  border-radius: 0.35rem;
+  font: inherit;
+  font-size: 0.82rem;
+  text-align: left;
+  text-decoration: none;
+  cursor: pointer;
+}
+.card-menu a:hover,
+.card-menu button:hover {
+  background: var(--flowdesk-bg);
+}
+.card-menu .won {
+  color: #167447;
+  font-weight: 700;
+}
+.card-menu .lost {
+  color: #a43a31;
+  font-weight: 700;
+}
+.card-menu .separated {
+  margin-top: 0.25rem;
+  border-top: 1px solid var(--flowdesk-border);
+  border-radius: 0 0 0.35rem 0.35rem;
+}
+.menu-label {
+  margin: 0.35rem 0.65rem 0.1rem;
+  color: var(--flowdesk-muted);
+  font-size: 0.65rem;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
 }
 dl {
   display: grid;
   gap: 0.35rem;
-  margin: 0.8rem 0;
+  margin: 0.7rem 0 0.3rem;
 }
 dl div {
   display: flex;
@@ -151,37 +327,6 @@ dt {
 dd {
   margin: 0;
   text-align: right;
-}
-article select {
-  width: 100%;
-  padding: 0.45rem;
-  margin-bottom: 0.5rem;
-  border: 1px solid var(--flowdesk-border);
-  border-radius: 0.35rem;
-  background: #fff;
-}
-.actions {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.25rem;
-}
-.actions a,
-.actions button,
-.restore {
-  padding: 0.35rem 0.45rem;
-  border: 0;
-  background: transparent;
-  color: var(--flowdesk-navy-light);
-  font-size: 0.7rem;
-  font-weight: 750;
-  text-decoration: none;
-  cursor: pointer;
-}
-.actions .won {
-  color: #167447;
-}
-.actions .lost {
-  color: #a43a31;
 }
 .archived {
   opacity: 0.72;
@@ -208,7 +353,8 @@ article select {
 }
 .modal-backdrop {
   position: fixed;
-  z-index: 20;
+  // Por encima de la barra superior (20) y del menú lateral (30) del panel.
+  z-index: 40;
   inset: 0;
   display: grid;
   place-items: center;
@@ -238,6 +384,7 @@ article select {
   font-weight: 700;
 }
 .modal select,
+.modal app-combobox,
 .modal input,
 .modal textarea {
   padding: 0.7rem;

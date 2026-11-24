@@ -1,24 +1,82 @@
 <section class="stage-page">
   <header>
-    <div><p class="eyebrow">Configuración comercial</p><h1>Etapas de oportunidades</h1>
-      <p>Personaliza el proceso comercial de tu empresa. Puedes registrar hasta 20 etapas.</p></div>
+    <div><p class="eyebrow">Configuración comercial</p><h1>Pipelines y etapas</h1>
+      <p>Organiza tus procesos comerciales en pipelines (por ejemplo, ventas nuevas y renovaciones). Cada pipeline tiene sus propias etapas.</p></div>
   </header>
   @if (error()) { <p class="message error" role="alert">{{ error() }}</p> }
   @if (success()) { <p class="message success">{{ success() }}</p> }
 
+  <section class="card pipeline-bar" aria-label="Pipeline">
+    <label class="pipeline-select"><span>Pipeline</span>
+      <app-combobox
+        [options]="pipelineOptions()"
+        [selectedValue]="selectedId()"
+        placeholder="Selecciona un pipeline"
+        (selected)="choosePipeline($event)"
+      />
+    </label>
+    @if (selected(); as pipeline) {
+      <div class="pipeline-info">
+        <div class="pipeline-badges">
+          @if (pipeline.is_default) { <span class="badge">Predeterminado</span> }
+          @if (!pipeline.is_active) { <span class="badge muted">Inactivo</span> }
+        </div>
+        <p>{{ pipeline.description || 'Sin descripción.' }}</p>
+        <small>{{ pipeline.stage_count }} etapas · {{ pipeline.open_opportunities }} oportunidades abiertas · {{ pipeline.total_opportunities }} en total</small>
+      </div>
+    }
+    @if (canManage) {
+      <div class="pipeline-actions">
+        <button type="button" (click)="openPipelineDialog('create')">Nuevo pipeline</button>
+        @if (selected(); as pipeline) {
+          <button type="button" class="secondary" (click)="openPipelineDialog('edit')">Editar</button>
+          @if (!pipeline.is_default) {
+            <button type="button" class="secondary" (click)="makeDefault()">Marcar como predeterminado</button>
+            <button type="button" class="secondary" (click)="toggleActive()">{{ pipeline.is_active ? 'Desactivar' : 'Activar' }}</button>
+            <button type="button" class="secondary danger" (click)="openPipelineDialog('delete')">Eliminar</button>
+          }
+        }
+      </div>
+    }
+  </section>
+
   <div class="layout">
     <form class="card form" [formGroup]="form" (ngSubmit)="submit()">
       <h2>{{ editing() ? 'Editar etapa' : 'Nueva etapa' }}</h2>
+      @if (selected(); as pipeline) { <p class="hint form-scope">En el pipeline <strong>{{ pipeline.name }}</strong>.</p> }
       <label><span>Nombre *</span><input formControlName="name" placeholder="Ej: Demostración" /></label>
-      <label><span>Tipo *</span><select formControlName="stage_type">
-        <option value="normal">Etapa normal</option><option value="won">Cierre ganado</option><option value="lost">Cierre perdido</option>
-      </select></label>
+      <label><span>Tipo *</span><app-combobox formControlName="stage_type" [options]="stageTypeOptions" placeholder="Selecciona un tipo" /></label>
       <div class="two">
         <label><span>Probabilidad (%) *</span><input type="number" min="0" max="100" formControlName="default_probability" /></label>
         <label><span>Orden *</span><input type="number" min="1" max="20" formControlName="position" /></label>
       </div>
-      <p class="hint">La probabilidad se aplicará al mover una oportunidad a esta etapa.</p>
-      <div class="actions"><button type="submit" [disabled]="saving()">{{ saving() ? 'Guardando…' : (editing() ? 'Guardar cambios' : 'Crear etapa') }}</button>
+      <fieldset class="color-field">
+        <legend>Color en el tablero</legend>
+        <div class="swatches" role="radiogroup" aria-label="Color de la etapa">
+          @for (swatch of palette; track swatch.value) {
+            <button
+              type="button"
+              class="swatch"
+              role="radio"
+              [style.--swatch]="swatch.value"
+              [class.selected]="form.controls.color.value === swatch.value"
+              [attr.aria-checked]="form.controls.color.value === swatch.value"
+              [attr.aria-label]="swatch.name"
+              [title]="swatch.name"
+              (click)="selectColor(swatch.value)"
+            ></button>
+          }
+          <label class="swatch custom" [class.selected]="!isPaletteColor(form.controls.color.value)" title="Color personalizado">
+            <input type="color" [value]="form.controls.color.value" (input)="customColor($event)" aria-label="Color personalizado" />
+          </label>
+        </div>
+        <div class="color-preview" [style.--stage-color]="form.controls.color.value">
+          <strong>{{ form.controls.name.value || 'Nombre de la etapa' }}</strong>
+          <span>Así se verá la columna</span>
+        </div>
+      </fieldset>
+      <p class="hint">La probabilidad se aplicará al mover una oportunidad a esta etapa. Cada pipeline admite hasta 20 etapas.</p>
+      <div class="actions"><button type="submit" [disabled]="saving() || !selected()">{{ saving() ? 'Guardando…' : (editing() ? 'Guardar cambios' : 'Crear etapa') }}</button>
         @if (editing()) { <button type="button" class="secondary" (click)="cancel()">Cancelar</button> }
       </div>
     </form>
@@ -31,7 +89,7 @@
         <div class="stage-list">
           @for (stage of stages(); track stage.id) {
             <article class="card" [class.inactive]="!stage.is_active">
-              <div class="position">{{ stage.position }}</div><div class="info"><div><h3>{{ stage.name }}</h3>
+              <div class="position" [style.background]="stage.color">{{ stage.position }}</div><div class="info"><div><h3>{{ stage.name }}</h3>
                 <span class="badge">{{ stage.stage_type === 'normal' ? 'Normal' : stage.stage_type === 'won' ? 'Ganada' : 'Perdida' }}</span>
                 @if (!stage.is_active) { <span class="badge muted">Inactiva</span> }</div>
                 <p>Probabilidad predeterminada: <strong>{{ stage.default_probability }}%</strong></p></div>
@@ -44,3 +102,37 @@
     </section>
   </div>
 </section>
+
+@if (dialog(); as kind) {
+  <div class="modal-backdrop" (click)="closeDialog()">
+    <section class="modal card" role="dialog" aria-modal="true" aria-labelledby="pipeline-dialog-title" (click)="$event.stopPropagation()">
+      @if (kind === 'delete') {
+        <h2 id="pipeline-dialog-title">Eliminar pipeline</h2>
+        <p>Se eliminará <strong>{{ selected()?.name }}</strong> con sus etapas. Solo es posible si no tiene oportunidades. Esta acción no se puede deshacer.</p>
+        @if (dialogError()) { <p class="message error" role="alert">{{ dialogError() }}</p> }
+        <div class="actions end">
+          <button type="button" class="secondary" (click)="closeDialog()">Cancelar</button>
+          <button type="button" class="danger-solid" [disabled]="processing()" (click)="deletePipeline()">{{ processing() ? 'Eliminando…' : 'Eliminar' }}</button>
+        </div>
+      } @else {
+        <h2 id="pipeline-dialog-title">{{ kind === 'create' ? 'Nuevo pipeline' : 'Editar pipeline' }}</h2>
+        <form [formGroup]="pipelineForm" (ngSubmit)="savePipeline()">
+          @if (dialogError()) { <p class="message error" role="alert">{{ dialogError() }}</p> }
+          <label><span>Nombre *</span><input formControlName="name" maxlength="80" placeholder="Ej: Renovaciones" /></label>
+          @if (pipelineForm.controls.name.touched && pipelineForm.controls.name.invalid) { <small class="field-error">Escribe un nombre de 2 a 80 caracteres.</small> }
+          <label><span>Descripción</span><input formControlName="description" maxlength="200" placeholder="¿Para qué tipo de oportunidades es?" /></label>
+          @if (kind === 'create') {
+            <label><span>Etapas iniciales</span>
+              <app-combobox formControlName="copy_stages_from" [options]="copyOptions()" placeholder="Etapas predeterminadas" />
+            </label>
+            <p class="hint">Después puedes agregar, editar o desactivar sus etapas.</p>
+          }
+          <div class="actions end">
+            <button type="button" class="secondary" (click)="closeDialog()">Cancelar</button>
+            <button type="submit" [disabled]="processing()">{{ processing() ? 'Guardando…' : kind === 'create' ? 'Crear pipeline' : 'Guardar cambios' }}</button>
+          </div>
+        </form>
+      }
+    </section>
+  </div>
+}

@@ -24,12 +24,6 @@
           Usuarios
         </a>
       }
-      @if (canManageUsers) {
-        <a routerLink="/panel/usuarios/invitar" routerLinkActive="active" (click)="closeSidebar()">
-          <span class="nav-icon" aria-hidden="true">＋</span>
-          Invitar usuario
-        </a>
-      }
 
       <p class="nav-label modules-label">Módulos</p>
       @if (canViewClients) {
@@ -44,7 +38,7 @@
         >
         @if (canManageOpportunityStages) {
           <a routerLink="/panel/configuracion/etapas-oportunidad" routerLinkActive="active" (click)="closeSidebar()"
-            ><span class="nav-icon" aria-hidden="true">≡</span>Etapas de oportunidades</a
+            ><span class="nav-icon" aria-hidden="true">≡</span>Pipelines y etapas</a
           >
         }
       }
@@ -59,12 +53,33 @@
         >
       }
       @if (canViewProducts) {
-        <a routerLink="/panel/productos" routerLinkActive="active" (click)="closeSidebar()"
-          ><span class="nav-icon" aria-hidden="true">□</span>Productos y servicios</a
-        >
         @if (canManageProductCatalogs) {
-          <a routerLink="/panel/configuracion/unidades" routerLinkActive="active" (click)="closeSidebar()"><span class="nav-icon" aria-hidden="true">↔</span>Unidades de medida</a>
-          <a routerLink="/panel/configuracion/marcas" routerLinkActive="active" (click)="closeSidebar()"><span class="nav-icon" aria-hidden="true">◆</span>Marcas</a>
+          <!-- Grupo con submenú: catálogo de productos y sus catálogos auxiliares. -->
+          <div class="nav-group" [class.open]="productsOpen()">
+            <button
+              type="button"
+              class="nav-group-toggle"
+              [class.active]="inProductsSection()"
+              [attr.aria-expanded]="productsOpen()"
+              aria-controls="submenu-productos"
+              (click)="toggleProducts()"
+            >
+              <span class="nav-icon" aria-hidden="true">□</span>Productos y servicios
+              <span class="nav-chevron" aria-hidden="true">⌄</span>
+            </button>
+            <div class="nav-submenu" id="submenu-productos" [attr.inert]="productsOpen() ? null : ''">
+              <div class="nav-submenu-inner">
+                <a routerLink="/panel/productos" routerLinkActive="active" (click)="closeSidebar()">Catálogo</a>
+                <a routerLink="/panel/configuracion/categorias" routerLinkActive="active" (click)="closeSidebar()">Categorías</a>
+                <a routerLink="/panel/configuracion/unidades" routerLinkActive="active" (click)="closeSidebar()">Unidades de medida</a>
+                <a routerLink="/panel/configuracion/marcas" routerLinkActive="active" (click)="closeSidebar()">Marcas</a>
+              </div>
+            </div>
+          </div>
+        } @else {
+          <a routerLink="/panel/productos" routerLinkActive="active" (click)="closeSidebar()"
+            ><span class="nav-icon" aria-hidden="true">□</span>Productos y servicios</a
+          >
         }
       }
       @if (canViewRoles) {

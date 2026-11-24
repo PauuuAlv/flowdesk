@@ -83,7 +83,7 @@ h1 {
 }
 .filters input,
 .filters select,
-.role-select select {
+.role-select select, .filters app-combobox, .role-select app-combobox {
   width: 100%;
   padding: 0.65rem 0.75rem;
   background: #fff;
@@ -165,11 +165,11 @@ h1 {
   color: var(--flowdesk-muted);
   font-size: 0.72rem;
 }
-.role-select select {
+.role-select select, .role-select app-combobox {
   padding: 0.55rem;
   font-size: 0.76rem;
 }
-.role-select select:disabled {
+.role-select select:disabled, .role-select app-combobox.is-disabled {
   background: var(--flowdesk-bg);
   color: var(--flowdesk-muted);
 }

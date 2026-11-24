@@ -65,23 +65,23 @@
             <tr>
               <td>{{ item.description }}</td>
               <td>{{ item.quantity }}</td>
-              <td>{{ money(item.unit_price) }}</td>
+              <td>{{ money(item.unit_price, q.currency) }}</td>
               <td>{{ item.discount_percent }}%</td>
-              <td>{{ money(item.amount) }}</td>
+              <td>{{ money(item.amount, q.currency) }}</td>
             </tr>
           }
         </tbody>
       </table>
       <div class="totals">
         <span
-          >Subtotal <b>{{ money(q.subtotal) }}</b></span
+          >Subtotal <b>{{ money(q.subtotal, q.currency) }}</b></span
         ><span
-          >Descuentos por concepto <b>- {{ money(q.discount) }}</b></span
+          >Descuentos por concepto <b>- {{ money(q.discount, q.currency) }}</b></span
         >@if (q.tax > 0) {
-          <span>IVA histórico ({{ q.tax_rate }}%) <b>{{ money(q.tax) }}</b></span>
+          <span>IVA histórico ({{ q.tax_rate }}%) <b>{{ money(q.tax, q.currency) }}</b></span>
         }
         ><strong
-          >Total <b>{{ money(q.total) }} {{ q.currency }}</b></strong
+          >Total <b>{{ money(q.total, q.currency) }}</b></strong
         >
       </div>
       @if (q.notes) {

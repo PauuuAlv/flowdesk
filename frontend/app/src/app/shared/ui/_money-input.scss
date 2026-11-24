@@ -1,0 +1,27 @@
+// Campo de importe con selector de moneda pegado a la derecha (discreto):
+//   <div class="money-input"><input …/><app-combobox class="currency" …/></div>
+// $scope es el contenedor que ya da borde a input/app-combobox en el formulario
+// (p. ej. '.grid'); así estas reglas pesan más que las generales.
+@mixin styles($scope: '') {
+  #{$scope} .money-input {
+    display: flex;
+    align-items: stretch;
+    min-width: 0;
+  }
+  #{$scope} .money-input > input {
+    flex: 1 1 auto;
+    min-width: 0;
+    border-top-right-radius: 0;
+    border-bottom-right-radius: 0;
+  }
+  #{$scope} .money-input > app-combobox {
+    flex: 0 0 6.25rem;
+    width: 6.25rem;
+    margin-left: -1px;
+    color: var(--flowdesk-navy-light);
+    background: #f6f8fa;
+    border-top-left-radius: 0;
+    border-bottom-left-radius: 0;
+    font-weight: 700;
+  }
+}

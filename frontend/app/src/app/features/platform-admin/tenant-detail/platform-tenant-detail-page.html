@@ -4,102 +4,151 @@
   @if (success()) { <div class="success" role="status">{{ success() }}</div> }
   @if (loading()) { <div class="card">Cargando empresa…</div> }
   @if (tenant(); as company) {
-    <header class="hero">
-      <div class="avatar">{{ company.name.slice(0, 2).toUpperCase() }}</div>
-      <div><p>DETALLE DE EMPRESA</p><h1>{{ company.name }}</h1><span>{{ company.slug }}</span></div>
-      <span [class]="'badge ' + company.subscription_status">{{ status(company.subscription_status) }}</span>
-    </header>
-    <section class="summary">
-      <article><span>Plan actual</span><strong>{{ company.plan_name }}</strong></article>
-      <article><span>Integrantes</span><strong>{{ company.usage.users }}/{{ company.max_users }}</strong></article>
-      <article><span>Creada</span><strong>{{ date(company.created_at) }}</strong></article>
-      <article><span>Renovación</span><strong>{{ date(company.subscription_renews_at) }}</strong></article>
-    </section>
-    <div class="grid">
-      <section class="card">
-        <h2>Empresa y administrador</h2><p>Información principal del tenant.</p>
-        <dl><div><dt>Empresa</dt><dd>{{ company.name }}</dd></div><div><dt>Identificador</dt><dd>{{ company.slug }}</dd></div><div><dt>Administrador principal</dt><dd>{{ company.admin_name || 'Sin nombre registrado' }}</dd></div><div><dt>Correo</dt><dd>{{ company.admin_email || 'Sin correo registrado' }}</dd></div></dl>
-      </section>
-      <section class="card">
-        <h2>Suscripción</h2><p>Control del plan y acceso de la empresa.</p>
-        <div class="controls"><label>Plan<select [value]="company.plan_key" [disabled]="saving() || !access.canManage()" (change)="changePlan($event)"><option value="basic">Básico</option><option value="professional">Profesional</option><option value="enterprise">Empresarial</option></select></label><label>Estado<select [value]="company.subscription_status" [disabled]="saving() || !access.canManage()" (change)="changeStatus($event)"><option value="trial">Prueba</option><option value="active">Activo</option><option value="suspended">Suspendido</option><option value="cancelled">Cancelado</option></select></label></div>
-        @if (saving()) { <small class="saving">Guardando cambios…</small> }
-      </section>
+  <header class="hero">
+    <div class="avatar">{{ company.name.slice(0, 2).toUpperCase() }}</div>
+    <div>
+      <p>DETALLE DE EMPRESA</p>
+      <h1>{{ company.name }}</h1><span>{{ company.slug }}</span>
     </div>
+    <span [class]="'badge ' + company.subscription_status">{{ status(company.subscription_status) }}</span>
+  </header>
+  <section class="summary">
+    <article><span>Plan actual</span><strong>{{ company.plan_name }}</strong></article>
+    <article><span>Integrantes</span><strong>{{ company.usage.users }}/{{ company.max_users }}</strong></article>
+    <article><span>Creada</span><strong>{{ date(company.created_at) }}</strong></article>
+    <article><span>Renovación</span><strong>{{ date(company.subscription_renews_at) }}</strong></article>
+  </section>
+  <div class="grid">
     <section class="card">
-      <h2>Uso y límites</h2><p>Consumo actual incluido en el plan {{ company.plan_name }}.</p>
-      <div class="usage">
-        <div><span>Usuarios <b>{{ company.usage.users }}/{{ company.max_users }}</b></span><i><em [style.width.%]="percent(company.usage.users, company.max_users)"></em></i><small>{{ company.usage.active_users }} activos · {{ company.usage.invited_users }} invitados</small></div>
-        <div><span>Clientes <b>{{ company.usage.clients }}/{{ company.max_clients }}</b></span><i><em [style.width.%]="percent(company.usage.clients, company.max_clients)"></em></i></div>
-        <div><span>Productos <b>{{ company.usage.products }}/{{ company.max_products }}</b></span><i><em [style.width.%]="percent(company.usage.products, company.max_products)"></em></i></div>
-      </div>
-    </section>
-    <section class="card modules">
-      <h2>Módulos del tenant</h2><p>Información registrada dentro de cada área del CRM.</p>
-      <div class="module-grid">@for (module of modules(); track module.name) { <article><span>{{ module.name }}</span><strong>{{ module.count === null ? 'Disponible' : module.count }}</strong><small>Habilitado</small></article> }</div>
-    </section>
-    @if (access.canManage()) {
-      <section class="card danger-zone">
-        <h2>Gestión de la empresa</h2><p>Edita sus datos, bloquea temporalmente el acceso o elimínala definitivamente.</p>
-        <div class="actions">
-          <button type="button" class="secondary" (click)="openDialog('edit')">Editar datos</button>
-          <button type="button" class="warn" (click)="openDialog('toggle')">{{ company.is_active ? 'Inhabilitar empresa' : 'Habilitar empresa' }}</button>
-          <button type="button" class="danger" (click)="openDialog('delete')">Eliminar empresa</button>
+      <h2>Empresa y administrador</h2>
+      <p>Información principal del tenant.</p>
+      <dl>
+        <div>
+          <dt>Empresa</dt>
+          <dd>{{ company.name }}</dd>
         </div>
-      </section>
-    }
+        <div>
+          <dt>Identificador</dt>
+          <dd>{{ company.slug }}</dd>
+        </div>
+        <div>
+          <dt>Administrador principal</dt>
+          <dd>{{ company.admin_name || 'Sin nombre registrado' }}</dd>
+        </div>
+        <div>
+          <dt>Correo</dt>
+          <dd>{{ company.admin_email || 'Sin correo registrado' }}</dd>
+        </div>
+      </dl>
+    </section>
+    <section class="card">
+      <h2>Suscripción</h2>
+      <p>Control del plan y acceso de la empresa.</p>
+      <div class="controls"><label>Plan<app-combobox #planCombo [options]="planChoices"
+            [selectedValue]="company.plan_key" [disabled]="saving() || !access.canManage()" placeholder="Plan"
+            (selected)="changePlan($event, planCombo)" /></label><label>Estado<app-combobox #statusCombo
+            [options]="statusChoices" [selectedValue]="company.subscription_status"
+            [disabled]="saving() || !access.canManage()" placeholder="Estado"
+            (selected)="changeStatus($event, statusCombo)" /></label></div>
+      @if (saving()) { <small class="saving">Guardando cambios…</small> }
+    </section>
+  </div>
+  <section class="card">
+    <h2>Uso y límites</h2>
+    <p>Consumo actual incluido en el plan {{ company.plan_name }}.</p>
+    <div class="usage">
+      <div><span>Usuarios <b>{{ company.usage.users }}/{{ company.max_users }}</b></span><i><em
+            [style.width.%]="percent(company.usage.users, company.max_users)"></em></i><small>{{
+          company.usage.active_users }} activos · {{ company.usage.invited_users }} invitados</small></div>
+      <div><span>Clientes <b>{{ company.usage.clients }}/{{ company.max_clients }}</b></span><i><em
+            [style.width.%]="percent(company.usage.clients, company.max_clients)"></em></i></div>
+      <div><span>Productos <b>{{ company.usage.products }}/{{ company.max_products }}</b></span><i><em
+            [style.width.%]="percent(company.usage.products, company.max_products)"></em></i></div>
+    </div>
+  </section>
+  <section class="card modules">
+    <h2>Módulos del tenant</h2>
+    <p>Información registrada dentro de cada área del CRM.</p>
+    <div class="module-grid">@for (module of modules(); track module.name) { <article><span>{{ module.name
+          }}</span><strong>{{ module.count === null ? 'Disponible' : module.count }}</strong><small>Habilitado</small>
+      </article> }</div>
+  </section>
+  @if (access.canManage()) {
+  <section class="card danger-zone">
+    <h2>Gestión de la empresa</h2>
+    <p>Edita sus datos, bloquea temporalmente el acceso o elimínala definitivamente.</p>
+    <div class="actions">
+      <button type="button" class="secondary" (click)="openDialog('edit')">Editar datos</button>
+      <button type="button" class="warn" (click)="openDialog('toggle')">{{ company.is_active ? 'Inhabilitar empresa' :
+        'Habilitar empresa' }}</button>
+      <button type="button" class="danger" (click)="openDialog('delete')">Eliminar empresa</button>
+    </div>
+  </section>
+  }
 
-    @if (dialog() === 'edit') {
-      <div class="modal-backdrop" role="presentation">
-        <section class="dialog" role="dialog" aria-modal="true" aria-labelledby="edit-title">
-          <h2 id="edit-title">Editar empresa</h2>
-          <form [formGroup]="editForm" (ngSubmit)="saveEdit()" novalidate>
-            @if (dialogError()) { <p class="error">{{ dialogError() }}</p> }
-            <label>Nombre de la empresa<input type="text" formControlName="name" autocomplete="organization" /></label>
-            @if (editForm.controls.name.touched && editForm.controls.name.invalid) { <small class="field-error">Ingresa el nombre de la empresa.</small> }
-            <label>Identificador<input type="text" formControlName="slug" autocapitalize="none" /></label>
-            @if (editForm.controls.slug.touched && editForm.controls.slug.invalid) { <small class="field-error">Usa letras minúsculas, números y guiones.</small> }
-            <div class="dialog-actions">
-              <button class="secondary" type="button" (click)="closeDialog()">Cancelar</button>
-              <button class="primary" type="submit" [disabled]="processing()">{{ processing() ? 'Guardando…' : 'Guardar cambios' }}</button>
-            </div>
-          </form>
-        </section>
-      </div>
-    }
+  @if (dialog() === 'edit') {
+  <div class="modal-backdrop" role="presentation">
+    <section class="dialog" role="dialog" aria-modal="true" aria-labelledby="edit-title">
+      <h2 id="edit-title">Editar empresa</h2>
+      <form [formGroup]="editForm" (ngSubmit)="saveEdit()" novalidate>
+        @if (dialogError()) { <p class="error">{{ dialogError() }}</p> }
+        <label>Nombre de la empresa<input type="text" formControlName="name" autocomplete="organization" /></label>
+        @if (editForm.controls.name.touched && editForm.controls.name.invalid) { <small class="field-error">Ingresa el
+          nombre de la empresa.</small> }
+        <label>Identificador<input type="text" formControlName="slug" autocapitalize="none" /></label>
+        @if (editForm.controls.slug.touched && editForm.controls.slug.invalid) { <small class="field-error">Usa letras
+          minúsculas, números y guiones.</small> }
+        <div class="dialog-actions">
+          <button class="secondary" type="button" (click)="closeDialog()">Cancelar</button>
+          <button class="primary" type="submit" [disabled]="processing()">{{ processing() ? 'Guardando…' : 'Guardar
+            cambios' }}</button>
+        </div>
+      </form>
+    </section>
+  </div>
+  }
 
-    @if (dialog() === 'toggle') {
-      <div class="modal-backdrop" role="presentation">
-        <section class="dialog" role="dialog" aria-modal="true" aria-labelledby="toggle-title">
-          <h2 id="toggle-title">{{ company.is_active ? 'Inhabilitar' : 'Habilitar' }} empresa</h2>
-          @if (company.is_active) {
-            <p>La suscripción de <strong>{{ company.name }}</strong> quedará <strong>suspendida</strong>: sus usuarios no podrán iniciar sesión y las sesiones abiertas se cerrarán. Sus datos se conservan.</p>
-          } @else {
-            <p>La suscripción de <strong>{{ company.name }}</strong> quedará <strong>activa</strong> y sus usuarios podrán volver a iniciar sesión.</p>
-          }
-          @if (dialogError()) { <p class="error">{{ dialogError() }}</p> }
-          <div class="dialog-actions">
-            <button class="secondary" type="button" (click)="closeDialog()">Cancelar</button>
-            <button [class]="company.is_active ? 'danger' : 'primary'" type="button" [disabled]="processing()" (click)="confirmToggle()">{{ processing() ? 'Guardando…' : (company.is_active ? 'Inhabilitar' : 'Habilitar') }}</button>
-          </div>
-        </section>
+  @if (dialog() === 'toggle') {
+  <div class="modal-backdrop" role="presentation">
+    <section class="dialog" role="dialog" aria-modal="true" aria-labelledby="toggle-title">
+      <h2 id="toggle-title">{{ company.is_active ? 'Inhabilitar' : 'Habilitar' }} empresa</h2>
+      @if (company.is_active) {
+      <p>La suscripción de <strong>{{ company.name }}</strong> quedará <strong>suspendida</strong>: sus usuarios no
+        podrán iniciar sesión y las sesiones abiertas se cerrarán. Sus datos se conservan.</p>
+      } @else {
+      <p>La suscripción de <strong>{{ company.name }}</strong> quedará <strong>activa</strong> y sus usuarios podrán
+        volver a iniciar sesión.</p>
+      }
+      @if (dialogError()) { <p class="error">{{ dialogError() }}</p> }
+      <div class="dialog-actions">
+        <button class="secondary" type="button" (click)="closeDialog()">Cancelar</button>
+        <button [class]="company.is_active ? 'danger' : 'primary'" type="button" [disabled]="processing()"
+          (click)="confirmToggle()">{{ processing() ? 'Guardando…' : (company.is_active ? 'Inhabilitar' : 'Habilitar')
+          }}</button>
       </div>
-    }
+    </section>
+  </div>
+  }
 
-    @if (dialog() === 'delete') {
-      <div class="modal-backdrop" role="presentation">
-        <section class="dialog" role="dialog" aria-modal="true" aria-labelledby="delete-title">
-          <h2 id="delete-title">Eliminar empresa</h2>
-          <p>Se eliminarán <strong>{{ company.name }}</strong> y <strong>todos sus datos</strong>: usuarios, roles, clientes, oportunidades, actividades, cotizaciones, productos y catálogos. <strong>Esta acción no se puede deshacer.</strong></p>
-          @if (company.is_active) { <p class="hint">Si solo quieres bloquear el acceso, usa <em>Inhabilitar empresa</em>.</p> }
-          <label>Escribe <code>{{ company.slug }}</code> para confirmar<input type="text" autocapitalize="none" autocomplete="off" [value]="deleteConfirmation()" (input)="updateDeleteConfirmation($event)" /></label>
-          @if (dialogError()) { <p class="error">{{ dialogError() }}</p> }
-          <div class="dialog-actions">
-            <button class="secondary" type="button" (click)="closeDialog()">Cancelar</button>
-            <button class="danger" type="button" [disabled]="processing() || !canConfirmDelete(company)" (click)="confirmDelete()">{{ processing() ? 'Eliminando…' : 'Eliminar definitivamente' }}</button>
-          </div>
-        </section>
+  @if (dialog() === 'delete') {
+  <div class="modal-backdrop" role="presentation">
+    <section class="dialog" role="dialog" aria-modal="true" aria-labelledby="delete-title">
+      <h2 id="delete-title">Eliminar empresa</h2>
+      <p>Se eliminarán <strong>{{ company.name }}</strong> y <strong>todos sus datos</strong>: usuarios, roles,
+        clientes, oportunidades, actividades, cotizaciones, productos y catálogos. <strong>Esta acción no se puede
+          deshacer.</strong></p>
+      @if (company.is_active) { <p class="hint">Si solo quieres bloquear el acceso, usa <em>Inhabilitar empresa</em>.
+      </p> }
+      <label>Escribe <code>{{ company.slug }}</code> para confirmar<input type="text" autocapitalize="none"
+          autocomplete="off" [value]="deleteConfirmation()" (input)="updateDeleteConfirmation($event)" /></label>
+      @if (dialogError()) { <p class="error">{{ dialogError() }}</p> }
+      <div class="dialog-actions">
+        <button class="secondary" type="button" (click)="closeDialog()">Cancelar</button>
+        <button class="danger" type="button" [disabled]="processing() || !canConfirmDelete(company)"
+          (click)="confirmDelete()">{{ processing() ? 'Eliminando…' : 'Eliminar definitivamente' }}</button>
       </div>
-    }
+    </section>
+  </div>
+  }
   }
 </section>

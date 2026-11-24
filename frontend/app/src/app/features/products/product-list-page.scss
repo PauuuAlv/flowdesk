@@ -64,7 +64,7 @@ header p:last-child {
   font-weight: 750;
 }
 .filters input,
-.filters select {
+.filters select, .filters app-combobox {
   display: block;
   width: 100%;
   padding: 0.7rem;

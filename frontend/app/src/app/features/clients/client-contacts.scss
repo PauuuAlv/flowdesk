@@ -1,0 +1,232 @@
+:host {
+  display: block;
+}
+.contacts-card {
+  padding: clamp(1.25rem, 3vw, 2rem);
+  margin-bottom: 1rem;
+  background: #fff;
+  border: 1px solid var(--flowdesk-border);
+  border-radius: 0.85rem;
+  box-shadow: 0 0.8rem 2.5rem rgb(20 42 56 / 6%);
+}
+.contacts-heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 1.25rem;
+}
+h2,
+h3 {
+  margin: 0;
+  color: var(--flowdesk-navy);
+}
+.contacts-heading p {
+  margin: 0.35rem 0 0;
+  color: var(--flowdesk-muted);
+  font-size: 0.84rem;
+}
+button {
+  padding: 0.55rem 0.85rem;
+  color: var(--flowdesk-ink);
+  background: #fff;
+  border: 1px solid var(--flowdesk-border);
+  border-radius: 0.45rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+button:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+.primary-action,
+.form-actions button[type='submit'] {
+  color: #fff;
+  background: var(--flowdesk-navy);
+  border-color: var(--flowdesk-navy);
+}
+button.danger {
+  color: var(--flowdesk-danger);
+}
+button.danger-solid {
+  color: #fff;
+  background: var(--flowdesk-danger);
+  border-color: var(--flowdesk-danger);
+}
+.message.error {
+  padding: 0.8rem 1rem;
+  margin-bottom: 1rem;
+  color: #842b22;
+  background: #fff1ef;
+  border: 1px solid #efb8b1;
+  border-radius: 0.55rem;
+  font-size: 0.82rem;
+}
+.contact-form {
+  padding: 1rem;
+  margin-bottom: 1.25rem;
+  background: #f7f9fa;
+  border: 1px solid var(--flowdesk-border);
+  border-radius: 0.65rem;
+}
+.form-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+}
+.field {
+  display: grid;
+  align-content: start;
+  gap: 0.4rem;
+}
+.field > span:first-child {
+  font-size: 0.8rem;
+  font-weight: 750;
+}
+.field input {
+  width: 100%;
+  padding: 0.65rem 0.8rem;
+  color: var(--flowdesk-ink);
+  background: #fff;
+  border: 1px solid #cbd1d8;
+  border-radius: 0.45rem;
+  outline: none;
+}
+.field input:focus {
+  border-color: var(--flowdesk-navy-light);
+  box-shadow: 0 0 0 3px rgb(38 82 107 / 14%);
+}
+.field input.ng-touched.ng-invalid {
+  border-color: var(--flowdesk-danger);
+}
+.field small {
+  color: var(--flowdesk-danger);
+  font-size: 0.72rem;
+}
+.checkbox {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.85rem;
+  font-weight: 650;
+}
+.full-width {
+  grid-column: 1/-1;
+}
+.form-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.6rem;
+  margin-top: 1rem;
+}
+.contact-list {
+  display: grid;
+  gap: 0.6rem;
+  padding: 0;
+  margin: 0;
+  list-style: none;
+}
+.contact-list li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.85rem 1rem;
+  border: 1px solid var(--flowdesk-border);
+  border-radius: 0.6rem;
+}
+.contact-info {
+  display: grid;
+  gap: 0.2rem;
+  min-width: 0;
+  font-size: 0.85rem;
+}
+.contact-info strong {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: var(--flowdesk-navy);
+  font-size: 0.95rem;
+}
+.contact-info > span {
+  color: var(--flowdesk-muted);
+}
+.meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem 1rem;
+}
+.meta a {
+  color: var(--flowdesk-navy-light);
+  text-decoration: none;
+  overflow-wrap: anywhere;
+}
+.badge {
+  padding: 0.1rem 0.5rem;
+  color: var(--flowdesk-copper);
+  background: rgb(184 115 51 / 12%);
+  border-radius: 999px;
+  font-size: 0.68rem;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+.contact-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 0.4rem;
+}
+.empty {
+  margin: 0;
+  padding: 1.5rem;
+  color: var(--flowdesk-muted);
+  text-align: center;
+  background: #f7f9fa;
+  border-radius: 0.6rem;
+  font-size: 0.88rem;
+}
+.loading {
+  display: grid;
+  gap: 0.6rem;
+}
+.loading i {
+  height: 3.5rem;
+  background: #edf0f2;
+  border-radius: 0.5rem;
+}
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  display: grid;
+  place-items: center;
+  padding: 1rem;
+  background: rgb(16 28 38 / 45%);
+}
+.modal {
+  width: min(28rem, 100%);
+  padding: 1.5rem;
+  background: #fff;
+  border-radius: 0.8rem;
+}
+.modal p {
+  color: var(--flowdesk-muted);
+  font-size: 0.88rem;
+  line-height: 1.5;
+}
+@media (max-width: 700px) {
+  .form-grid {
+    grid-template-columns: 1fr;
+  }
+  .full-width {
+    grid-column: auto;
+  }
+  .contacts-heading,
+  .contact-list li {
+    align-items: stretch;
+    flex-direction: column;
+  }
+  .contact-actions {
+    justify-content: flex-start;
+  }
+}

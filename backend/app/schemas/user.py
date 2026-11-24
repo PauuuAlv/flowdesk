@@ -23,6 +23,8 @@ class UserMeResponse(BaseModel):
     tenant_id: str
     tenant_name: str
     tenant_logo_url: str | None = None
+    # Moneda predeterminada de la empresa (Configuración) para formularios nuevos.
+    tenant_currency: str = "MXN"
     email: str
     full_name: str | None
     role: str

@@ -2,7 +2,12 @@
   <header>
     <div>
       <p class="eyebrow">Pipeline comercial</p>
-      <h1>{{ id ? 'Editar oportunidad' : 'Nueva oportunidad' }}</h1>
+      <h1>
+        {{ id ? 'Editar oportunidad' : 'Nueva oportunidad' }}
+        @if (pipelineName(); as name) {
+          <span class="pipeline-name">en {{ name }}</span>
+        }
+      </h1>
       <p>Define el valor, responsable y siguiente etapa de la negociación.</p>
     </div>
     <a routerLink="/panel/oportunidades">Volver</a>
@@ -17,34 +22,51 @@
       <div class="card grid">
         <label
           ><span>Cliente *</span
-          ><select formControlName="client_id">
-            <option value="">Selecciona un cliente</option>
-            @for (c of clients(); track c.id) {
-              <option [value]="c.id">{{ c.company_name }}</option>
-            }
-          </select></label
+          ><app-combobox
+            formControlName="client_id"
+            [options]="clientOptions()"
+            placeholder="Escribe para buscar un cliente"
+        /></label
         >
+        @if (pipelineOptions().length > 1) {
+          <label
+            ><span>Pipeline *</span
+            ><app-combobox
+              formControlName="pipeline_id"
+              [options]="pipelineOptions()"
+              placeholder="Selecciona un pipeline"
+              (selected)="changePipeline($event)"
+          /></label>
+        }
         <label
           ><span>Nombre *</span
           ><input formControlName="name" placeholder="Ej: Renovación anual" /></label
         ><label
           ><span>Responsable *</span
-          ><select formControlName="owner_user_id">
-            @for (u of assignees(); track u.id) {
-              <option [value]="u.id">{{ u.name }}</option>
-            }
-          </select></label
+          ><app-combobox
+            formControlName="owner_user_id"
+            [options]="assigneeOptions()"
+            placeholder="Escribe para buscar un responsable"
+        /></label
         >
         <label
           ><span>Valor estimado *</span
-          ><input type="number" min="0" step="0.01" formControlName="amount" /></label
+          ><div class="money-input">
+            <input type="number" min="0" step="0.01" formControlName="amount" /><app-combobox
+              formControlName="currency"
+              [options]="currencyOptions"
+              ariaLabel="Moneda del valor estimado"
+              placeholder="Moneda"
+            />
+          </div></label
         ><label
           ><span>Etapa *</span
-          ><select formControlName="stage" (change)="changeStage($event)">
-            @for (s of stages(); track s.id) {
-              <option [value]="s.key">{{ s.name }}</option>
-            }
-          </select></label
+          ><app-combobox
+            formControlName="stage"
+            [options]="stageOptions()"
+            placeholder="Selecciona una etapa"
+            (selected)="changeStage($event)"
+        /></label
         ><label
           ><span>Probabilidad (%) *</span
           ><input type="number" min="0" max="100" formControlName="probability" /></label

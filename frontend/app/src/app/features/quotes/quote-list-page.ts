@@ -4,9 +4,12 @@ import { Quote, QuoteStatus } from '../../core/models/quote.models';
 import { PERMISSIONS } from '../../core/models/permission.models';
 import { QuoteService } from '../../core/services/quote.service';
 import { SessionService } from '../../core/services/session.service';
+import { Combobox } from '../../shared/ui/combobox/combobox';
+import { formatMoney } from '../../core/models/currency.models';
+
 @Component({
   selector: 'app-quote-list-page',
-  imports: [RouterLink],
+  imports: [RouterLink, Combobox],
   templateUrl: './quote-list-page.html',
   styleUrl: './quote-list-page.scss',
 })
@@ -44,8 +47,8 @@ export class QuoteListPage {
   setSearch(e: Event) {
     this.search.set((e.target as HTMLInputElement).value);
   }
-  setFilter(e: Event) {
-    this.filter.set((e.target as HTMLSelectElement).value as QuoteStatus | 'all');
+  setFilter(value: string) {
+    this.filter.set(value as QuoteStatus | 'all');
   }
   change(x: Quote, status: 'sent' | 'accepted' | 'rejected') {
     this.s
@@ -55,8 +58,8 @@ export class QuoteListPage {
         error: () => this.error.set('No fue posible cambiar el estado.'),
       });
   }
-  money(v: number) {
-    return new Intl.NumberFormat('es-MX', { style: 'currency', currency: 'MXN' }).format(v);
+  money(v: number, currency: string) {
+    return formatMoney(v, currency);
   }
   label(s: QuoteStatus) {
     return {

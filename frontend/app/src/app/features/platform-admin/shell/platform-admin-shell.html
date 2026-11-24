@@ -1,38 +1,114 @@
 <div class="platform-shell">
-  <aside>
-    <a class="brand" routerLink="/administracion-flowdesk">Flowdesk</a>
-    <p>Administración</p>
+  <aside class="sidebar" [class.is-open]="sidebarOpen()" aria-label="Navegación de plataforma">
+    <div class="sidebar-heading">
+      <a class="brand" routerLink="/administracion-flowdesk">Flowdesk</a>
+      <button class="sidebar-close" type="button" (click)="closeSidebar()" aria-label="Cerrar menú">
+        ×
+      </button>
+    </div>
+
     <nav aria-label="Administración de plataforma">
-      <a
-        routerLink="/administracion-flowdesk"
-        [routerLinkActiveOptions]="{ exact: true }"
-        routerLinkActive="active"
-        ><span>⌂</span> Panel</a
-      >
-      <a routerLink="/administracion-flowdesk/empresas" routerLinkActive="active"
-        ><span>▦</span> Empresas</a
-      >
-      <a routerLink="/administracion-flowdesk/planes" routerLinkActive="active"
-        ><span>◇</span> Planes</a
-      >
-      <a routerLink="/administracion-flowdesk/suscripciones" routerLinkActive="active"
-        ><span>▤</span> Suscripciones</a
-      >
-      <a routerLink="/administracion-flowdesk/auditoria" routerLinkActive="active"
-        ><span>◷</span> Auditoría</a
-      >
-      @if (access.canManage()) {
+      <p class="nav-label">Administración</p>
+      @if (access.can(P.overviewView)) {
+        <a
+          routerLink="/administracion-flowdesk"
+          [routerLinkActiveOptions]="{ exact: true }"
+          routerLinkActive="active"
+          ><span>⌂</span> Panel</a
+        >
+      }
+      @if (access.can(P.tenantsView)) {
+        <a routerLink="/administracion-flowdesk/empresas" routerLinkActive="active"
+          ><span>▦</span> Empresas</a
+        >
+      }
+      @if (access.can(P.plansView)) {
+        <a routerLink="/administracion-flowdesk/planes" routerLinkActive="active"
+          ><span>◇</span> Planes</a
+        >
+      }
+      @if (access.can(P.subscriptionsView)) {
+        <a routerLink="/administracion-flowdesk/suscripciones" routerLinkActive="active"
+          ><span>▤</span> Suscripciones</a
+        >
+      }
+      @if (access.can(P.auditView)) {
+        <a routerLink="/administracion-flowdesk/auditoria" routerLinkActive="active"
+          ><span>◷</span> Auditoría</a
+        >
+      }
+      @if (access.can(P.teamView) || access.can(P.rolesView)) {
         <a routerLink="/administracion-flowdesk/equipo" routerLinkActive="active"
           ><span>◎</span> Equipo de plataforma</a
         >
       }
     </nav>
+
+    <div class="sidebar-footer">
+      <span>{{ access.member()?.role_name || 'Sesión activa' }}</span>
+      <strong>{{ access.member()?.email || 'Control SaaS' }}</strong>
+    </div>
   </aside>
+
+  @if (sidebarOpen()) {
+    <button class="backdrop" type="button" (click)="closeSidebar()" aria-label="Cerrar menú"></button>
+  }
+
   <section class="workspace">
     <header>
-      <div><small>PLATAFORMA</small><strong>{{ access.member()?.full_name || 'Control SaaS' }}</strong></div>
-      <button type="button" (click)="logout()">Cerrar sesión</button>
+      <div class="header-title">
+        <button
+          class="menu-button"
+          type="button"
+          (click)="toggleSidebar()"
+          aria-label="Abrir menú"
+          [attr.aria-expanded]="sidebarOpen()"
+        >
+          ☰
+        </button>
+        <div>
+          <small>PLATAFORMA</small>
+          <strong>Administración Flowdesk</strong>
+        </div>
+      </div>
+      <div class="profile-area">
+        <button
+          class="profile-trigger"
+          type="button"
+          (click)="toggleProfile()"
+          [attr.aria-expanded]="profileOpen()"
+          aria-haspopup="menu"
+        >
+          <span class="avatar" aria-hidden="true">{{ initials }}</span>
+          <span class="profile-copy">
+            <strong>{{ access.member()?.full_name || 'Administrador' }}</strong>
+            <small>{{ access.member()?.role_name || 'Sin rol' }}</small>
+          </span>
+          <span class="chevron" aria-hidden="true">⌄</span>
+        </button>
+
+        @if (profileOpen()) {
+          <div class="profile-menu" role="menu">
+            <div class="profile-summary">
+              <strong>{{ access.member()?.full_name || 'Administrador' }}</strong>
+              <span>{{ access.member()?.email }}</span>
+              @if (access.member()?.is_owner) {
+                <em>Cuenta principal</em>
+              }
+            </div>
+            <a role="menuitem" routerLink="/administracion-flowdesk/perfil" (click)="closeProfile()">Mi perfil</a>
+            <a
+              role="menuitem"
+              routerLink="/administracion-flowdesk/perfil"
+              fragment="seguridad"
+              (click)="closeProfile()"
+              >Cambiar contraseña</a
+            >
+            <button role="menuitem" type="button" (click)="logout()">Cerrar sesión</button>
+          </div>
+        }
+      </div>
     </header>
-    <main><router-outlet /></main>
+    <main (click)="closeProfile()"><router-outlet /></main>
   </section>
 </div>

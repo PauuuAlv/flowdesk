@@ -2,6 +2,8 @@ from decimal import Decimal
 
 from pydantic import BaseModel, EmailStr, Field, field_validator
 
+from app.core.currencies import CurrencyCode
+
 
 class CompanySettingsPayload(BaseModel):
     name: str = Field(min_length=2, max_length=255)
@@ -16,7 +18,8 @@ class CompanySettingsPayload(BaseModel):
     state: str | None = Field(default=None, max_length=100)
     postal_code: str | None = Field(default=None, max_length=12)
     country: str = Field(min_length=2, max_length=80)
-    currency: str = Field(min_length=3, max_length=3, pattern=r"^[A-Za-z]{3}$")
+    # Moneda predeterminada de oportunidades, cotizaciones y productos nuevos.
+    currency: CurrencyCode
     default_tax_rate: Decimal = Field(ge=0, le=100, max_digits=5, decimal_places=2)
     quote_validity_days: int = Field(ge=1, le=365)
     quote_prefix: str = Field(min_length=1, max_length=12, pattern=r"^[A-Za-z0-9-]+$")

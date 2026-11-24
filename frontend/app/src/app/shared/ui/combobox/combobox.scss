@@ -1,0 +1,127 @@
+// El host se ve como un campo; cada formulario le aplica su propio borde y
+// relleno (sus estilos incluyen `app-combobox` junto a `select`).
+:host {
+  position: relative;
+  display: flex;
+  align-items: center;
+  width: 100%;
+  min-width: 0;
+  padding: 0.7rem 0.8rem;
+  color: var(--flowdesk-ink);
+  background: #fff;
+  border: 1px solid #cbd1d8;
+  border-radius: 0.45rem;
+  cursor: text;
+}
+:host(:focus-within) {
+  border-color: var(--flowdesk-navy-light);
+  box-shadow: 0 0 0 3px rgb(38 82 107 / 14%);
+}
+:host(.is-disabled) {
+  color: var(--flowdesk-muted);
+  background: #f3f5f7;
+  cursor: not-allowed;
+}
+:host(.ng-touched.ng-invalid) {
+  border-color: var(--flowdesk-danger);
+}
+
+.combo-input {
+  flex: 1 1 auto;
+  min-width: 0;
+  width: 100%;
+  padding: 0;
+  margin: 0;
+  color: inherit;
+  background: transparent;
+  border: 0;
+  outline: none;
+  font: inherit;
+  text-overflow: ellipsis;
+}
+.combo-input::placeholder {
+  color: var(--flowdesk-muted);
+  opacity: 0.85;
+}
+.combo-input:disabled {
+  cursor: not-allowed;
+}
+
+.combo-toggle {
+  display: grid;
+  flex: 0 0 auto;
+  width: 1.25rem;
+  height: 1.25rem;
+  place-items: center;
+  padding: 0;
+  margin: 0 0 0 0.4rem;
+  color: var(--flowdesk-muted);
+  background: transparent;
+  border: 0;
+  cursor: pointer;
+}
+.combo-toggle svg {
+  width: 1rem;
+  height: 1rem;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  transition: transform 0.15s ease;
+}
+:host(.is-open) .combo-toggle svg {
+  transform: rotate(180deg);
+}
+.combo-toggle:disabled {
+  cursor: not-allowed;
+}
+
+.combo-list {
+  position: fixed;
+  z-index: 1000;
+  box-sizing: border-box;
+  padding: 0.3rem;
+  margin: 0;
+  overflow-y: auto;
+  color: var(--flowdesk-ink);
+  background: #fff;
+  border: 1px solid var(--flowdesk-border);
+  border-radius: 0.55rem;
+  box-shadow: 0 0.9rem 2.2rem rgb(20 42 56 / 18%);
+  list-style: none;
+  font-size: 0.88rem;
+  font-weight: 500;
+  text-align: left;
+  text-transform: none;
+  letter-spacing: normal;
+}
+.combo-list li {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.55rem 0.65rem;
+  border-radius: 0.35rem;
+  cursor: pointer;
+}
+.combo-list li span {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.combo-list li small {
+  flex: 0 0 auto;
+  color: var(--flowdesk-muted);
+  font-size: 0.74rem;
+}
+.combo-list li.active {
+  background: var(--flowdesk-bg);
+}
+.combo-list li.selected {
+  color: var(--flowdesk-navy-light);
+  font-weight: 700;
+}
+.combo-list li.empty {
+  color: var(--flowdesk-muted);
+  cursor: default;
+}

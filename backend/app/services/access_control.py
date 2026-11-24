@@ -12,39 +12,32 @@ from app.core.permissions import (
 )
 from app.models.role import Permission, Role, RolePermission
 from app.models.user import User
-from app.models.opportunity_stage import OpportunityStage
+from app.services.pipelines import DEFAULT_PIPELINE_NAME, create_pipeline
 from app.models.product_catalog import MeasurementUnit
 
 
-OPPORTUNITY_STAGE_TEMPLATES = (
-    ("prospecting", "Prospecto", 1, "normal", 10),
-    ("contact", "Contacto", 2, "normal", 30),
-    ("proposal", "Propuesta", 3, "normal", 60),
-    ("negotiation", "Negociación", 4, "normal", 80),
-    ("won", "Ganada", 5, "won", 100),
-    ("lost", "Perdida", 6, "lost", 0),
-)
-
-
 def create_opportunity_stage_templates(db: Session, tenant_id) -> None:
-    for key, name, position, stage_type, probability in OPPORTUNITY_STAGE_TEMPLATES:
-        db.add(OpportunityStage(
-            tenant_id=tenant_id, key=key, name=name, position=position,
-            stage_type=stage_type, default_probability=probability, is_active=True,
-        ))
-    db.flush()
+    """Toda empresa nueva arranca con el pipeline predeterminado "Ventas" y sus etapas."""
+    create_pipeline(
+        db, tenant_id, name=DEFAULT_PIPELINE_NAME,
+        description="Pipeline principal de la empresa", is_default=True,
+    )
 
 
+# (clave, nombre, abreviatura, tipo): el tipo separa unidades de productos y de servicios.
 PRODUCT_UNIT_TEMPLATES = (
-    ("piece", "Pieza", "pza"), ("service", "Servicio", "serv"),
-    ("hour", "Hora", "h"), ("day", "Día", "día"), ("month", "Mes", "mes"),
-    ("license", "Licencia", "lic"), ("package", "Paquete", "paq"),
+    ("piece", "Pieza", "pza", "product"), ("license", "Licencia", "lic", "product"),
+    ("package", "Paquete", "paq", "product"), ("service", "Servicio", "serv", "service"),
+    ("hour", "Hora", "h", "service"), ("day", "Día", "día", "service"), ("month", "Mes", "mes", "service"),
 )
 
 
 def create_product_catalog_templates(db: Session, tenant_id) -> None:
-    for key, name, abbreviation in PRODUCT_UNIT_TEMPLATES:
-        db.add(MeasurementUnit(tenant_id=tenant_id, key=key, name=name, abbreviation=abbreviation, is_active=True))
+    for key, name, abbreviation, item_type in PRODUCT_UNIT_TEMPLATES:
+        db.add(MeasurementUnit(
+            tenant_id=tenant_id, key=key, name=name, abbreviation=abbreviation,
+            item_type=item_type, is_active=True,
+        ))
     db.flush()
 
 

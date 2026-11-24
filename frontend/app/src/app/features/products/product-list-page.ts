@@ -4,9 +4,12 @@ import { Product, ProductStatus, ProductType } from '../../core/models/product.m
 import { PERMISSIONS } from '../../core/models/permission.models';
 import { ProductService } from '../../core/services/product.service';
 import { SessionService } from '../../core/services/session.service';
+import { Combobox } from '../../shared/ui/combobox/combobox';
+import { formatMoney } from '../../core/models/currency.models';
+
 @Component({
   selector: 'app-product-list-page',
-  imports: [RouterLink],
+  imports: [RouterLink, Combobox],
   templateUrl: './product-list-page.html',
   styleUrl: './product-list-page.scss',
 })
@@ -53,11 +56,11 @@ export class ProductListPage {
   protected setSearch(e: Event) {
     this.search.set((e.target as HTMLInputElement).value);
   }
-  protected setStatus(e: Event) {
-    this.status.set((e.target as HTMLSelectElement).value as ProductStatus | 'all');
+  protected setStatus(value: string) {
+    this.status.set(value as ProductStatus | 'all');
   }
-  protected setType(e: Event) {
-    this.type.set((e.target as HTMLSelectElement).value as ProductType | 'all');
+  protected setType(value: string) {
+    this.type.set(value as ProductType | 'all');
   }
   protected confirm() {
     const item = this.pending();
@@ -78,8 +81,8 @@ export class ProductListPage {
       },
     });
   }
-  protected money(v: number) {
-    return new Intl.NumberFormat('es-MX', { style: 'currency', currency: 'MXN' }).format(v);
+  protected money(v: number, currency: string) {
+    return formatMoney(v, currency);
   }
   protected unit(v: string) {
     return (

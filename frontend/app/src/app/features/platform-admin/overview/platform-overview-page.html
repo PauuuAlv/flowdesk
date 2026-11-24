@@ -1,7 +1,7 @@
 <section class="page">
   <header class="title">
     <div><p>RESUMEN GENERAL</p><h1>Panel de plataforma</h1><span>Consulta el estado y el uso general de Flowdesk.</span></div>
-    @if (access.canManage()) { <a routerLink="/administracion-flowdesk/empresas" fragment="crear-empresa">Nueva empresa</a> }
+    @if (access.canManage()) { <a routerLink="/administracion-flowdesk/empresas" fragment="seccion-crear-empresa">Nueva empresa</a> }
   </header>
   @if (error()) { <div class="error">{{ error() }} <button (click)="load()">Reintentar</button></div> }
   @if (loading()) { <div class="empty">Cargando información…</div> } @else {

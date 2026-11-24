@@ -6,7 +6,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from app.core.config import settings
 from app.middleware.tenant import TenantContextMiddleware
-from app.api.v1 import activities, auth, clients, company_settings, dashboard, notifications, opportunities, opportunity_stages, platform_admin, product_catalogs, products, quotes, roles, tenant_plan, users
+from app.api.v1 import activities, auth, clients, company_settings, contacts, dashboard, notifications, opportunities, opportunity_stages, pipelines, platform_admin, platform_roles, product_catalogs, products, quotes, roles, tenant_plan, users
 
 logger = logging.getLogger("flowdesk")
 
@@ -17,10 +17,12 @@ async def lifespan(_app: FastAPI):
     # que el rol Administrador de cada empresa tenga todos los permisos.
     from app.core.database import SessionLocal
     from app.services.access_control import sync_permission_catalog
+    from app.services.platform_access import sync_platform_access
 
     db = SessionLocal()
     try:
         sync_permission_catalog(db)
+        sync_platform_access(db)
     except Exception:  # la API debe arrancar aunque la DB aun no este migrada
         logger.exception("No fue posible sincronizar el catalogo de permisos")
         db.rollback()
@@ -48,11 +50,14 @@ app.add_middleware(TenantContextMiddleware)
 
 app.include_router(auth.router, prefix="/api/auth", tags=["auth"])
 app.include_router(platform_admin.router, prefix="/api/platform-admin", tags=["platform-admin"])
+app.include_router(platform_roles.router, prefix="/api/platform-admin/roles", tags=["platform-roles"])
 app.include_router(users.router, prefix="/api/users", tags=["users"])
 app.include_router(roles.router, prefix="/api/roles", tags=["roles"])
 app.include_router(clients.router, prefix="/api/clients", tags=["clients"])
+app.include_router(contacts.router, prefix="/api/clients/{client_id}/contacts", tags=["contacts"])
 app.include_router(opportunities.router, prefix="/api/opportunities", tags=["opportunities"])
 app.include_router(opportunity_stages.router, prefix="/api/opportunity-stages", tags=["opportunity-stages"])
+app.include_router(pipelines.router, prefix="/api/pipelines", tags=["pipelines"])
 app.include_router(activities.router, prefix="/api/activities", tags=["activities"])
 app.include_router(notifications.router, prefix="/api/notifications", tags=["notifications"])
 app.include_router(quotes.router, prefix="/api/quotes", tags=["quotes"])

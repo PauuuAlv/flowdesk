@@ -2,6 +2,7 @@ import { Component, inject, signal } from '@angular/core';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import { Quote, QuoteStatus } from '../../core/models/quote.models';
 import { QuoteService } from '../../core/services/quote.service';
+import { formatMoney } from '../../core/models/currency.models';
 @Component({
   selector: 'app-quote-detail-page',
   imports: [RouterLink],
@@ -22,8 +23,8 @@ export class QuoteDetailPage {
         error: () => this.error.set('No fue posible cargar la cotización.'),
       });
   }
-  money(x: number) {
-    return new Intl.NumberFormat('es-MX', { style: 'currency', currency: 'MXN' }).format(x);
+  money(x: number, currency: string) {
+    return formatMoney(x, currency);
   }
   label(x: QuoteStatus) {
     return {

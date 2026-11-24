@@ -9,9 +9,13 @@ class Opportunity(BaseModel, TenantMixin):
     __tablename__ = "opportunities"
 
     client_id = Column(UUID(as_uuid=True), ForeignKey("clients.id"), nullable=False, index=True)
+    # Pipeline al que pertenece; su etapa (stage) debe ser una etapa de ese pipeline.
+    pipeline_id = Column(UUID(as_uuid=True), ForeignKey("pipelines.id"), nullable=False, index=True)
     owner_user_id = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=False, index=True)
     name = Column(String(140), nullable=False, index=True)
     amount = Column(Numeric(14, 2), nullable=False, default=0)
+    # Moneda del monto (MXN, USD); por defecto la de la empresa al crearla.
+    currency = Column(String(3), nullable=False, default="MXN", server_default="MXN")
     stage = Column(String(30), nullable=False, default="prospecting", index=True)
     probability = Column(Integer, nullable=False, default=10)
     expected_close_date = Column(Date, nullable=True)
@@ -23,3 +27,4 @@ class Opportunity(BaseModel, TenantMixin):
 
     client = relationship("Client", lazy="joined")
     owner = relationship("User", lazy="joined")
+    pipeline = relationship("Pipeline", lazy="joined")

@@ -1,22 +1,33 @@
-import { Component, computed, inject, signal } from '@angular/core';
+import { Component, DestroyRef, HostListener, computed, inject, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { forkJoin } from 'rxjs';
-import { LossReason, Opportunity, OpportunityStage, OpportunityStageCatalog, OpportunityStageHistory } from '../../core/models/opportunity.models';
+import { LossReason, Opportunity, OpportunityStage, OpportunityStageCatalog, OpportunityStageHistory, Pipeline } from '../../core/models/opportunity.models';
 import { PERMISSIONS } from '../../core/models/permission.models';
 import { OpportunityService } from '../../core/services/opportunity.service';
 import { SessionService } from '../../core/services/session.service';
+import { preferredPipeline, rememberPipeline } from '../../core/services/pipeline-selection';
+import { Combobox, ComboOption } from '../../shared/ui/combobox/combobox';
+import { DEFAULT_CURRENCY, formatMoney, MoneyTotal, sumByCurrency } from '../../core/models/currency.models';
 
 @Component({
   selector: 'app-opportunity-board-page',
-  imports: [RouterLink],
+  imports: [RouterLink, Combobox],
   templateUrl: './opportunity-board-page.html',
   styleUrl: './opportunity-board-page.scss',
 })
 export class OpportunityBoardPage {
   private readonly service = inject(OpportunityService);
   private readonly user = inject(SessionService).getUser();
-  protected readonly stages = signal<OpportunityStageCatalog[]>([]);
-  protected readonly openStages = computed(() => this.stages().filter((stage) => stage.stage_type === 'normal'));
+  private readonly companyCurrency = this.user?.tenant_currency || DEFAULT_CURRENCY;
+  // Pipelines activos y el que se muestra en el tablero (se recuerda en el navegador).
+  protected readonly pipelines = signal<Pipeline[]>([]);
+  protected readonly pipelineId = signal<string | null>(null);
+  protected readonly pipelineOptions = computed<ComboOption[]>(() =>
+    this.pipelines().map((p) => ({ value: p.id, label: p.name, hint: p.is_default ? 'Predeterminado' : undefined })),
+  );
+  private readonly allStages = signal<OpportunityStageCatalog[]>([]);
+  /** Etapas del pipeline elegido: son las columnas del tablero. */
+  protected readonly stages = computed(() => this.allStages().filter((stage) => stage.pipeline_id === this.pipelineId()));
   protected readonly lossReasons: Array<{ key: LossReason; label: string }> = [
     { key: 'price', label: 'Precio' },
     { key: 'no_response', label: 'Sin respuesta' },
@@ -25,6 +36,10 @@ export class OpportunityBoardPage {
     { key: 'not_qualified', label: 'No era una oportunidad calificada' },
     { key: 'other', label: 'Otro' },
   ];
+  protected readonly lossReasonOptions: ComboOption[] = this.lossReasons.map((reason) => ({
+    value: reason.key,
+    label: reason.label,
+  }));
   protected readonly items = signal<Opportunity[]>([]);
   protected readonly loading = signal(true);
   protected readonly error = signal('');
@@ -46,19 +61,30 @@ export class OpportunityBoardPage {
     const q = this.search().trim().toLowerCase();
     return this.items().filter(
       (x) =>
+        x.pipeline_id === this.pipelineId() &&
         (this.showArchived() || !x.archived) &&
         (!q || `${x.name} ${x.client_name} ${x.owner_name}`.toLowerCase().includes(q)),
     );
   });
   constructor() {
     this.load();
+    // El menú usa posición fija: se cierra al desplazar la página o el tablero (scroll horizontal).
+    const onScroll = () => this.dismissMenu();
+    document.addEventListener('scroll', onScroll, true);
+    inject(DestroyRef).onDestroy(() => document.removeEventListener('scroll', onScroll, true));
   }
   protected load() {
     this.loading.set(true);
-    forkJoin({ items: this.service.list(true), stages: this.service.stages(true) }).subscribe({
+    forkJoin({
+      items: this.service.list(true),
+      stages: this.service.stages(true),
+      pipelines: this.service.pipelines(),
+    }).subscribe({
       next: (v) => {
         this.items.set(v.items);
-        this.stages.set(v.stages);
+        this.allStages.set(v.stages);
+        this.pipelines.set(v.pipelines);
+        this.pipelineId.set(preferredPipeline(v.pipelines, this.pipelineId())?.id ?? null);
         this.loading.set(false);
       },
       error: () => {
@@ -70,21 +96,133 @@ export class OpportunityBoardPage {
   protected byStage(stage: OpportunityStage) {
     return this.visible().filter((item) => item.stage === stage);
   }
-  protected total(stage: OpportunityStage) {
-    return this.byStage(stage).reduce((sum, item) => sum + Number(item.amount), 0);
+  /** Total de la columna por moneda (nunca se suman monedas distintas). */
+  protected stageTotals(stage: OpportunityStage): MoneyTotal[] {
+    const totals = sumByCurrency(this.byStage(stage), (item) => item.currency, (item) => Number(item.amount));
+    // La moneda de la empresa siempre primero (y en cero si la columna está vacía).
+    const own = totals.find((total) => total.currency === this.companyCurrency) ?? { currency: this.companyCurrency, amount: 0 };
+    return [own, ...totals.filter((total) => total.currency !== this.companyCurrency)];
+  }
+  protected choosePipeline(id: string) {
+    this.pipelineId.set(id);
+    rememberPipeline(id);
   }
   protected updateSearch(event: Event) {
     this.search.set((event.target as HTMLInputElement).value);
   }
-  protected changeStage(item: Opportunity, event: Event) {
-    const stage = (event.target as HTMLSelectElement).value as OpportunityStage;
-    (event.target as HTMLSelectElement).value = item.stage;
-    const selected = this.stages().find((value) => value.key === stage);
-    if (!selected || selected.key === item.stage) return;
-    this.changing.set(item);
-    this.changingStage.set(selected);
-    this.error.set('');
+  // --- Arrastrar y soltar (RF-028) ---------------------------------------------
+  // Soltar en una etapa abierta abre el modal de cambio de etapa (con nota); en
+  // Ganada/Perdida abre el de cierre (con motivo). Nada cambia hasta confirmar.
+  protected readonly dragging = signal<Opportunity | null>(null);
+  protected readonly dropTarget = signal<string | null>(null);
+
+  /** Se arrastran las oportunidades abiertas, no archivadas, si se pueden mover o cerrar. */
+  protected canDrag(item: Opportunity): boolean {
+    return !item.archived && this.stageType(item.stage) === 'normal' && (this.canUpdate || this.canClose);
   }
+
+  /** ¿Se puede soltar la tarjeta que se arrastra en esta columna? */
+  protected canDropOn(stage: OpportunityStageCatalog): boolean {
+    const item = this.dragging();
+    if (!item || item.stage === stage.key || !stage.is_active) return false;
+    return stage.stage_type === 'normal' ? this.canUpdate : this.canClose;
+  }
+
+  protected onDragStart(event: DragEvent, item: Opportunity): void {
+    if (!this.canDrag(item)) {
+      event.preventDefault();
+      return;
+    }
+    this.closeMenu();
+    this.dragging.set(item);
+    event.dataTransfer?.setData('text/plain', item.id); // Firefox exige datos para arrastrar
+    if (event.dataTransfer) event.dataTransfer.effectAllowed = 'move';
+  }
+
+  protected onDragEnd(): void {
+    this.dragging.set(null);
+    this.dropTarget.set(null);
+  }
+
+  protected onDragOver(event: DragEvent, stage: OpportunityStageCatalog): void {
+    if (!this.canDropOn(stage)) return; // sin preventDefault el navegador no permite soltar
+    event.preventDefault();
+    if (event.dataTransfer) event.dataTransfer.dropEffect = 'move';
+    this.dropTarget.set(stage.key);
+  }
+
+  protected onDragLeave(event: DragEvent, stage: OpportunityStageCatalog): void {
+    // Ignora la salida hacia un elemento hijo de la misma columna.
+    const next = event.relatedTarget as Node | null;
+    if (next && (event.currentTarget as HTMLElement).contains(next)) return;
+    if (this.dropTarget() === stage.key) this.dropTarget.set(null);
+  }
+
+  protected onDrop(event: DragEvent, stage: OpportunityStageCatalog): void {
+    event.preventDefault();
+    const item = this.dragging();
+    const allowed = this.canDropOn(stage);
+    this.onDragEnd();
+    if (!item || !allowed) return;
+    if (stage.stage_type === 'normal') {
+      this.changing.set(item);
+      this.changingStage.set(stage);
+      this.error.set('');
+    } else {
+      this.openClose(item, stage);
+    }
+  }
+
+  // --- Detalles plegables (esquina doblada abajo a la derecha) -------------------
+  /** Tarjetas desplegadas; por defecto todas muestran solo monto, nombre y cliente. */
+  private readonly expanded = signal<ReadonlySet<string>>(new Set());
+
+  protected isExpanded(id: string): boolean {
+    return this.expanded().has(id);
+  }
+
+  protected toggleDetails(event: MouseEvent, id: string): void {
+    event.stopPropagation();
+    this.expanded.update((current) => {
+      const next = new Set(current);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  }
+
+  // --- Menú de acciones de cada tarjeta (botón ⋯ arriba a la izquierda) ---------
+  protected readonly menuItem = signal<Opportunity | null>(null);
+  protected readonly menuPosition = signal({ top: 0, left: 0 });
+
+  protected toggleMenu(event: MouseEvent, item: Opportunity): void {
+    event.stopPropagation();
+    if (this.menuItem()?.id === item.id) {
+      this.closeMenu();
+      return;
+    }
+    // Posición fija junto al botón: el tablero tiene scroll horizontal y recortaría el menú.
+    const rect = (event.currentTarget as HTMLElement).getBoundingClientRect();
+    const width = 208;
+    this.menuPosition.set({
+      top: rect.bottom + 6,
+      left: Math.max(8, Math.min(rect.left, window.innerWidth - width - 8)),
+    });
+    this.menuItem.set(item);
+  }
+
+  protected closeMenu(): void {
+    this.menuItem.set(null);
+  }
+
+  @HostListener('document:click')
+  @HostListener('document:keydown.escape')
+  @HostListener('window:resize')
+  protected dismissMenu(): void {
+    if (this.menuItem()) this.closeMenu();
+  }
+
+
   protected cancelStageChange() {
     if (!this.saving()) { this.changing.set(null); this.changingStage.set(null); }
   }
@@ -183,12 +321,8 @@ export class OpportunityBoardPage {
   protected toggleArchived(event: Event) {
     this.showArchived.set((event.target as HTMLInputElement).checked);
   }
-  protected money(value: number) {
-    return new Intl.NumberFormat('es-MX', {
-      style: 'currency',
-      currency: 'MXN',
-      maximumFractionDigits: 0,
-    }).format(value);
+  protected money(value: number, currency: string) {
+    return formatMoney(value, currency, 0);
   }
   private replace(item: Opportunity) {
     this.items.update((values) => values.map((value) => (value.id === item.id ? item : value)));

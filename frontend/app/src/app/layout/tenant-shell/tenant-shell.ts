@@ -1,7 +1,7 @@
 import { Component, DestroyRef, HostListener, inject, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import { Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
-import { catchError, of, switchMap, timer } from 'rxjs';
+import { NavigationEnd, Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
+import { catchError, filter, of, switchMap, timer } from 'rxjs';
 
 import { PERMISSIONS } from '../../core/models/permission.models';
 import { FlowdeskNotification } from '../../core/models/notification.models';
@@ -27,8 +27,22 @@ export class TenantShell {
   protected readonly notificationsLoading = signal(false);
   protected readonly notifications = signal<FlowdeskNotification[]>([]);
   protected readonly unreadCount = signal(0);
+  /** Submenú de "Productos y servicios" (catálogo, categorías, unidades y marcas). */
+  protected readonly productsOpen = signal(false);
+  protected readonly inProductsSection = signal(false);
 
   constructor() {
+    // Al entrar a una página de la sección, su submenú se despliega solo.
+    const syncSection = (url: string) => {
+      const inside = /^\/panel\/(productos|configuracion\/(categorias|unidades|marcas))(\/|\?|#|$)/.test(url);
+      this.inProductsSection.set(inside);
+      if (inside) this.productsOpen.set(true);
+    };
+    syncSection(this.router.url);
+    this.router.events.pipe(
+      filter((event): event is NavigationEnd => event instanceof NavigationEnd),
+      takeUntilDestroyed(this.destroyRef),
+    ).subscribe((event) => syncSection(event.urlAfterRedirects));
     this.sessionService.userUpdates$.pipe(takeUntilDestroyed(this.destroyRef)).subscribe((user) => this.user = user);
     timer(0, 60_000).pipe(
       switchMap(() => this.notificationsService.list().pipe(catchError(() => of(null)))),
@@ -106,6 +120,10 @@ export class TenantShell {
     this.sidebarOpen.update((open) => !open);
     this.profileOpen.set(false);
     this.notificationsOpen.set(false);
+  }
+
+  protected toggleProducts(): void {
+    this.productsOpen.update((open) => !open);
   }
 
   protected closeSidebar(): void {

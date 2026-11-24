@@ -8,11 +8,12 @@ from app.models.client import Client
 from app.models.notification import Notification
 from app.models.opportunity import Opportunity
 from app.models.opportunity_stage import OpportunityStage
+from app.models.pipeline import Pipeline
 from app.models.opportunity_stage_history import OpportunityStageHistory
 from app.models.password_reset_token import PasswordResetToken
 from app.models.plan_change_request import PlanChangeRequest
 from app.models.product import Product
-from app.models.product_catalog import Brand, MeasurementUnit
+from app.models.product_catalog import Brand, MeasurementUnit, ProductCategory
 from app.models.quote import Quote, QuoteItem
 from app.models.role import Role, RolePermission
 from app.models.tenant import Tenant
@@ -52,9 +53,11 @@ class TenantRepository:
         db.execute(delete(OpportunityStageHistory).where(OpportunityStageHistory.tenant_id == tenant_id))
         db.execute(delete(Opportunity).where(Opportunity.tenant_id == tenant_id))
         db.execute(delete(OpportunityStage).where(OpportunityStage.tenant_id == tenant_id))
+        db.execute(delete(Pipeline).where(Pipeline.tenant_id == tenant_id))
         db.execute(delete(Client).where(Client.tenant_id == tenant_id))
         db.execute(delete(Product).where(Product.tenant_id == tenant_id))
         db.execute(delete(Brand).where(Brand.tenant_id == tenant_id))
+        db.execute(delete(ProductCategory).where(ProductCategory.tenant_id == tenant_id))
         db.execute(delete(MeasurementUnit).where(MeasurementUnit.tenant_id == tenant_id))
         db.execute(delete(PlanChangeRequest).where(PlanChangeRequest.tenant_id == tenant_id))
         db.execute(delete(PasswordResetToken).where(PasswordResetToken.tenant_id == tenant_id))

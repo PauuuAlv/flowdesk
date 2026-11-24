@@ -4,6 +4,7 @@ from datetime import datetime, timezone
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 
+from app.core.currencies import tenant_currency
 from app.core.database import get_db
 from app.models.client import Client
 from app.models.opportunity import Opportunity
@@ -19,6 +20,7 @@ from app.schemas.opportunity import (
     OpportunityStageHistoryResponse,
 )
 from app.security.permissions import require_permission
+from app.services.pipelines import default_pipeline, pipeline_or_404
 
 router = APIRouter()
 
@@ -44,9 +46,11 @@ def _related_or_404(db: Session, tenant_id, client_id: str, owner_id: str):
     return client, owner
 
 
-def _stage_or_404(db: Session, tenant_id, key: str, active_only: bool = True) -> OpportunityStage:
+def _stage_or_404(db: Session, tenant_id, key: str, pipeline_id, active_only: bool = True) -> OpportunityStage:
+    """La etapa debe existir y pertenecer al pipeline de la oportunidad."""
     query = db.query(OpportunityStage).filter(
         OpportunityStage.tenant_id == tenant_id, OpportunityStage.key == key,
+        OpportunityStage.pipeline_id == pipeline_id,
     )
     if active_only:
         query = query.filter(OpportunityStage.is_active.is_(True))
@@ -58,9 +62,10 @@ def _stage_or_404(db: Session, tenant_id, key: str, active_only: bool = True) ->
 
 def _serialize(item: Opportunity) -> OpportunityResponse:
     return OpportunityResponse(
-        id=str(item.id), client_id=str(item.client_id), client_name=item.client.company_name,
+        id=str(item.id), pipeline_id=str(item.pipeline_id), pipeline_name=item.pipeline.name,
+        client_id=str(item.client_id), client_name=item.client.company_name,
         owner_user_id=str(item.owner_user_id), owner_name=item.owner.full_name or item.owner.email,
-        name=item.name, amount=item.amount, stage=item.stage, probability=item.probability,
+        name=item.name, amount=item.amount, currency=item.currency, stage=item.stage, probability=item.probability,
         expected_close_date=item.expected_close_date, notes=item.notes,
         loss_reason=item.loss_reason, loss_detail=item.loss_detail, archived=item.archived_at is not None,
         closed_at=item.closed_at,
@@ -81,8 +86,10 @@ def _history_entry(
 
 
 @router.get("", response_model=list[OpportunityResponse])
-def list_opportunities(include_archived: bool = False, db: Session = Depends(get_db), current_user: User = Depends(require_permission("opportunities.view"))):
+def list_opportunities(include_archived: bool = False, pipeline_id: uuid.UUID | None = None, db: Session = Depends(get_db), current_user: User = Depends(require_permission("opportunities.view"))):
     query = db.query(Opportunity).filter(Opportunity.tenant_id == current_user.tenant_id)
+    if pipeline_id:
+        query = query.filter(Opportunity.pipeline_id == pipeline_id)
     if not include_archived:
         query = query.filter(Opportunity.archived_at.is_(None))
     items = query.order_by(Opportunity.updated_at.desc()).all()
@@ -98,8 +105,16 @@ def list_assignees(db: Session = Depends(get_db), current_user: User = Depends(r
 @router.post("", response_model=OpportunityResponse, status_code=status.HTTP_201_CREATED)
 def create_opportunity(payload: SaveOpportunityRequest, db: Session = Depends(get_db), current_user: User = Depends(require_permission("opportunities.create"))):
     client, owner = _related_or_404(db, current_user.tenant_id, payload.client_id, payload.owner_user_id)
-    stage = _stage_or_404(db, current_user.tenant_id, payload.stage)
-    item = Opportunity(tenant_id=current_user.tenant_id, client_id=client.id, owner_user_id=owner.id, **payload.model_dump(exclude={"client_id", "owner_user_id"}))
+    pipeline = (
+        pipeline_or_404(db, current_user.tenant_id, payload.pipeline_id, active_only=True)
+        if payload.pipeline_id else default_pipeline(db, current_user.tenant_id)
+    )
+    stage = _stage_or_404(db, current_user.tenant_id, payload.stage, pipeline.id)
+    item = Opportunity(
+        tenant_id=current_user.tenant_id, client_id=client.id, owner_user_id=owner.id, pipeline_id=pipeline.id,
+        currency=payload.currency or tenant_currency(db, current_user.tenant_id),
+        **payload.model_dump(exclude={"client_id", "owner_user_id", "currency", "pipeline_id"}),
+    )
     if stage.stage_type == "won": item.probability = 100
     if stage.stage_type == "lost": item.probability = 0
     db.add(item); db.flush()
@@ -117,8 +132,14 @@ def get_opportunity(opportunity_id: uuid.UUID, db: Session = Depends(get_db), cu
 def update_opportunity(opportunity_id: uuid.UUID, payload: SaveOpportunityRequest, db: Session = Depends(get_db), current_user: User = Depends(require_permission("opportunities.update"))):
     item = _opportunity_or_404(db, current_user.tenant_id, opportunity_id)
     client, owner = _related_or_404(db, current_user.tenant_id, payload.client_id, payload.owner_user_id)
-    _stage_or_404(db, current_user.tenant_id, payload.stage, active_only=False)
-    for key, value in payload.model_dump(exclude={"client_id", "owner_user_id"}).items(): setattr(item, key, value)
+    # Cambiar de pipeline exige una etapa del nuevo pipeline.
+    pipeline = item.pipeline
+    if payload.pipeline_id and payload.pipeline_id != str(item.pipeline_id):
+        pipeline = pipeline_or_404(db, current_user.tenant_id, payload.pipeline_id, active_only=True)
+    _stage_or_404(db, current_user.tenant_id, payload.stage, pipeline.id, active_only=False)
+    item.pipeline_id = pipeline.id
+    for key, value in payload.model_dump(exclude={"client_id", "owner_user_id", "currency", "pipeline_id"}).items(): setattr(item, key, value)
+    if payload.currency: item.currency = payload.currency
     item.client_id, item.owner_user_id = client.id, owner.id
     db.commit(); db.refresh(item)
     return _serialize(item)
@@ -128,7 +149,7 @@ def update_opportunity(opportunity_id: uuid.UUID, payload: SaveOpportunityReques
 def update_stage(opportunity_id: uuid.UUID, payload: UpdateOpportunityStageRequest, db: Session = Depends(get_db), current_user: User = Depends(require_permission("opportunities.update"))):
     item = _opportunity_or_404(db, current_user.tenant_id, opportunity_id)
     previous_stage = item.stage
-    stage = _stage_or_404(db, current_user.tenant_id, payload.stage)
+    stage = _stage_or_404(db, current_user.tenant_id, payload.stage, item.pipeline_id)
     if stage.stage_type in ("won", "lost"):
         raise HTTPException(status_code=409, detail="Use the close opportunity endpoint")
     item.stage = payload.stage
@@ -146,7 +167,7 @@ def update_stage(opportunity_id: uuid.UUID, payload: UpdateOpportunityStageReque
 def close_opportunity(opportunity_id: uuid.UUID, payload: CloseOpportunityRequest, db: Session = Depends(get_db), current_user: User = Depends(require_permission("opportunities.close"))):
     item = _opportunity_or_404(db, current_user.tenant_id, opportunity_id)
     previous_stage = item.stage
-    stage = _stage_or_404(db, current_user.tenant_id, payload.stage)
+    stage = _stage_or_404(db, current_user.tenant_id, payload.stage, item.pipeline_id)
     if stage.stage_type not in ("won", "lost"):
         raise HTTPException(status_code=409, detail="Stage is not a closing stage")
     if stage.stage_type == "lost" and not payload.loss_reason:
