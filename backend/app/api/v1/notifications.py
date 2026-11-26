@@ -1,71 +1,26 @@
 import uuid
-from datetime import date, datetime, timedelta, timezone
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Request
 from sqlalchemy.orm import Session
 
+from app.core.config import settings
 from app.core.database import get_db
-from app.models.activity import Activity
 from app.models.notification import Notification
-from app.models.opportunity import Opportunity
-from app.models.quote import Quote
+from app.models.push_subscription import PushSubscription
 from app.models.user import User
-from app.schemas.notification import NotificationListResponse, NotificationResponse
+from app.schemas.notification import (
+    NotificationListResponse,
+    NotificationResponse,
+    PushConfigResponse,
+    PushSubscriptionRequest,
+    PushTestResponse,
+    PushUnsubscribeRequest,
+)
 from app.security.user_auth import get_current_user
+from app.services.notifications import sync_user_notifications
+from app.services.web_push import mark_pending_as_processed, send_to_user
 
 router = APIRouter()
-
-
-def _add_if_missing(db: Session, user: User, event_key: str, kind: str, title: str, message: str, route: str) -> None:
-    exists = db.query(Notification.id).filter(
-        Notification.tenant_id == user.tenant_id,
-        Notification.user_id == user.id,
-        Notification.event_key == event_key,
-    ).first()
-    if not exists:
-        db.add(Notification(tenant_id=user.tenant_id, user_id=user.id, event_key=event_key,
-            notification_type=kind, title=title, message=message, route=route, is_read=False))
-
-
-def _sync_notifications(db: Session, user: User) -> None:
-    now = datetime.now(timezone.utc)
-    activity_limit = now + timedelta(hours=24)
-    activities = db.query(Activity).filter(
-        Activity.tenant_id == user.tenant_id,
-        Activity.owner_user_id == user.id,
-        Activity.status == "pending",
-        Activity.scheduled_at <= activity_limit,
-    ).all()
-    for item in activities:
-        overdue = item.scheduled_at < now
-        _add_if_missing(db, user, f"activity:{item.id}:due", "activity_overdue" if overdue else "activity_upcoming",
-            "Actividad vencida" if overdue else "Actividad próxima",
-            f"{item.title} · {item.client.company_name}", "/panel/actividades")
-
-    today = date.today()
-    date_limit = today + timedelta(days=3)
-    quotes = db.query(Quote).filter(
-        Quote.tenant_id == user.tenant_id,
-        Quote.owner_user_id == user.id,
-        Quote.status.in_(["draft", "sent"]),
-        Quote.valid_until.between(today, date_limit),
-    ).all()
-    for item in quotes:
-        _add_if_missing(db, user, f"quote:{item.id}:expiry", "quote_expiring", "Cotización por vencer",
-            f"{item.prefix}-{item.sequence:04d} vence el {item.valid_until.strftime('%d/%m/%Y')}",
-            f"/panel/cotizaciones/{item.id}")
-
-    opportunities = db.query(Opportunity).filter(
-        Opportunity.tenant_id == user.tenant_id,
-        Opportunity.owner_user_id == user.id,
-        Opportunity.archived_at.is_(None),
-        Opportunity.closed_at.is_(None),
-        Opportunity.expected_close_date.between(today, date_limit),
-    ).all()
-    for item in opportunities:
-        _add_if_missing(db, user, f"opportunity:{item.id}:close", "opportunity_closing", "Cierre estimado próximo",
-            f"{item.name} · {item.expected_close_date.strftime('%d/%m/%Y')}", "/panel/oportunidades")
-    db.commit()
 
 
 def _serialize(item: Notification) -> NotificationResponse:
@@ -75,7 +30,7 @@ def _serialize(item: Notification) -> NotificationResponse:
 
 @router.get("", response_model=NotificationListResponse)
 def list_notifications(db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
-    _sync_notifications(db, current_user)
+    sync_user_notifications(db, current_user)
     query = db.query(Notification).filter(Notification.tenant_id == current_user.tenant_id,
         Notification.user_id == current_user.id)
     unread = query.filter(Notification.is_read.is_(False)).count()
@@ -99,3 +54,66 @@ def mark_all_notifications_read(db: Session = Depends(get_db), current_user: Use
     db.query(Notification).filter(Notification.tenant_id == current_user.tenant_id,
         Notification.user_id == current_user.id, Notification.is_read.is_(False)).update({"is_read": True})
     db.commit()
+
+
+# ---------------------------------------------------------------------------
+# Web Push (W3C Push API + VAPID)
+# ---------------------------------------------------------------------------
+
+@router.get("/push/config", response_model=PushConfigResponse)
+def push_config(_current_user: User = Depends(get_current_user)):
+    """Clave pública VAPID que el navegador usa como `applicationServerKey`."""
+    if not settings.push_enabled:
+        return PushConfigResponse(enabled=False)
+    return PushConfigResponse(enabled=True, public_key=settings.VAPID_PUBLIC_KEY)
+
+
+@router.post("/push/subscriptions", status_code=204)
+def save_push_subscription(payload: PushSubscriptionRequest, request: Request,
+                           db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+    """Registra (o reasigna al usuario actual) la suscripción de este navegador."""
+    if not settings.push_enabled:
+        raise HTTPException(status_code=503, detail="Web Push no está configurado")
+    user_agent = (request.headers.get("user-agent") or "")[:300] or None
+    subscription = db.query(PushSubscription).filter(PushSubscription.endpoint == payload.endpoint).first()
+    is_new_for_user = (subscription is None or subscription.user_id != current_user.id
+        or subscription.tenant_id != current_user.tenant_id)
+    if subscription is None:
+        subscription = PushSubscription(endpoint=payload.endpoint)
+        db.add(subscription)
+    subscription.tenant_id = current_user.tenant_id
+    subscription.user_id = current_user.id
+    subscription.p256dh = payload.keys.p256dh
+    subscription.auth = payload.keys.auth
+    subscription.user_agent = user_agent
+    subscription.failure_count = 0
+    if is_new_for_user:
+        mark_pending_as_processed(db, current_user.tenant_id, current_user.id)
+    db.commit()
+
+
+@router.delete("/push/subscriptions", status_code=204)
+def delete_push_subscription(payload: PushUnsubscribeRequest, db: Session = Depends(get_db),
+                             current_user: User = Depends(get_current_user)):
+    db.query(PushSubscription).filter(
+        PushSubscription.endpoint == payload.endpoint,
+        PushSubscription.tenant_id == current_user.tenant_id,
+        PushSubscription.user_id == current_user.id,
+    ).delete(synchronize_session=False)
+    db.commit()
+
+
+@router.post("/push/test", response_model=PushTestResponse)
+def send_test_push(db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+    """Envía una notificación de prueba a todos los navegadores del usuario."""
+    if not settings.push_enabled:
+        raise HTTPException(status_code=503, detail="Web Push no está configurado")
+    result = send_to_user(db, current_user.tenant_id, current_user.id, {
+        "id": f"test-{uuid.uuid4()}",
+        "type": "push_test",
+        "title": "Notificaciones activadas",
+        "body": "Así verás los avisos de Flowdesk en este dispositivo.",
+        "url": "/panel",
+        "tag": "flowdesk-push-test",
+    })
+    return PushTestResponse(delivered=result.delivered, removed=result.removed, failed=result.failed)

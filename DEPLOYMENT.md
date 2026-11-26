@@ -76,3 +76,30 @@ operaciones que llaman a la API fallarán de forma esperada hasta colocar la URL
 
 Una vez validado el ambiente de prueba, se revisarán los cambios antes de llevarlos primero a
 `dev` y posteriormente a `main`.
+
+## Notificaciones Web Push (VAPID)
+
+Las notificaciones del sistema (actividades próximas/vencidas, cotizaciones por
+vencer y cierres estimados) también se entregan como notificaciones del
+navegador usando Web Push estándar (W3C Push API + VAPID, RFC 8291/8292). No se
+depende de Firebase ni de otro proveedor: cada navegador usa su propio servicio
+push.
+
+1. Genera el par de claves una sola vez:
+   `docker compose exec backend python -m app.scripts.generate_vapid_keys`
+2. Define `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY` (secreta) y `VAPID_SUBJECT`
+   (`mailto:` o `https:` de contacto real; Apple lo exige) en el backend.
+   Si cambias las claves, cada usuario debe volver a activar los avisos.
+3. Cada usuario activa los avisos desde la campana del panel ("Activar").
+   El navegador pide permiso y la suscripción se guarda en `push_subscriptions`.
+
+El despachador corre dentro de la API cada `PUSH_SCAN_INTERVAL_SECONDS`
+(desactívalo con `PUSH_WORKER_ENABLED=false`) o por separado con
+`python -m app.workers.push_dispatcher [--once]`; un candado de PostgreSQL evita
+envíos duplicados entre réplicas. En planes que duermen la API por inactividad
+(Render free), los avisos solo salen mientras la API está despierta: usa un cron
+externo con `--once` o un plan sin suspensión.
+
+Requisitos del navegador: HTTPS (o `localhost`), y en iPhone/iPad la app debe
+estar agregada a la pantalla de inicio (iOS 16.4+). El service worker vive en
+`frontend/app/public/sw.js` y se publica en `/sw.js`.

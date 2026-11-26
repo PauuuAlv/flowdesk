@@ -41,4 +41,25 @@ class Settings(BaseSettings):
     # sustituirse por un adaptador S3/R2 sin guardar binarios en PostgreSQL.
     MEDIA_ROOT: str = "/app/storage"
 
+    # Web Push (estándar W3C Push API + VAPID, RFC 8292). Genera el par de
+    # claves con `python -m app.scripts.generate_vapid_keys`. Sin claves, la
+    # API sigue funcionando y las notificaciones solo se ven dentro del panel.
+    VAPID_PUBLIC_KEY: str | None = None
+    VAPID_PRIVATE_KEY: str | None = None
+    # Contacto del operador para los servicios push (mailto: o https:).
+    VAPID_SUBJECT: str = "mailto:no-reply@flowdesk.local"
+    # Despachador en segundo plano: dispara recordatorios de actividades y
+    # envía los avisos pendientes. El intervalo define la precisión de los
+    # recordatorios.
+    PUSH_WORKER_ENABLED: bool = True
+    PUSH_SCAN_INTERVAL_SECONDS: int = 60
+    # Notificaciones más antiguas que esto ya no se envían al navegador.
+    PUSH_MAX_AGE_HOURS: int = 12
+    # Tiempo que el servicio push conserva el mensaje si el equipo está apagado.
+    PUSH_TTL_SECONDS: int = 86400
+
+    @property
+    def push_enabled(self) -> bool:
+        return bool(self.VAPID_PUBLIC_KEY and self.VAPID_PRIVATE_KEY)
+
 settings = Settings()

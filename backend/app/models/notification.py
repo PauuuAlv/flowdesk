@@ -1,4 +1,4 @@
-from sqlalchemy import Boolean, Column, ForeignKey, String, UniqueConstraint
+from sqlalchemy import Boolean, Column, DateTime, ForeignKey, String, UniqueConstraint
 from sqlalchemy.dialects.postgresql import UUID
 
 from app.models.base import BaseModel, TenantMixin
@@ -17,3 +17,6 @@ class Notification(BaseModel, TenantMixin):
     message = Column(String(300), nullable=False)
     route = Column(String(300), nullable=False)
     is_read = Column(Boolean, nullable=False, default=False, index=True)
+    # Momento en que el despachador Web Push procesó la notificación (se haya
+    # entregado o no). NULL = pendiente de enviar al navegador.
+    push_sent_at = Column(DateTime(timezone=True), nullable=True, index=True)

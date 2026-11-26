@@ -50,3 +50,9 @@ services:
         sync: false
       - key: RESEND_API_URL
         value: https://api.resend.com/emails
+      - key: VAPID_PUBLIC_KEY
+        sync: false
+      - key: VAPID_PRIVATE_KEY
+        sync: false
+      - key: VAPID_SUBJECT
+        sync: false

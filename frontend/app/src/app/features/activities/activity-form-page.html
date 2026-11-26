@@ -50,6 +50,9 @@
           ></textarea>
         </label>
       </div>
+      <section class="card reminders-card">
+        <app-activity-reminders-editor [reminders]="form.controls.reminders" [scheduledAt]="form.controls.scheduled_at.value" />
+      </section>
       <div class="actions">
         <a routerLink="/panel/actividades">Cancelar</a
         ><button [disabled]="saving()">{{ saving() ? 'Guardando…' : 'Guardar actividad' }}</button>

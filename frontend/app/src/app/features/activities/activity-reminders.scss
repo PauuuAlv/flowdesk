@@ -1,0 +1,25 @@
+:host { display: block; }
+.reminders { display: grid; gap: .75rem; }
+.reminders-head { display: flex; flex-wrap: wrap; align-items: start; justify-content: space-between; gap: .75rem 1.5rem; }
+.reminders h2 { margin: 0; color: var(--flowdesk-navy); font-size: 1rem; }
+.reminders-head p { margin: .2rem 0 0; color: var(--flowdesk-muted); font-size: .78rem; }
+.presets { display: flex; flex-wrap: wrap; gap: .4rem; }
+.presets button { padding: .4rem .65rem; color: #275d78; background: #f2f8fb; border: 1px solid #cfe2ec; border-radius: 999px; font-size: .74rem; font-weight: 750; cursor: pointer; }
+.presets .fixed { color: #fff; background: #275d78; border-color: #275d78; }
+.reminder-row { display: grid; grid-template-columns: 6rem 8rem auto 1fr auto; align-items: center; gap: .6rem; padding: .6rem; background: var(--flowdesk-bg); border: 1px solid var(--flowdesk-border); border-radius: .5rem; }
+.reminder-row.is-fixed { grid-template-columns: minmax(13rem, 16rem) 1fr auto; }
+.reminder-row input, .reminder-row select { width: 100%; padding: .55rem; border: 1px solid #cbd1d8; border-radius: .4rem; background: #fff; }
+.reminder-row input.ng-invalid.ng-touched { border-color: #c0392b; }
+.reminder-row span { color: var(--flowdesk-muted); font-size: .8rem; }
+.reminder-row small { color: var(--flowdesk-ink); font-size: .76rem; }
+.reminder-row small.past { color: #a5481f; }
+.row-actions { display: flex; gap: .35rem; }
+.row-actions button { padding: .45rem .6rem; background: #fff; border-radius: .4rem; font-size: .74rem; font-weight: 750; cursor: pointer; white-space: nowrap; }
+.switch { color: #275d78; border: 1px solid #cfe2ec; }
+.remove { color: #842b22; border: 1px solid #efb8b1; }
+.reminders-empty { margin: 0; color: var(--flowdesk-muted); font-size: .8rem; }
+@media (max-width: 650px) {
+  .reminder-row, .reminder-row.is-fixed { grid-template-columns: 1fr 1fr auto; }
+  .reminder-row.is-fixed .when { grid-column: 1 / -1; }
+  .reminder-row small, .reminder-row .row-actions { grid-column: 1 / -1; }
+}

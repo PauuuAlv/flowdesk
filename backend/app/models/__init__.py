@@ -12,11 +12,13 @@ from app.models.opportunity_stage import OpportunityStage
 from app.models.pipeline import Pipeline
 from app.models.opportunity_stage_history import OpportunityStageHistory
 from app.models.activity import Activity
+from app.models.activity_reminder import ActivityReminder
 from app.models.quote import Quote, QuoteItem
 from app.models.product import Product
 from app.models.product_catalog import Brand, MeasurementUnit, ProductCategory
 from app.models.plan_change_request import PlanChangeRequest
 from app.models.notification import Notification
+from app.models.push_subscription import PushSubscription
 
 __all__ = [
     "PasswordResetToken",
@@ -37,6 +39,7 @@ __all__ = [
     "Pipeline",
     "OpportunityStageHistory",
     "Activity",
+    "ActivityReminder",
     "Quote",
     "QuoteItem",
     "Brand",
@@ -44,4 +47,5 @@ __all__ = [
     "MeasurementUnit",
     "PlanChangeRequest",
     "Notification",
+    "PushSubscription",
 ]

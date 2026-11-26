@@ -8,10 +8,11 @@ import { ActivityService } from '../../core/services/activity.service';
 import { ClientService } from '../../core/services/client.service';
 import { OpportunityService } from '../../core/services/opportunity.service';
 import { Combobox, ComboOption } from '../../shared/ui/combobox/combobox';
+import { ActivityRemindersEditor, loadReminders, ReminderGroup, reminderPayload } from './activity-reminders-editor';
 
 @Component({
   selector: 'app-activity-form-page',
-  imports: [ReactiveFormsModule, RouterLink, Combobox],
+  imports: [ReactiveFormsModule, RouterLink, Combobox, ActivityRemindersEditor],
   templateUrl: './activity-form-page.html',
   styleUrl: './activity-form-page.scss',
 })
@@ -38,6 +39,7 @@ export class ActivityFormPage {
     title: ['', [Validators.required, Validators.minLength(3), Validators.maxLength(140)]],
     description: ['', Validators.maxLength(1000)],
     scheduled_at: ['', Validators.required],
+    reminders: this.fb.nonNullable.array<ReminderGroup>([]),
   });
   protected readonly availableOpportunities = computed(() =>
     this.opportunities().filter((x) => x.client_id === this.selectedClient() && !x.archived),
@@ -93,14 +95,21 @@ export class ActivityFormPage {
       this.form.controls.opportunity_id.setValue('');
     });
   }
+
   protected submit() {
     if (this.form.invalid) {
       this.form.markAllAsTouched();
       return;
     }
-    const v = this.form.getRawValue();
+    const { reminders: _reminders, ...v } = this.form.getRawValue();
+    const reminders = reminderPayload(this.form.controls.reminders, v.scheduled_at);
+    if (!reminders) {
+      this.error.set('Revisa los recordatorios marcados: deben ser antes de la actividad y con máximo 30 días de anticipación.');
+      return;
+    }
     const body: SaveActivityRequest = {
       ...v,
+      reminders,
       opportunity_id: v.opportunity_id || null,
       description: v.description.trim() || null,
       title: v.title.trim(),
@@ -120,7 +129,8 @@ export class ActivityFormPage {
   private load(id: string) {
     this.service.get(id).subscribe({
       next: (x) => {
-        this.form.setValue({
+        loadReminders(this.fb.nonNullable, this.form.controls.reminders, x.reminders ?? []);
+        this.form.patchValue({
           client_id: x.client_id,
           opportunity_id: '',
           owner_user_id: x.owner_user_id,

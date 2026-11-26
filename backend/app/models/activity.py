@@ -21,3 +21,5 @@ class Activity(BaseModel, TenantMixin):
     client = relationship("Client", lazy="joined")
     opportunity = relationship("Opportunity", lazy="joined")
     owner = relationship("User", lazy="joined")
+    reminders = relationship("ActivityReminder", lazy="selectin", cascade="all, delete-orphan",
+        order_by="ActivityReminder.remind_at", passive_deletes=True)

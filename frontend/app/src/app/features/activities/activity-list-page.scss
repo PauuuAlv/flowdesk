@@ -88,6 +88,22 @@ article {
 article.overdue {
   border-left: 4px solid #b54035;
 }
+/* Actividad abierta desde una notificación: parpadea tres veces. */
+article.flash {
+  animation: activity-flash 0.8s ease-in-out 3;
+  scroll-margin: 6rem;
+}
+@keyframes activity-flash {
+  0%,
+  100% {
+    background: #fff;
+    box-shadow: none;
+  }
+  50% {
+    background: #fff4e0;
+    box-shadow: 0 0 0 3px #c87923;
+  }
+}
 .type {
   color: var(--flowdesk-copper);
   font-size: 0.72rem;
@@ -144,6 +160,35 @@ article.overdue {
 }
 .actions .muted {
   color: var(--flowdesk-muted);
+}
+.reminders-panel {
+  grid-column: 1 / -1;
+  display: grid;
+  gap: 0.75rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--flowdesk-border);
+}
+.reminders-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.5rem;
+}
+.reminders-actions button {
+  padding: 0.6rem 0.9rem;
+  border-radius: 0.45rem;
+  font-size: 0.78rem;
+  font-weight: 750;
+  cursor: pointer;
+}
+.reminders-actions .muted {
+  color: var(--flowdesk-ink);
+  background: #fff;
+  border: 1px solid var(--flowdesk-border);
+}
+.reminders-actions .primary {
+  color: #fff;
+  background: var(--flowdesk-navy);
+  border: 0;
 }
 .state {
   padding: 2.5rem;

@@ -71,6 +71,9 @@ header > a {
 .wide {
   grid-column: 1/-1;
 }
+.reminders-card {
+  margin-top: 1rem;
+}
 .actions {
   display: flex;
   justify-content: flex-end;

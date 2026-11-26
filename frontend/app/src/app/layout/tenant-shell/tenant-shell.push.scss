@@ -1,0 +1,6 @@
+.push-settings { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: .35rem .75rem; padding: .7rem 1rem; color: var(--flowdesk-muted); background: var(--flowdesk-bg); border-top: 1px solid var(--flowdesk-border); font-size: .7rem; }
+.push-settings button { padding: .3rem .6rem; color: #275d78; background: #fff; border: 1px solid var(--flowdesk-border); border-radius: .4rem; font-size: .68rem; font-weight: 750; cursor: pointer; }
+.push-settings button:disabled { opacity: .6; cursor: wait; }
+.push-settings small { flex-basis: 100%; color: #a5481f; }
+.push-settings .push-actions { display: flex; gap: .4rem; }
+.push-settings small { color: var(--flowdesk-muted); }

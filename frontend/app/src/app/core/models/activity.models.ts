@@ -1,5 +1,18 @@
 export type ActivityType = 'call' | 'email' | 'meeting' | 'task';
 export type ActivityStatus = 'pending' | 'completed' | 'cancelled';
+export interface ActivityReminder {
+  id: string;
+  minutes_before: number | null;
+  fixed_at: string | null;
+  remind_at: string;
+  sent_at: string | null;
+}
+/** Exactamente uno: `minutes_before` (X tiempo antes) o `fixed_at` (fecha y hora exacta, ISO). */
+export interface ActivityReminderInput {
+  id: string | null;
+  minutes_before?: number;
+  fixed_at?: string;
+}
 export interface Activity {
   id: string;
   client_id: string;
@@ -14,6 +27,7 @@ export interface Activity {
   scheduled_at: string;
   status: ActivityStatus;
   completed_at: string | null;
+  reminders: ActivityReminder[];
   created_at: string;
   updated_at: string;
 }
@@ -25,4 +39,6 @@ export interface SaveActivityRequest {
   title: string;
   description: string | null;
   scheduled_at: string;
+  /** Conjunto completo de recordatorios; los que falten se eliminan. */
+  reminders?: ActivityReminderInput[];
 }

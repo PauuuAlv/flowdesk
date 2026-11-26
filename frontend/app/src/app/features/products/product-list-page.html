@@ -62,6 +62,7 @@
           <tr>
             <th>Elemento</th>
             <th>Tipo</th>
+            <th>Categoría</th>
             <th>Marca</th>
             <th>Unidad</th>
             <th>Precio base</th>
@@ -75,9 +76,10 @@
             <tr [class.inactive]="item.status === 'inactive'">
               <td>
                 <strong>{{ item.name }}</strong
-                ><span>{{ item.sku }}{{ item.category ? ' · ' + item.category : '' }}</span>
+                ><span>{{ item.sku }}</span>
               </td>
               <td>{{ item.item_type === 'product' ? 'Producto' : 'Servicio' }}</td>
+              <td>{{ item.category }}</td>
               <td>{{ item.brand_name || 'Sin marca' }}</td>
               <td>{{ item.unit_name }}</td>
               <td>

@@ -17,6 +17,7 @@
       >Buscar<input
         type="search"
         placeholder="Actividad, cliente o responsable"
+        [value]="search()"
         (input)="setSearch($event)" /></label
     ><label
       >Tipo<app-combobox
@@ -46,7 +47,7 @@
   } @else {
     <div class="list">
       @for (item of filtered(); track item.id) {
-        <article [class.overdue]="overdue(item)">
+        <article [id]="'actividad-' + item.id" [class.overdue]="overdue(item)" [class.flash]="highlighted() === item.id">
           <div class="type">{{ typeLabel(item.activity_type) }}</div>
           <div class="content">
             <h2>{{ item.title }}</h2>
@@ -67,6 +68,11 @@
             }
           </div>
           <div class="actions">
+            @if (canManageReminders(item)) {
+              <button type="button" (click)="toggleReminders(item)" [attr.aria-expanded]="remindersOpen() === item.id">
+                Recordatorios{{ pendingReminders(item) ? ' (' + pendingReminders(item) + ')' : '' }}
+              </button>
+            }
             @if (canUpdate) {
               <a [routerLink]="['/panel/actividades', item.id, 'editar']">Editar</a>
             }
@@ -77,6 +83,20 @@
               <button class="muted" (click)="changeStatus(item, 'pending')">Reabrir</button>
             }
           </div>
+          @if (remindersOpen() === item.id) {
+            <div class="reminders-panel">
+              <app-activity-reminders-editor [reminders]="reminderForm" [scheduledAt]="item.scheduled_at" />
+              @if (remindersError()) {
+                <p class="error" role="alert">{{ remindersError() }}</p>
+              }
+              <div class="reminders-actions">
+                <button type="button" class="muted" (click)="toggleReminders(item)">Cancelar</button>
+                <button type="button" class="primary" (click)="saveReminders(item)" [disabled]="remindersSaving()">
+                  {{ remindersSaving() ? 'Guardando…' : 'Guardar recordatorios' }}
+                </button>
+              </div>
+            </div>
+          }
         </article>
       }
     </div>

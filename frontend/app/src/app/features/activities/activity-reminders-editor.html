@@ -1,0 +1,42 @@
+<div class="reminders">
+  <div class="reminders-head">
+    @if (showHeader()) {
+      <div>
+        <h2>Recordatorios</h2>
+        <p>Opcional. Se avisa al responsable en el panel y en su navegador.</p>
+      </div>
+    }
+    @if (controls.length < maxReminders) {
+      <div class="presets">
+        @for (preset of presets; track preset.minutes) {
+          <button type="button" (click)="addBefore(preset.minutes)">+ {{ preset.label }}</button>
+        }
+        <button type="button" class="fixed" (click)="addFixed()">+ Fecha y hora</button>
+      </div>
+    }
+  </div>
+  @for (group of controls; track group; let i = $index) {
+    <div class="reminder-row" [class.is-fixed]="group.controls.mode.value === 'fixed'" [formGroup]="group">
+      @if (group.controls.mode.value === 'fixed') {
+        <input class="when" type="datetime-local" formControlName="at" [attr.aria-label]="'Fecha y hora del recordatorio ' + (i + 1)" />
+      } @else {
+        <input type="number" min="0" step="1" formControlName="amount" [attr.aria-label]="'Anticipación del recordatorio ' + (i + 1)" />
+        <select formControlName="unit" aria-label="Unidad">
+          @for (unit of units; track unit.value) {
+            <option [value]="unit.value">{{ unit.label }}</option>
+          }
+        </select>
+        <span>antes</span>
+      }
+      <small [class.past]="summaries()[i]?.past">{{ summaries()[i]?.text }}</small>
+      <div class="row-actions">
+        <button type="button" class="switch" (click)="switchMode(group)">
+          {{ group.controls.mode.value === 'fixed' ? 'Usar tiempo antes' : 'Usar fecha exacta' }}
+        </button>
+        <button type="button" class="remove" (click)="remove(i)" [attr.aria-label]="'Eliminar recordatorio ' + (i + 1)">Eliminar</button>
+      </div>
+    </div>
+  } @empty {
+    <p class="reminders-empty">Sin recordatorios. Agrega uno con los botones de arriba.</p>
+  }
+</div>

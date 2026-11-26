@@ -1,5 +1,6 @@
+import asyncio
 import logging
-from contextlib import asynccontextmanager
+from contextlib import asynccontextmanager, suppress
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
@@ -28,7 +29,31 @@ async def lifespan(_app: FastAPI):
         db.rollback()
     finally:
         db.close()
-    yield
+
+    push_task = None
+    if settings.PUSH_WORKER_ENABLED:
+        push_task = asyncio.create_task(_push_dispatcher_loop())
+    try:
+        yield
+    finally:
+        if push_task:
+            push_task.cancel()
+            with suppress(asyncio.CancelledError):
+                await push_task
+
+
+async def _push_dispatcher_loop() -> None:
+    """Ejecuta el despachador (recordatorios + Web Push) periódicamente sin bloquear la API."""
+    from app.workers.push_dispatcher import run_cycle
+
+    interval = max(settings.PUSH_SCAN_INTERVAL_SECONDS, 15)
+    await asyncio.sleep(10)  # deja terminar el arranque antes del primer ciclo
+    while True:
+        try:
+            await asyncio.to_thread(run_cycle)
+        except Exception:
+            logger.exception("Falló el ciclo del despachador Web Push")
+        await asyncio.sleep(interval)
 
 
 app = FastAPI(
