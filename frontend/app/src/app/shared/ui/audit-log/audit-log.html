@@ -1,0 +1,248 @@
+<section class="filters" aria-label="Filtros de auditoría">
+  <label class="search">
+    <span>Buscar</span>
+    <input
+      type="search"
+      placeholder="Descripción, correo, IP o endpoint"
+      [value]="search()"
+      (input)="onSearch($any($event.target).value)"
+    />
+  </label>
+  <div class="field" role="group" aria-label="Acción">
+    <span>Acción</span>
+    <app-multi-select
+      [options]="operationOptions"
+      [selected]="operations()"
+      ariaLabel="Tipos de acción"
+      placeholder="Todas las acciones"
+      (selectedChange)="setOperations($event)"
+    />
+  </div>
+  <div class="field" role="group" aria-label="Módulo">
+    <span>Módulo</span>
+    <app-multi-select
+      [options]="entityOptions()"
+      [selected]="entities()"
+      ariaLabel="Módulos"
+      placeholder="Todos los módulos"
+      (selectedChange)="setEntities($event)"
+    />
+  </div>
+  <div class="field" role="group" aria-label="Usuario">
+    <span>Usuario</span>
+    <app-multi-select
+      [options]="actorOptions()"
+      [selected]="actorIds()"
+      ariaLabel="Usuarios"
+      placeholder="Todos los usuarios"
+      (selectedChange)="setActors($event)"
+    />
+  </div>
+  <label>
+    <span>Desde</span>
+    <input type="date" [value]="dateFrom()" (change)="setDateFrom($any($event.target).value)" />
+  </label>
+  <label>
+    <span>Hasta</span>
+    <input type="date" [value]="dateTo()" (change)="setDateTo($any($event.target).value)" />
+  </label>
+  @if (hasFilters()) {
+    <button type="button" class="link-button" (click)="clearFilters()">Limpiar filtros</button>
+  }
+</section>
+
+<div class="toolbar">
+  <span class="count">
+    @if (page(); as current) {
+      {{ current.total }} {{ current.total === 1 ? 'registro' : 'registros' }}
+      @if (hasFilters()) {
+        con los filtros aplicados
+      }
+    }
+  </span>
+  <div class="toolbar-actions">
+    @if (downloadError()) {
+      <span class="download-error" role="alert">{{ downloadError() }}</span>
+    }
+    @if (canExport()) {
+    <button
+      type="button"
+      class="pdf-button"
+      [disabled]="downloading() || !page()?.total"
+      (click)="downloadReport()"
+    >
+      <span aria-hidden="true">⤓</span>
+      {{ downloading() ? 'Generando PDF…' : 'Descargar PDF' }}
+    </button>
+    }
+  </div>
+</div>
+
+@if (error()) {
+  <div class="state error" role="alert">
+    {{ error() }}
+    <button type="button" class="link-button" (click)="load()">Reintentar</button>
+  </div>
+} @else if (loading() && !page()) {
+  <div class="state" aria-busy="true">Cargando auditoría…</div>
+} @else {
+  <div class="table-card" [class.is-loading]="loading()">
+    <table class="log-table">
+      <thead>
+        <tr>
+          <th scope="col" class="col-toggle"><span class="sr-only">Detalle</span></th>
+          <th scope="col" class="col-date">Fecha y hora</th>
+          <th scope="col" class="col-op">Acción</th>
+          <th scope="col">Descripción</th>
+          <th scope="col" class="col-actor">Usuario</th>
+          <th scope="col" class="col-entity">Módulo</th>
+          @if (scope() === 'platform') {
+            <th scope="col" class="col-tenant">Empresa</th>
+          }
+          <th scope="col" class="col-ip">IP</th>
+          <th scope="col" class="col-browser">Navegador</th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (entry of page()?.items ?? []; track entry.id) {
+          <tr
+            class="entry"
+            [class.open]="expandedId() === entry.id"
+            tabindex="0"
+            [attr.aria-expanded]="expandedId() === entry.id"
+            (click)="toggle(entry)"
+            (keydown.enter)="toggle(entry)"
+            (keydown.space)="$event.preventDefault(); toggle(entry)"
+          >
+            <td class="col-toggle"><span class="chevron" aria-hidden="true">›</span></td>
+            <td class="col-date">
+              <time [attr.datetime]="entry.created_at">
+                <strong>{{ day(entry.created_at) }}</strong>
+                <small>{{ time(entry.created_at) }}</small>
+              </time>
+            </td>
+            <td class="col-op">
+              <span class="badge" [attr.data-op]="entry.operation">{{ operationLabel(entry) }}</span>
+            </td>
+            <td class="col-desc" [title]="entry.description">{{ entry.description }}</td>
+            <td class="col-actor" [title]="actorLabel(entry)">
+              {{ actorLabel(entry) }}
+              <small>{{ actorKind(entry) }}</small>
+            </td>
+            <td class="col-entity">{{ entry.entity_label || '—' }}</td>
+            @if (scope() === 'platform') {
+              <td class="col-tenant">{{ entry.tenant_name || '—' }}</td>
+            }
+            <td class="col-ip">{{ entry.ip_address || '—' }}</td>
+            <td class="col-browser">{{ browser(entry.user_agent) }}</td>
+          </tr>
+
+          @if (expandedId() === entry.id) {
+            <tr class="detail-row">
+              <td [attr.colspan]="scope() === 'platform' ? 9 : 8">
+                <div class="detail">
+                  <dl>
+                    <div>
+                      <dt>Fecha y hora</dt>
+                      <dd>{{ date(entry.created_at) }}</dd>
+                    </div>
+                    <div>
+                      <dt>Realizado por</dt>
+                      <dd>{{ actorLabel(entry) }} <em>({{ actorKind(entry) }})</em></dd>
+                    </div>
+                    <div>
+                      <dt>Dirección IP</dt>
+                      <dd>{{ entry.ip_address || 'No disponible' }}</dd>
+                    </div>
+                    <div>
+                      <dt>Navegador</dt>
+                      <dd>{{ browser(entry.user_agent) }}</dd>
+                    </div>
+                    <div class="wide">
+                      <dt>Endpoint</dt>
+                      <dd>
+                        @if (entry.endpoint) {
+                          <code>{{ entry.http_method }} {{ entry.endpoint }}</code>
+                        } @else {
+                          No disponible
+                        }
+                      </dd>
+                    </div>
+                    @if (entry.entity_id) {
+                      <div class="wide">
+                        <dt>Registro</dt>
+                        <dd><code>{{ entry.entity_id }}</code></dd>
+                      </div>
+                    }
+                    @if (entry.user_agent) {
+                      <div class="full">
+                        <dt>User-Agent completo</dt>
+                        <dd class="ua">{{ entry.user_agent }}</dd>
+                      </div>
+                    }
+                  </dl>
+
+                  @if (rows(entry).length) {
+                    <h3>{{ dataTitle(entry) }}</h3>
+                    <div class="diff-wrap">
+                      <table class="diff">
+                        <thead>
+                          <tr>
+                            <th scope="col">Campo</th>
+                            @if (entry.operation === 'UPDATE') {
+                              <th scope="col">Antes</th>
+                              <th scope="col">Después</th>
+                            } @else {
+                              <th scope="col">Valor</th>
+                            }
+                          </tr>
+                        </thead>
+                        <tbody>
+                          @for (row of rows(entry); track row.field) {
+                            <tr>
+                              <th scope="row">{{ row.field }}</th>
+                              @if (entry.operation === 'UPDATE') {
+                                <td class="before">{{ row.before }}</td>
+                                <td class="after">{{ row.after }}</td>
+                              } @else if (entry.operation === 'DELETE') {
+                                <td>{{ row.before }}</td>
+                              } @else {
+                                <td>{{ row.after }}</td>
+                              }
+                            </tr>
+                          }
+                        </tbody>
+                      </table>
+                    </div>
+                  }
+                </div>
+              </td>
+            </tr>
+          }
+        } @empty {
+          <tr>
+            <td class="empty" [attr.colspan]="scope() === 'platform' ? 9 : 8">
+              @if (hasFilters()) {
+                No hay registros que coincidan con los filtros.
+              } @else {
+                Todavía no hay actividad registrada. Las altas, cambios y eliminaciones aparecerán aquí.
+              }
+            </td>
+          </tr>
+        }
+      </tbody>
+    </table>
+  </div>
+
+  @if ((page()?.total ?? 0) > pageSize) {
+    <nav class="pager" aria-label="Paginación">
+      <button type="button" [disabled]="pageNumber() === 1 || loading()" (click)="goTo(pageNumber() - 1)">
+        ← Anterior
+      </button>
+      <span>{{ rangeLabel() }}</span>
+      <button type="button" [disabled]="!hasNext() || loading()" (click)="goTo(pageNumber() + 1)">
+        Siguiente →
+      </button>
+    </nav>
+  }
+}

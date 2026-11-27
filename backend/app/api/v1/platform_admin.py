@@ -3,6 +3,7 @@ import logging
 import uuid
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Response, status
+from fastapi.responses import StreamingResponse
 from sqlalchemy import func
 from sqlalchemy.orm import Session
 
@@ -36,7 +37,6 @@ from app.schemas.platform_admin import (
     UpdateTenantStatusRequest,
     UpdateTenantSubscriptionRequest,
     SaaSPlanResponse,
-    PlatformAuditResponse,
     PlatformAdminMeResponse,
     InvitePlatformMemberRequest,
     PlatformMemberResponse,
@@ -48,6 +48,7 @@ from app.schemas.platform_admin import (
     PlatformForgotPasswordRequest,
     PlatformResetPasswordRequest,
 )
+from app.schemas.audit import AuditFiltersResponse, AuditPageResponse
 from app.schemas.auth import MessageResponse
 from app.schemas.tenant_plan import PlanChangeRequestResponse, ResolvePlanChangeRequest
 from app.security.jwt import create_platform_admin_token
@@ -59,6 +60,10 @@ from app.services.access_control import (
     create_opportunity_stage_templates,
     create_product_catalog_templates,
 )
+from app.core.audit import record_event
+from app.core.audit_context import get_audit_context
+from app.services import audit_queries
+from app.services.audit_report import MAX_REPORT_ROWS, build_audit_pdf, resolve_timezone
 from app.services.email import EmailService, get_email_service
 from app.services.platform_access import count_active_superadmins
 
@@ -126,8 +131,23 @@ def platform_admin_login(payload: PlatformAdminLoginRequest, db: Session = Depen
         or not admin.hashed_password
         or not verify_password(payload.password, admin.hashed_password)
     ):
+        if admin:
+            entry = record_event(
+                db, "auth.login_failed", f"Intento de inicio de sesión fallido para {admin.email}",
+                scope="platform", entity="platform_admins", entity_id=admin.id,
+                details={"reason": "inactive" if not admin.is_active else "wrong_password"},
+            )
+            entry.actor_type = "anonymous"
+            entry.actor_email = payload.email
+            db.commit()
         raise invalid_credentials
 
+    get_audit_context().set_platform_admin(admin.id, admin.email)
+    record_event(
+        db, "auth.login", f"{admin.email} inició sesión en la administración",
+        scope="platform", entity="platform_admins", entity_id=admin.id,
+    )
+    db.commit()
     token = create_platform_admin_token(admin_id=admin.id)
     return PlatformAdminTokenResponse(access_token=token)
 
@@ -225,6 +245,7 @@ def platform_reset_password(payload: PlatformResetPasswordRequest, db: Session =
     ):
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid or expired reset token")
 
+    get_audit_context().set_platform_admin(admin.id, admin.email)
     admin.hashed_password = hash_password(payload.new_password)
     # El enlace es de un solo uso.
     admin.password_reset_token_hash = None
@@ -263,6 +284,11 @@ def accept_platform_invitation(payload: AcceptPlatformInvitationRequest, db: Ses
         or admin.invitation_expires_at < datetime.now(timezone.utc)
     ):
         raise HTTPException(status_code=400, detail="Invalid or expired invitation")
+    get_audit_context().set_platform_admin(admin.id, admin.email)
+    record_event(
+        db, "auth.register", f"{admin.email} aceptó su invitación al equipo de plataforma",
+        scope="platform", entity="platform_admins", entity_id=admin.id,
+    )
     admin.hashed_password = hash_password(payload.password)
     admin.invitation_token_hash = None
     admin.invitation_expires_at = None
@@ -625,8 +651,8 @@ def delete_tenant(
     admin=Depends(require_platform_permission("platform.tenants.delete")),
 ):
     """Elimina la empresa y TODOS sus datos de forma permanente. Se exige el
-    slug como confirmación para evitar borrados accidentales. La bitácora de
-    auditoría se conserva (su tenant_id queda en NULL)."""
+    slug como confirmación para evitar borrados accidentales. Las bitácoras de
+    auditoría (de plataforma y de la empresa) se conservan."""
     tenant = _tenant_or_404(db, tenant_id)
     if confirm_slug.strip().lower() != tenant.slug:
         raise HTTPException(
@@ -634,12 +660,24 @@ def delete_tenant(
             detail="Confirmation slug does not match",
         )
 
+    # El borrado es masivo (no pasa por los eventos del ORM), así que se deja un
+    # resumen con cuántos registros se eliminaron de cada tabla, en ambas
+    # bitácoras: la de plataforma y la de la propia empresa (que se conserva).
+    tenant_repo = TenantRepository()
+    details = {
+        "tenant_id": str(tenant.id), "tenant_name": tenant.name, "slug": tenant.slug,
+        "plan_key": tenant.plan_key, "deleted_records": tenant_repo.count_data(db, tenant.id),
+    }
+    description = f"Se eliminó la empresa {tenant.name} y todos sus datos."
     db.add(PlatformAuditLog(
-        platform_admin_id=admin.id, tenant_id=None, action="tenant.deleted",
-        description=f"Se eliminó la empresa {tenant.name} y todos sus datos.",
-        details={"tenant_id": str(tenant.id), "slug": tenant.slug, "plan_key": tenant.plan_key},
+        platform_admin_id=admin.id, tenant_id=tenant.id, action="tenant.deleted",
+        description=description, details=details, entity="tenants", entity_id=str(tenant.id),
     ))
-    TenantRepository().delete_with_data(db, tenant.id)
+    record_event(
+        db, "tenant.deleted", description, tenant_id=tenant.id, scope="tenant",
+        details=details, entity="tenants", entity_id=tenant.id,
+    )
+    tenant_repo.delete_with_data(db, tenant.id)
     db.commit()
     return Response(status_code=status.HTTP_204_NO_CONTENT)
 
@@ -666,27 +704,103 @@ def list_plans(
     ]
 
 
-@router.get("/audit", response_model=list[PlatformAuditResponse])
+@router.get("/audit", response_model=AuditPageResponse)
 def list_platform_audit(
+    page: int = Query(1, ge=1),
+    page_size: int = Query(25, ge=1, le=100),
+    operation: list[str] | None = Query(None, description="Repetible: CREATE | UPDATE | DELETE | EVENT"),
+    entity: list[str] | None = Query(None, description="Repetible: tabla auditada"),
+    admin_id: list[uuid.UUID] | None = Query(None, description="Repetible"),
+    tenant_id: uuid.UUID | None = None,
+    search: str | None = Query(None, max_length=120),
+    date_from: datetime | None = None,
+    date_to: datetime | None = None,
     db: Session = Depends(get_db),
     _admin=Depends(require_platform_permission("platform.audit.view")),
 ):
-    items = db.query(PlatformAuditLog).order_by(PlatformAuditLog.created_at.desc()).limit(250).all()
-    tenants = {item.id: item.name for item in db.query(Tenant).all()}
-    admins = {item.id: item.email for item in db.query(PlatformAdmin).all()}
-    return [
-        PlatformAuditResponse(
-            id=str(item.id),
-            action=item.action,
-            description=item.description,
-            tenant_id=str(item.tenant_id) if item.tenant_id else None,
-            tenant_name=tenants.get(item.tenant_id),
-            admin_email=admins.get(item.platform_admin_id),
-            details=item.details or {},
-            created_at=item.created_at,
-        )
-        for item in items
-    ]
+    """Bitácora de acciones de la administración de Flowdesk (paginada)."""
+    query = db.query(PlatformAuditLog)
+    if tenant_id:
+        query = query.filter(PlatformAuditLog.tenant_id == tenant_id)
+    query = audit_queries.apply_filters(
+        query, PlatformAuditLog, operations=operation, entities=entity, actor_ids=admin_id,
+        search=search, date_from=date_from, date_to=date_to,
+    )
+    items, total = audit_queries.paginate(query, PlatformAuditLog, page, page_size)
+    tenant_ids = {item.tenant_id for item in items if item.tenant_id}
+    tenants = dict(db.query(Tenant.id, Tenant.name).filter(Tenant.id.in_(tenant_ids)).all()) if tenant_ids else {}
+    return AuditPageResponse(
+        items=[
+            audit_queries.serialize(
+                item,
+                tenant_name=tenants.get(item.tenant_id) or (item.details or {}).get("tenant_name"),
+            )
+            for item in items
+        ],
+        total=total, page=page, page_size=page_size,
+    )
+
+
+@router.get("/audit/report.pdf")
+def platform_audit_report(
+    operation: list[str] | None = Query(None, description="Repetible: CREATE | UPDATE | DELETE | EVENT"),
+    entity: list[str] | None = Query(None, description="Repetible: tabla auditada"),
+    admin_id: list[uuid.UUID] | None = Query(None, description="Repetible"),
+    tenant_id: uuid.UUID | None = None,
+    search: str | None = Query(None, max_length=120),
+    date_from: datetime | None = None,
+    date_to: datetime | None = None,
+    tz: str | None = Query(None, max_length=64, description="Zona horaria IANA del usuario"),
+    db: Session = Depends(get_db),
+    admin: PlatformAdmin = Depends(require_platform_permission("platform.audit.view")),
+    _can_export: PlatformAdmin = Depends(require_platform_permission("platform.audit.export")),
+):
+    """Reporte PDF de la bitácora de plataforma, con los mismos filtros que la pantalla.
+    Requiere `platform.audit.view` y `platform.audit.export`."""
+    zone = resolve_timezone(tz)
+    query = db.query(PlatformAuditLog)
+    if tenant_id:
+        query = query.filter(PlatformAuditLog.tenant_id == tenant_id)
+    query = audit_queries.apply_filters(
+        query, PlatformAuditLog, operations=operation, entities=entity, actor_ids=admin_id,
+        search=search, date_from=date_from, date_to=date_to,
+    )
+    items, total = audit_queries.paginate(query, PlatformAuditLog, 1, MAX_REPORT_ROWS)
+    tenant_ids = {item.tenant_id for item in items if item.tenant_id}
+    tenant_names = dict(db.query(Tenant.id, Tenant.name).filter(Tenant.id.in_(tenant_ids)).all()) if tenant_ids else {}
+    filters = audit_queries.describe_filters(
+        db, PlatformAuditLog, zone, operations=operation, entities=entity, actor_ids=admin_id,
+        search=search, date_from=date_from, date_to=date_to,
+        tenant_name=tenant_names.get(tenant_id) if tenant_id else None,
+    )
+    pdf = build_audit_pdf(
+        title="Reporte de auditoría",
+        subtitle="Administración de Flowdesk",
+        items=items, total=total, filters=filters,
+        generated_by=admin.email, tz=zone, show_tenant=True, tenant_names=tenant_names,
+    )
+    record_event(
+        db, "audit.report_exported", f"Generó un reporte de auditoría en PDF ({min(total, MAX_REPORT_ROWS)} registros)",
+        scope="platform", details={"filters": dict(filters), "total": total},
+    )
+    db.commit()
+
+    filename = f"auditoria-plataforma-{datetime.now(zone).strftime('%Y%m%d-%H%M')}.pdf"
+    return StreamingResponse(
+        pdf, media_type="application/pdf",
+        headers={"Content-Disposition": f'attachment; filename="{filename}"'},
+    )
+
+
+@router.get("/audit/filters", response_model=AuditFiltersResponse)
+def platform_audit_filters(
+    db: Session = Depends(get_db),
+    _admin=Depends(require_platform_permission("platform.audit.view")),
+):
+    return AuditFiltersResponse(
+        entities=audit_queries.entity_options(db, PlatformAuditLog),
+        actors=audit_queries.actor_options(db, PlatformAuditLog),
+    )
 
 
 @router.get("/subscription-requests", response_model=list[PlanChangeRequestResponse])

@@ -1,6 +1,6 @@
 import uuid
 
-from sqlalchemy import delete, select, update
+from sqlalchemy import delete, func, select, update
 from sqlalchemy.orm import Session
 
 from app.models.activity import Activity
@@ -38,11 +38,25 @@ class TenantRepository:
         # caller quiere crear el tenant + el admin en la misma transacción)
         return tenant
 
+    def count_data(self, db: Session, tenant_id: uuid.UUID) -> dict[str, int]:
+        """Cuántos registros tiene la empresa en cada tabla (para el resumen de
+        auditoría antes de un borrado masivo)."""
+        models = (
+            Activity, Quote, OpportunityStageHistory, Opportunity, OpportunityStage,
+            Pipeline, Client, Product, Brand, ProductCategory, MeasurementUnit,
+            PlanChangeRequest, User, Role,
+        )
+        counts = {
+            model.__tablename__: db.query(func.count()).select_from(model).filter(model.tenant_id == tenant_id).scalar() or 0
+            for model in models
+        }
+        return {table: total for table, total in counts.items() if total}
+
     def delete_with_data(self, db: Session, tenant_id: uuid.UUID) -> None:
         """Elimina la empresa y TODOS sus datos. La mayoría de las tablas no
         tienen llave foránea hacia `tenants`, así que se borran explícitamente
-        en orden de dependencias (hijos primero). La bitácora de auditoría de
-        plataforma se conserva (su FK pone tenant_id en NULL).
+        en orden de dependencias (hijos primero). Las bitácoras de auditoría
+        (de plataforma y de la empresa) se conservan: no tienen llaves foráneas.
         No hace commit: lo decide el caller."""
         quote_ids = select(Quote.id).where(Quote.tenant_id == tenant_id)
 

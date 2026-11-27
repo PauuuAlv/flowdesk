@@ -5,6 +5,7 @@ from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from jose import JWTError
 from sqlalchemy.orm import Session
 
+from app.core.audit_context import get_audit_context
 from app.core.database import get_db
 from app.core.platform_permissions import PLATFORM_PERMISSION_CODES
 from app.models.platform_admin import PlatformAdmin
@@ -33,6 +34,7 @@ def get_current_platform_admin(
     if not admin or not admin.is_active:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Admin not found or inactive")
 
+    get_audit_context().set_platform_admin(admin.id, admin.email)
     return admin
 
 

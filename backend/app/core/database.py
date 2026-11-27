@@ -15,3 +15,9 @@ def get_db():
         yield db
     finally:
         db.close()
+
+
+# Registra los eventos del ORM que llenan created_by/updated_by y escriben la
+# auditoría (ver app/core/audit.py). Se importa aquí para que aplique a toda
+# sesión creada con SessionLocal: API, workers y scripts.
+import app.core.audit  # noqa: E402,F401

@@ -1,0 +1,35 @@
+:host {
+  display: block;
+}
+
+.page {
+  max-width: 88rem;
+  margin: 0 auto;
+  color: var(--flowdesk-navy);
+}
+
+header {
+  margin-bottom: 1.25rem;
+
+  span {
+    display: block;
+    max-width: 52rem;
+    color: var(--flowdesk-muted);
+    line-height: 1.55;
+  }
+}
+
+.eyebrow {
+  margin: 0;
+  color: var(--flowdesk-copper);
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+h1 {
+  margin: 0.25rem 0 0.4rem;
+  font-size: clamp(2rem, 4vw, 3.1rem);
+  letter-spacing: -0.04em;
+}

@@ -21,6 +21,7 @@ PLATFORM_PERMISSION_CATALOG: tuple[tuple[str, str, str], ...] = (
     ("platform.subscriptions.view", "subscriptions", "Ver solicitudes de cambio de plan"),
     ("platform.subscriptions.resolve", "subscriptions", "Aprobar o rechazar solicitudes de cambio de plan"),
     ("platform.audit.view", "audit", "Consultar la bitácora de auditoría"),
+    ("platform.audit.export", "audit", "Descargar el reporte de auditoría en PDF"),
     ("platform.team.view", "team", "Ver el equipo de plataforma"),
     ("platform.team.invite", "team", "Invitar integrantes al equipo de plataforma"),
     ("platform.team.update", "team", "Cambiar el rol de un integrante o activarlo/desactivarlo"),

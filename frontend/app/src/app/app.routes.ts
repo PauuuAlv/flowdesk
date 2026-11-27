@@ -22,6 +22,7 @@ import {
   viewRolesGuard,
   viewCompanySettingsGuard,
   viewUsersGuard,
+  viewAuditGuard,
 } from './core/guards/auth.guard';
 
 export const routes: Routes = [
@@ -279,6 +280,12 @@ export const routes: Routes = [
         canActivate: [viewRolesGuard],
         loadComponent: () =>
           import('./features/roles/role-form-page').then((component) => component.RoleFormPage),
+      },
+      {
+        path: 'auditoria',
+        canActivate: [viewAuditGuard],
+        loadComponent: () =>
+          import('./features/audit/tenant-audit-page').then((c) => c.TenantAuditPage),
       },
       {
         path: 'perfil',

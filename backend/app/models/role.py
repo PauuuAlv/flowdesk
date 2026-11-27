@@ -11,10 +11,10 @@ from sqlalchemy import (
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
 
-from app.models.base import Base, BaseModel, TenantMixin
+from app.models.base import AuditMixin, Base, BaseModel, TenantMixin, TimestampMixin
 
 
-class Permission(Base):
+class Permission(Base, TimestampMixin, AuditMixin):
     """Catálogo GLOBAL de permisos del sistema (no pertenece a ningún tenant).
     Se llena desde `app.core.permissions.PERMISSION_CATALOG`."""
 
@@ -23,7 +23,6 @@ class Permission(Base):
     code = Column(String(80), primary_key=True)
     module = Column(String(40), nullable=False, index=True)
     description = Column(String(160), nullable=False)
-    created_at = Column(DateTime(timezone=True), server_default=func.now())
 
 
 class Role(BaseModel, TenantMixin):
@@ -55,7 +54,7 @@ class Role(BaseModel, TenantMixin):
         return sorted(item.permission_code for item in self.permissions)
 
 
-class RolePermission(Base):
+class RolePermission(Base, TimestampMixin, AuditMixin):
     """Relación rol ↔ permiso dentro de un tenant."""
 
     __tablename__ = "role_permissions"

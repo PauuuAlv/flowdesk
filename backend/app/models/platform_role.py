@@ -2,10 +2,10 @@ from sqlalchemy import Boolean, Column, DateTime, ForeignKey, String, func
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
 
-from app.models.base import Base, BaseModel
+from app.models.base import AuditMixin, Base, BaseModel, TimestampMixin
 
 
-class PlatformPermission(Base):
+class PlatformPermission(Base, TimestampMixin, AuditMixin):
     """Catálogo de permisos de la administración de plataforma.
     Se llena desde `app.core.platform_permissions.PLATFORM_PERMISSION_CATALOG`."""
 
@@ -14,7 +14,6 @@ class PlatformPermission(Base):
     code = Column(String(80), primary_key=True)
     module = Column(String(40), nullable=False, index=True)
     description = Column(String(160), nullable=False)
-    created_at = Column(DateTime(timezone=True), server_default=func.now())
 
 
 class PlatformRole(BaseModel):
@@ -38,7 +37,7 @@ class PlatformRole(BaseModel):
         return sorted(item.permission_code for item in self.permissions)
 
 
-class PlatformRolePermission(Base):
+class PlatformRolePermission(Base, TimestampMixin, AuditMixin):
     __tablename__ = "platform_role_permissions"
 
     role_id = Column(

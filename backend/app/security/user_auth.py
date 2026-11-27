@@ -4,6 +4,7 @@ from fastapi import Depends, HTTPException, Request, status
 from fastapi.security import HTTPBearer
 from sqlalchemy.orm import Session
 
+from app.core.audit_context import get_audit_context
 from app.core.database import get_db
 from app.models.user import User
 from app.repositories.tenant_repository import TenantRepository
@@ -41,6 +42,7 @@ def get_current_user(
     if not TenantRepository().is_active(db, user.tenant_id):
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Company disabled")
 
+    get_audit_context().set_user(user.id, user.tenant_id, user.email)
     return user
 
 

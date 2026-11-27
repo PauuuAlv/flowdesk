@@ -31,11 +31,22 @@ export const PERMISSIONS = {
   productsDelete: 'products.delete',
   settingsView: 'settings.view',
   settingsUpdate: 'settings.update',
+  auditView: 'audit.view',
+  auditExport: 'audit.export',
 } as const;
 
 export type PermissionCode = (typeof PERMISSIONS)[keyof typeof PERMISSIONS];
 
 export const PERMISSION_MODULES = [
+  {
+    key: 'audit',
+    label: 'Auditoría',
+    description: 'Historial de altas, cambios y eliminaciones hechos por los usuarios.',
+    permissions: [
+      { code: PERMISSIONS.auditView, label: 'Ver' },
+      { code: PERMISSIONS.auditExport, label: 'Descargar PDF' },
+    ],
+  },
   {
     key: 'settings',
     label: 'Configuración de empresa',

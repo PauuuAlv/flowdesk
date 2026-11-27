@@ -9,6 +9,7 @@ export const PLATFORM_PERMISSIONS = {
   subscriptionsView: 'platform.subscriptions.view',
   subscriptionsResolve: 'platform.subscriptions.resolve',
   auditView: 'platform.audit.view',
+  auditExport: 'platform.audit.export',
   teamView: 'platform.team.view',
   teamInvite: 'platform.team.invite',
   teamUpdate: 'platform.team.update',
@@ -56,7 +57,10 @@ export const PLATFORM_PERMISSION_MODULES: ReadonlyArray<PlatformPermissionModule
   },
   {
     key: 'audit', label: 'Auditoría', description: 'Bitácora de acciones del equipo de plataforma.',
-    permissions: [{ code: P.auditView, label: 'Ver' }],
+    permissions: [
+      { code: P.auditView, label: 'Ver' },
+      { code: P.auditExport, label: 'Descargar PDF' },
+    ],
   },
   {
     key: 'team', label: 'Equipo de plataforma', description: 'Integrantes con acceso a la administración.',

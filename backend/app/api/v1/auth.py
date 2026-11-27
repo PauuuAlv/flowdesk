@@ -6,6 +6,8 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from jose import JWTError
 from sqlalchemy.orm import Session
 
+from app.core.audit import record_event
+from app.core.audit_context import get_audit_context
 from app.core.config import settings
 from app.core.database import get_db
 from app.models.user import User
@@ -36,6 +38,19 @@ router = APIRouter()
 logger = logging.getLogger("flowdesk.auth")
 
 
+def _record_failed_login(db: Session, user: User, email: str, reason: str) -> None:
+    """Intento fallido sobre una cuenta existente: queda en la auditoría de su
+    empresa (los correos que no existen no se registran)."""
+    entry = record_event(
+        db, "auth.login_failed", f"Intento de inicio de sesión fallido para {email}",
+        tenant_id=user.tenant_id, scope="tenant", entity="users", entity_id=user.id,
+        details={"reason": reason},
+    )
+    entry.actor_type = "anonymous"
+    entry.actor_email = email
+    db.commit()
+
+
 @router.post("/login", response_model=TokenResponse)
 def login(payload: LoginRequest, db: Session = Depends(get_db)):
     user_repo = UserRepository(db)
@@ -50,15 +65,26 @@ def login(payload: LoginRequest, db: Session = Depends(get_db)):
 
     if not user or user.status != "active" or not user.hashed_password:
             # Cubre: usuario no existe, todavía está 'invited' (sin password), o 'disabled'.
+            if user:
+                _record_failed_login(db, user, payload.email, f"status:{user.status}")
             raise invalid_credentials
-    
+
     if not user or not verify_password(payload.password, user.hashed_password):
+        _record_failed_login(db, user, payload.email, "wrong_password")
         raise invalid_credentials
 
     # Solo se revela que la empresa está inhabilitada (suscripción suspendida o
     # cancelada) después de validar la contraseña.
     if not TenantRepository().is_active(db, user.tenant_id):
+        _record_failed_login(db, user, payload.email, "company_disabled")
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Company disabled")
+
+    get_audit_context().set_user(user.id, user.tenant_id, user.email)
+    record_event(
+        db, "auth.login", f"{user.email} inició sesión",
+        tenant_id=user.tenant_id, entity="users", entity_id=user.id,
+    )
+    db.commit()
 
     access_token = create_access_token(user_id=user.id, tenant_id=user.tenant_id, role=user.role_key)
     refresh_token = create_refresh_token(user_id=user.id, tenant_id=user.tenant_id)
@@ -114,12 +140,19 @@ def register(payload: RegisterRequest, db: Session = Depends(get_db)):
     if user.invitation_expires_at is None or user.invitation_expires_at < datetime.now(timezone.utc):
         raise invalid_token
 
+    # Registro público (aceptar invitación): el cambio se atribuye al propio
+    # usuario que se está registrando.
+    get_audit_context().set_user(user.id, user.tenant_id, user.email)
     user.hashed_password = hash_password(payload.password)
     user.status = "active"
     user.activated_at = datetime.now(timezone.utc)
     # Se limpia el token: de un solo uso, no se puede reusar después de activarse.
     user.invitation_token_hash = None
     user.invitation_expires_at = None
+    record_event(
+        db, "auth.register", f"{user.email} aceptó su invitación y activó su cuenta",
+        tenant_id=user.tenant_id, entity="users", entity_id=user.id,
+    )
 
     db.commit()
     db.refresh(user)
@@ -160,6 +193,10 @@ def change_password(
     if verify_password(payload.new_password, current_user.hashed_password):
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="New password must be different")
     current_user.hashed_password = hash_password(payload.new_password)
+    record_event(
+        db, "auth.password_changed", f"{current_user.email} cambió su contraseña",
+        tenant_id=current_user.tenant_id, entity="users", entity_id=current_user.id,
+    )
     db.commit()
     logger.info("User %s changed their password", current_user.id)
 
@@ -199,6 +236,14 @@ def forgot_password(
 
     if not user or user.status != "active" or not TenantRepository().is_active(db, user.tenant_id):
         return generic_response  # no seguimos, pero tampoco lo decimos
+
+    entry = record_event(
+        db, "auth.password_reset_requested",
+        f"Se solicitó restablecer la contraseña de {user.email}",
+        tenant_id=user.tenant_id, scope="tenant", entity="users", entity_id=user.id,
+    )
+    entry.actor_type = "anonymous"
+    entry.actor_email = user.email
 
     raw_token = generate_raw_token()
     reset_repo = PasswordResetRepository()
@@ -245,8 +290,13 @@ def reset_password(payload: ResetPasswordRequest, db: Session = Depends(get_db))
             detail="Invalid or expired reset token",
         )
 
+    get_audit_context().set_user(user.id, user.tenant_id, user.email)
     user.hashed_password = hash_password(payload.new_password)
     reset_row.used_at = datetime.now(timezone.utc)
+    record_event(
+        db, "auth.password_reset", f"{user.email} restableció su contraseña con un enlace de recuperación",
+        tenant_id=user.tenant_id, entity="users", entity_id=user.id,
+    )
     db.commit()
 
     # Por si el usuario había pedido varios links de reset, invalida los demás.

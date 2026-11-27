@@ -100,9 +100,9 @@ def update(
             raise HTTPException(status_code=409, detail="Pipeline has open opportunities")
 
     if payload.is_default and not item.is_default:
-        db.query(Pipeline).filter(Pipeline.tenant_id == tenant_id, Pipeline.is_default.is_(True)).update(
-            {Pipeline.is_default: False}, synchronize_session=False
-        )
+        # Registro por registro para que el cambio quede auditado.
+        for other in db.query(Pipeline).filter(Pipeline.tenant_id == tenant_id, Pipeline.is_default.is_(True)):
+            other.is_default = False
         db.flush()
     item.name, item.description = payload.name, payload.description
     item.is_active, item.is_default = payload.is_active, payload.is_default
@@ -123,7 +123,10 @@ def delete(
         raise HTTPException(status_code=409, detail="The default pipeline cannot be deleted")
     if db.query(Opportunity.id).filter(Opportunity.pipeline_id == item.id).first():
         raise HTTPException(status_code=409, detail="Pipeline has opportunities")
-    db.query(OpportunityStage).filter(OpportunityStage.pipeline_id == item.id).delete(synchronize_session=False)
+    # Registro por registro para que cada etapa eliminada quede auditada.
+    for stage in db.query(OpportunityStage).filter(OpportunityStage.pipeline_id == item.id).all():
+        db.delete(stage)
+    db.flush()
     db.delete(item)
     db.commit()
     return Response(status_code=status.HTTP_204_NO_CONTENT)

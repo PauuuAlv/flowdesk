@@ -6,8 +6,9 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.core.config import settings
+from app.middleware.audit import AuditContextMiddleware
 from app.middleware.tenant import TenantContextMiddleware
-from app.api.v1 import activities, auth, clients, company_settings, contacts, dashboard, data_transfer, notifications, opportunities, opportunity_stages, pipelines, platform_admin, platform_roles, product_catalogs, products, quotes, roles, tenant_plan, users
+from app.api.v1 import activities, audit, auth, clients, company_settings, contacts, dashboard, data_transfer, notifications, opportunities, opportunity_stages, pipelines, platform_admin, platform_roles, product_catalogs, products, quotes, roles, tenant_plan, users
 
 logger = logging.getLogger("flowdesk")
 
@@ -71,6 +72,9 @@ app.add_middleware(
 )
 
 app.add_middleware(TenantContextMiddleware)
+# Se agrega al final para que sea el más externo: el contexto de auditoría
+# (IP, navegador, endpoint, actor) existe antes que cualquier otra cosa.
+app.add_middleware(AuditContextMiddleware)
 
 
 app.include_router(auth.router, prefix="/api/auth", tags=["auth"])
@@ -92,6 +96,7 @@ app.include_router(products.router, prefix="/api/products", tags=["products"])
 app.include_router(product_catalogs.router, prefix="/api/product-catalogs", tags=["product-catalogs"])
 app.include_router(tenant_plan.router, prefix="/api/tenant-plan", tags=["tenant-plan"])
 app.include_router(data_transfer.router, prefix="/api/data-transfer", tags=["data-transfer"])
+app.include_router(audit.router, prefix="/api/audit", tags=["audit"])
 
 
 @app.get("/health")

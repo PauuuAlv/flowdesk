@@ -667,7 +667,9 @@ def import_pipelines(ctx: ImportContext, filename: str, rows: list[Row]):
                     raise RowError("El pipeline tiene oportunidades abiertas y no se puede desactivar.")
             pipeline.is_active = active
             if make_default and not pipeline.is_default:
-                db.query(Pipeline).filter(Pipeline.tenant_id == ctx.tenant_id, Pipeline.id != pipeline.id).update({"is_default": False})
+                for other in db.query(Pipeline).filter(Pipeline.tenant_id == ctx.tenant_id, Pipeline.id != pipeline.id,
+                        Pipeline.is_default.is_(True)):
+                    other.is_default = False
                 db.flush()
                 pipeline.is_default = True
             holder["pipeline"], holder["created"] = pipeline, created

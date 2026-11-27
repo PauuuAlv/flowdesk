@@ -72,6 +72,7 @@ export const createProductsGuard: CanActivateFn = () => permissionGuard(PERMISSI
 export const updateProductsGuard: CanActivateFn = () => permissionGuard(PERMISSIONS.productsUpdate);
 export const viewCompanySettingsGuard: CanActivateFn = () =>
   permissionGuard(PERMISSIONS.settingsView);
+export const viewAuditGuard: CanActivateFn = () => permissionGuard(PERMISSIONS.auditView);
 
 function permissionGuard(permission: (typeof PERMISSIONS)[keyof typeof PERMISSIONS]) {
   const sessionService = inject(SessionService);

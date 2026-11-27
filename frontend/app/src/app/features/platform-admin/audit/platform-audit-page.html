@@ -1,11 +1,11 @@
-<section class="page"><header><div><p>SEGURIDAD Y CONTROL</p><h1>Auditoría</h1><span>Historial de acciones sensibles realizadas desde la administración de Flowdesk.</span></div><label>Tipo de evento<app-combobox
-        [options]="[{ value: 'all', label: 'Todos' }, { value: 'tenant.created', label: 'Empresas creadas' }, { value: 'subscription.updated', label: 'Cambios de suscripción' }]"
-        [selectedValue]="filter()"
-        ariaLabel="Tipo de evento"
-        placeholder="Tipo de evento"
-        (selected)="setFilter($event)"
-      /></label></header>
-  @if(error()){<div class="error">{{error()}}</div>}@if(loading()){<div class="empty">Cargando actividad…</div>}@else{
-    <section class="timeline">@for(entry of visible();track entry.id){<article><div class="icon">{{entry.action==='tenant.created'?'+':'↻'}}</div><div><div class="top"><strong>{{action(entry.action)}}</strong><time>{{date(entry.created_at)}}</time></div><p>{{entry.description}}</p><footer><span>Empresa: <b>{{entry.tenant_name||'No disponible'}}</b></span><span>Realizado por: <b>{{entry.admin_email||'Administrador de plataforma'}}</b></span></footer></div></article>}@empty{<div class="empty">Todavía no hay eventos para mostrar. Las próximas altas y modificaciones aparecerán aquí.</div>}</section>
-  }
-</section>
+<main class="page">
+  <header>
+    <p class="eyebrow">Seguridad y control</p>
+    <h1>Auditoría</h1>
+    <span>
+      Historial de las acciones realizadas desde la administración de Flowdesk: altas, cambios y
+      eliminaciones, con IP, navegador, endpoint y el estado anterior y posterior de cada registro.
+    </span>
+  </header>
+  <app-audit-log scope="platform" [canExport]="canExport()" />
+</main>

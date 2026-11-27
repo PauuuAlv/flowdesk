@@ -42,6 +42,8 @@ PERMISSION_CATALOG: tuple[tuple[str, str, str], ...] = (
     ("products.delete", "products", "Desactivar productos y servicios"),
     ("settings.view", "settings", "Ver la configuración de la empresa"),
     ("settings.update", "settings", "Editar la configuración de la empresa"),
+    ("audit.view", "audit", "Ver la auditoría de la empresa"),
+    ("audit.export", "audit", "Descargar el reporte de auditoría en PDF"),
 )
 
 PERMISSION_CODES: tuple[str, ...] = tuple(code for code, _module, _description in PERMISSION_CATALOG)
@@ -82,6 +84,9 @@ ROLE_TEMPLATES = (
         "name": "Visor",
         "description": "Solo consulta la información de la empresa, sin poder modificarla.",
         "is_protected": False,
-        "permissions": tuple(code for code in PERMISSION_CODES if code.endswith(".view")),
+        # La auditoría es información sensible: no se da por defecto al Visor.
+        "permissions": tuple(
+            code for code in PERMISSION_CODES if code.endswith(".view") and code != "audit.view"
+        ),
     },
 )

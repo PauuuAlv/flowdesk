@@ -91,9 +91,10 @@ def mark_platform_owner(db: Session, superadmin_role_id: uuid.UUID) -> None:
     owner_email = (settings.SUPERADMIN_EMAIL or "").strip().lower()
     if not owner_email:
         return
-    db.query(PlatformAdmin).filter(
+    for previous in db.query(PlatformAdmin).filter(
         PlatformAdmin.is_owner.is_(True), func.lower(PlatformAdmin.email) != owner_email
-    ).update({PlatformAdmin.is_owner: False}, synchronize_session=False)
+    ).all():
+        previous.is_owner = False
     owner = db.query(PlatformAdmin).filter(func.lower(PlatformAdmin.email) == owner_email).first()
     if owner:
         owner.is_owner = True

@@ -132,17 +132,6 @@ export interface SaaSPlan {
   features: string[];
 }
 
-export interface PlatformAudit {
-  id: string;
-  action: string;
-  description: string;
-  tenant_id: string | null;
-  tenant_name: string | null;
-  admin_email: string | null;
-  details: Record<string, unknown>;
-  created_at: string;
-}
-
 export interface CreateTenantResponse {
   tenant_id: string;
   tenant_name: string;

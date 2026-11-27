@@ -1,6 +1,6 @@
 from app.models.password_reset_token import PasswordResetToken
 from app.models.platform_admin import PlatformAdmin
-from app.models.platform_audit import PlatformAuditLog
+from app.models.platform_audit import PlatformAuditLog, TenantAuditLog
 from app.models.platform_role import PlatformPermission, PlatformRole, PlatformRolePermission
 from app.models.role import Permission, Role, RolePermission
 from app.models.tenant import Tenant
@@ -25,6 +25,7 @@ __all__ = [
     "PlatformAdmin",
     "Permission",
     "PlatformAuditLog",
+    "TenantAuditLog",
     "PlatformPermission",
     "PlatformRole",
     "PlatformRolePermission",

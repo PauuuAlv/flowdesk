@@ -20,7 +20,6 @@ import {
   UserMeResponse,
   TenantSaaS,
   SaaSPlan,
-  PlatformAudit,
   PlatformAdminMe,
   UpdateTenantSubscriptionRequest,
 } from '../models/auth.models';
@@ -94,10 +93,6 @@ export class AuthService {
 
   listSaaSPlans(): Observable<SaaSPlan[]> {
     return this.http.get<SaaSPlan[]>('/api/platform-admin/plans');
-  }
-
-  listPlatformAudit(): Observable<PlatformAudit[]> {
-    return this.http.get<PlatformAudit[]>('/api/platform-admin/audit');
   }
 
   listSubscriptionRequests(): Observable<PlanChangeRequest[]> {

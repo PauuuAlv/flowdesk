@@ -208,12 +208,3 @@ class SaaSPlanResponse(BaseModel):
     features: list[str]
 
 
-class PlatformAuditResponse(BaseModel):
-    id: str
-    action: str
-    description: str
-    tenant_id: str | None
-    tenant_name: str | None
-    admin_email: str | None
-    details: dict
-    created_at: datetime

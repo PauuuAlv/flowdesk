@@ -1,0 +1,64 @@
+<button
+  type="button"
+  class="trigger"
+  aria-haspopup="listbox"
+  [attr.aria-label]="ariaLabel()"
+  [attr.aria-expanded]="open()"
+  [attr.aria-controls]="listId"
+  [title]="summaryTitle()"
+  (click)="toggleOpen()"
+  (keydown)="onTriggerKeydown($event)"
+>
+  <span class="summary" [class.placeholder]="!selected().length">{{ summary() }}</span>
+  @if (selected().length > 1) {
+    <span class="count">{{ selected().length }}</span>
+  }
+  <svg viewBox="0 0 20 20" aria-hidden="true"><path d="m5 7.5 5 5 5-5" /></svg>
+</button>
+
+@if (open()) {
+  <div class="panel" (keydown)="onListKeydown($event)">
+    @if (options().length >= searchFrom()) {
+      <input
+        class="search"
+        type="search"
+        placeholder="Buscar…"
+        aria-label="Buscar opciones"
+        [value]="query()"
+        (input)="onSearch($any($event.target).value)"
+      />
+    }
+    <div class="actions">
+      <button type="button" (click)="selectAllVisible()">Seleccionar todos</button>
+      <button type="button" [disabled]="!selected().length" (click)="clear()">Limpiar</button>
+    </div>
+    <ul
+      role="listbox"
+      aria-multiselectable="true"
+      [id]="listId"
+      [attr.aria-activedescendant]="filtered().length ? optionId(active()) : null"
+    >
+      @for (option of filtered(); track option.value; let i = $index) {
+        <li
+          role="option"
+          [id]="optionId(i)"
+          [class.active]="i === active()"
+          [attr.aria-selected]="selectedSet().has(option.value)"
+          (mouseenter)="active.set(i)"
+          (mousedown)="$event.preventDefault()"
+          (click)="toggleOption(option.value)"
+        >
+          <span class="check" [class.on]="selectedSet().has(option.value)" aria-hidden="true">
+            <svg viewBox="0 0 16 16"><path d="m3.5 8.5 3 3 6-7" /></svg>
+          </span>
+          <span class="label">{{ option.label }}</span>
+          @if (option.hint) {
+            <small>{{ option.hint }}</small>
+          }
+        </li>
+      } @empty {
+        <li class="empty" role="presentation">Sin coincidencias</li>
+      }
+    </ul>
+  </div>
+}

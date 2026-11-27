@@ -159,6 +159,10 @@ export class TenantShell {
     const p = this.user?.permissions ?? [];
     return p.includes(PERMISSIONS.productsView);
   }
+  protected get canViewAudit(): boolean {
+    const p = this.user?.permissions ?? [];
+    return p.includes(PERMISSIONS.auditView);
+  }
   protected get canManageProductCatalogs(): boolean {
     const p = this.user?.permissions ?? [];
     return p.includes(PERMISSIONS.productsUpdate);

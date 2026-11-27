@@ -40,10 +40,12 @@ class ContactRepository(TenantScopedRepository[Contact]):
         return self._base_query(tenant_id).filter(Contact.client_id == client_id).count()
 
     def clear_primary(self, tenant_id: uuid.UUID, client_id: uuid.UUID) -> None:
-        (
+        # Registro por registro (y no un UPDATE masivo) para que quede auditado.
+        for contact in (
             self._base_query(tenant_id)
             .filter(Contact.client_id == client_id, Contact.is_primary.is_(True))
-            .update({Contact.is_primary: False}, synchronize_session="fetch")
-        )
+            .all()
+        ):
+            contact.is_primary = False
         # Se aplica antes de marcar el nuevo principal para no violar el índice único.
         self.db.flush()
