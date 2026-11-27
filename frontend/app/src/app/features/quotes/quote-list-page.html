@@ -5,9 +5,12 @@
       <h1>Cotizaciones</h1>
       <p>Controla importes, vigencia y respuesta de cada propuesta.</p>
     </div>
-    @if (canCreate) {
-      <a routerLink="/panel/cotizaciones/nueva">Nueva cotización</a>
-    }
+    <div class="header-tools">
+      @if (canCreate) {
+        <a routerLink="/panel/cotizaciones/nueva">Nueva cotización</a>
+      }
+      <app-data-transfer entity="quotes" (imported)="load()" />
+    </div>
   </header>
   @if (error()) {
     <p class="error">{{ error() }}</p>

@@ -50,7 +50,7 @@ header a {
 }
 .filters {
   display: grid;
-  grid-template-columns: 1fr 12rem 12rem;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 1rem;
   padding: 1rem;
   margin-bottom: 1rem;
@@ -78,6 +78,7 @@ header a {
 article {
   display: grid;
   grid-template-columns: 6rem 1fr 13rem auto;
+  box-shadow: inset 4px 0 0 var(--pipeline);
   align-items: center;
   gap: 1rem;
   padding: 1rem;
@@ -199,7 +200,7 @@ article.flash {
 }
 @media (max-width: 850px) {
   .filters {
-    grid-template-columns: 1fr;
+    grid-template-columns: 1fr 1fr;
   }
   .list article {
     grid-template-columns: 1fr;
@@ -215,5 +216,85 @@ article.flash {
   }
   header a {
     text-align: center;
+  }
+}
+.header-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.75rem;
+}
+.view-toggle {
+  display: inline-flex;
+  padding: 0.2rem;
+  background: #fff;
+  border: 1px solid var(--flowdesk-border);
+  border-radius: 0.55rem;
+}
+.view-toggle button {
+  padding: 0.55rem 0.9rem;
+  color: var(--flowdesk-navy);
+  background: transparent;
+  border: 0;
+  border-radius: 0.4rem;
+  font-weight: 750;
+  cursor: pointer;
+}
+.view-toggle button.active {
+  color: #fff;
+  background: var(--flowdesk-navy);
+}
+.filters .search {
+  grid-column: span 2;
+}
+.filter-actions {
+  grid-column: 1 / -1;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+}
+.filter-actions button {
+  padding: 0.4rem 0.75rem;
+  color: #275d78;
+  background: #f2f8fb;
+  border: 1px solid #cfe2ec;
+  border-radius: 999px;
+  font-size: 0.74rem;
+  font-weight: 750;
+  cursor: pointer;
+}
+.filter-actions .clear {
+  color: #842b22;
+  background: #fff;
+  border-color: #efb8b1;
+}
+.filter-actions .count {
+  margin-left: auto;
+  color: var(--flowdesk-muted);
+  font-size: 0.74rem;
+}
+.pipeline-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  margin-left: 0.6rem;
+}
+.pipeline-tag::before {
+  content: '';
+  width: 0.55rem;
+  height: 0.55rem;
+  background: var(--pipeline);
+  border-radius: 50%;
+}
+@media (max-width: 600px) {
+  .filters {
+    grid-template-columns: 1fr;
+  }
+  .filters .search {
+    grid-column: auto;
+  }
+  .header-actions {
+    justify-content: space-between;
   }
 }

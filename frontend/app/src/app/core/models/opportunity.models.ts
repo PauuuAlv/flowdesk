@@ -8,6 +8,8 @@ export interface Pipeline {
   position: number;
   is_default: boolean;
   is_active: boolean;
+  /** Color (#rrggbb) de sus actividades en el calendario. */
+  color: string;
   stage_count: number;
   open_opportunities: number;
   total_opportunities: number;
@@ -18,6 +20,8 @@ export interface SavePipelineRequest {
   description: string | null;
   /** Solo al crear: copia las etapas de otro pipeline (sin él, etapas predeterminadas). */
   copy_stages_from?: string | null;
+  /** Sin indicarlo se conserva (al editar) o se asigna uno de la paleta (al crear). */
+  color?: string;
   is_active?: boolean;
   is_default?: boolean;
 }

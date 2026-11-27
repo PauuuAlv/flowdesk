@@ -79,7 +79,7 @@ def pipeline_or_404(db: Session, tenant_id, pipeline_id, active_only: bool = Fal
 
 def create_pipeline(
     db: Session, tenant_id, *, name: str, description: str | None = None,
-    is_default: bool = False, source: Pipeline | None = None,
+    is_default: bool = False, source: Pipeline | None = None, color: str | None = None,
 ) -> Pipeline:
     """Crea el pipeline con sus etapas: copia las de `source` o, si no hay, usa
     las predeterminadas (incluidas Ganada y Perdida para poder cerrar). No hace commit."""
@@ -87,6 +87,7 @@ def create_pipeline(
     pipeline = Pipeline(
         tenant_id=tenant_id, name=name, description=description,
         position=position, is_default=is_default, is_active=True,
+        color=color or STAGE_PALETTE[(position - 1) % len(STAGE_PALETTE)],
     )
     db.add(pipeline)
     db.flush()

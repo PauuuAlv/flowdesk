@@ -1,0 +1,132 @@
+@if ((canExport() || canImport()) && menu()) {
+  <div class="kebab">
+    <button
+      type="button"
+      class="kebab-toggle"
+      aria-haspopup="menu"
+      [attr.aria-expanded]="menuOpen()"
+      [attr.aria-label]="'Más opciones de ' + label().toLowerCase()"
+      title="Más opciones"
+      (click)="toggleMenu($event)"
+    >
+      <svg viewBox="0 0 20 20" aria-hidden="true"><circle cx="10" cy="4" r="1.7" /><circle cx="10" cy="10" r="1.7" /><circle cx="10" cy="16" r="1.7" /></svg>
+    </button>
+    @if (menuOpen()) {
+      <div class="kebab-menu" role="menu">
+        @if (canExport()) {
+          <button type="button" role="menuitem" [disabled]="exporting()" (click)="menuOpen.set(false); exportData()">
+            <span aria-hidden="true">↓</span>{{ exporting() ? 'Exportando…' : 'Exportar CSV' }}
+          </button>
+        }
+        @if (canImport()) {
+          <button type="button" role="menuitem" (click)="menuOpen.set(false); openImport()">
+            <span aria-hidden="true">↑</span>Importar CSV
+          </button>
+        }
+      </div>
+    }
+  </div>
+  @if (exportError()) {
+    <p class="export-error" role="alert">{{ exportError() }}</p>
+  }
+} @else if (canExport() || canImport()) {
+  <div class="transfer" role="group" [attr.aria-label]="'Exportar o importar ' + label()">
+    @if (canExport()) {
+      <button type="button" [disabled]="exporting()" (click)="exportData()">
+        <span aria-hidden="true">↓</span>{{ exporting() ? 'Exportando…' : compact() ? 'Exportar' : isAll() ? 'Exportar todo (ZIP)' : 'Exportar CSV' }}
+      </button>
+    }
+    @if (canImport()) {
+      <button type="button" (click)="openImport()">
+        <span aria-hidden="true">↑</span>{{ compact() ? 'Importar' : isAll() ? 'Importar ZIP' : 'Importar CSV' }}
+      </button>
+    }
+  </div>
+  @if (exportError()) {
+    <p class="export-error" role="alert">{{ exportError() }}</p>
+  }
+}
+
+@if (dialogOpen()) {
+  <div class="transfer-backdrop" (click)="close()">
+    <section class="transfer-dialog" role="dialog" aria-modal="true" aria-labelledby="transfer-title" (click)="$event.stopPropagation()">
+      <header>
+        <h2 id="transfer-title">Importar {{ isAll() ? 'información de la empresa' : label().toLowerCase() }}</h2>
+        <button type="button" class="close" aria-label="Cerrar" [disabled]="importing()" (click)="close()">×</button>
+      </header>
+
+      @if (isAll()) {
+        <p>
+          Sube el ZIP que genera <strong>Exportar todo</strong> (puedes editar sus CSV o quitar los que no quieras
+          actualizar). Se procesan en orden: catálogos, productos, servicios, clientes, pipelines, oportunidades,
+          actividades y cotizaciones.
+        </p>
+      } @else {
+        <p>{{ info()?.hint }}</p>
+        <p class="muted">
+          Los registros que ya existen se actualizan y los demás se crean. Usa la
+          <button type="button" class="link" (click)="downloadTemplate()">plantilla CSV</button> o un archivo exportado
+          como punto de partida.
+        </p>
+      }
+      <p class="muted">Si alguna fila tiene errores no se guarda ningún cambio y verás qué corregir.</p>
+
+      <label class="file">
+        <input type="file" [accept]="isAll() ? '.zip,application/zip' : '.csv,text/csv'" (change)="chooseFile($event)" />
+        <span>{{ file()?.name || (isAll() ? 'Selecciona un archivo .zip' : 'Selecciona un archivo .csv') }}</span>
+      </label>
+
+      @if (error()) {
+        <p class="message error" role="alert">{{ error() }}</p>
+      }
+
+      @if (result(); as r) {
+        @if (r.applied) {
+          <div class="message success" role="status">
+            <strong>Importación completada.</strong> {{ r.created }} creados · {{ r.updated }} actualizados.
+            @if (r.entities.length > 1) {
+              <ul>
+                @for (e of r.entities; track e.entity) {
+                  <li>{{ e.label }}: {{ e.created }} creados, {{ e.updated }} actualizados</li>
+                }
+              </ul>
+            }
+          </div>
+        } @else {
+          <div class="message error" role="alert">
+            <strong>No se aplicó ningún cambio.</strong> Corrige {{ r.error_count === 1 ? 'el error' : 'los ' + r.error_count + ' errores' }} y vuelve a intentarlo.
+          </div>
+          <div class="errors">
+            <table>
+              <thead>
+                <tr>
+                  @if (isAll()) { <th>Archivo</th> }
+                  <th>Fila</th>
+                  <th>Problema</th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (e of r.errors; track $index) {
+                  <tr>
+                    @if (isAll()) { <td>{{ e.file }}</td> }
+                    <td>{{ e.row }}</td>
+                    <td>{{ e.message }}</td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+        }
+      }
+
+      <footer>
+        <button type="button" class="secondary" [disabled]="importing()" (click)="close()">
+          {{ result()?.applied ? 'Cerrar' : 'Cancelar' }}
+        </button>
+        <button type="button" class="primary" [disabled]="!file() || importing()" (click)="runImport()">
+          {{ importing() ? 'Importando…' : 'Importar' }}
+        </button>
+      </footer>
+    </section>
+  </div>
+}

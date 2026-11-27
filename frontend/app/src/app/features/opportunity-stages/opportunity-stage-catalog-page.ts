@@ -14,13 +14,14 @@ import { preferredPipeline, rememberPipeline } from '../../core/services/pipelin
 import { SessionService } from '../../core/services/session.service';
 import { Combobox, ComboOption } from '../../shared/ui/combobox/combobox';
 import { STAGE_PALETTE, suggestedStageColor } from '../../core/models/stage-colors';
+import { DataTransfer } from '../../shared/ui/data-transfer/data-transfer';
 
 type PipelineDialog = 'create' | 'edit' | 'delete' | null;
 
 /** Pipelines de la empresa y las etapas de cada uno (RF-021/022/023). */
 @Component({
   selector: 'app-opportunity-stage-catalog-page',
-  imports: [ReactiveFormsModule, Combobox],
+  imports: [ReactiveFormsModule, Combobox, DataTransfer],
   templateUrl: './opportunity-stage-catalog-page.html',
   styleUrl: './opportunity-stage-catalog-page.scss',
 })
@@ -58,6 +59,7 @@ export class OpportunityStageCatalogPage {
     name: ['', [Validators.required, Validators.minLength(2), Validators.maxLength(80)]],
     description: ['', Validators.maxLength(200)],
     copy_stages_from: [''],
+    color: [STAGE_PALETTE[0].value, [Validators.required, Validators.pattern(/^#[0-9a-fA-F]{6}$/)]],
   });
 
   // --- Etapas del pipeline elegido --------------------------------------------
@@ -93,6 +95,15 @@ export class OpportunityStageCatalogPage {
     this.colorChosen = true;
     this.form.controls.color.setValue(color.toLowerCase());
     this.form.controls.color.markAsDirty();
+  }
+
+  protected selectPipelineColor(color: string): void {
+    this.pipelineForm.controls.color.setValue(color.toLowerCase());
+    this.pipelineForm.controls.color.markAsDirty();
+  }
+
+  protected customPipelineColor(event: Event): void {
+    this.selectPipelineColor((event.target as HTMLInputElement).value);
   }
 
   protected customColor(event: Event): void {
@@ -166,9 +177,16 @@ export class OpportunityStageCatalogPage {
     this.success.set('');
     const current = this.selected();
     if (kind === 'create') {
-      this.pipelineForm.reset({ name: '', description: '', copy_stages_from: '' });
+      const used = new Set(this.pipelines().map((p) => p.color));
+      const color = (STAGE_PALETTE.slice(0, 8).find((swatch) => !used.has(swatch.value)) ?? STAGE_PALETTE[0]).value;
+      this.pipelineForm.reset({ name: '', description: '', copy_stages_from: '', color });
     } else if (kind === 'edit' && current) {
-      this.pipelineForm.reset({ name: current.name, description: current.description ?? '', copy_stages_from: '' });
+      this.pipelineForm.reset({
+        name: current.name,
+        description: current.description ?? '',
+        copy_stages_from: '',
+        color: current.color,
+      });
     }
     this.dialog.set(kind);
   }
@@ -188,6 +206,7 @@ export class OpportunityStageCatalogPage {
     const body = {
       name: value.name.trim(),
       description: value.description.trim() || null,
+      color: value.color,
       ...(current
         ? { is_active: current.is_active, is_default: current.is_default }
         : { copy_stages_from: value.copy_stages_from || null }),

@@ -67,3 +67,26 @@ textarea {
     grid-template-columns: 1fr;
   }
 }
+
+/* Acciones del encabezado de cada módulo (exportar/importar CSV y botón principal). */
+.header-tools {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.6rem;
+}
+header.with-tools {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: flex-end;
+  gap: 1rem;
+}
+header.with-tools > div:first-child {
+  flex: 1 1 28rem;
+  min-width: 0;
+}
+header.with-tools > .header-tools {
+  margin-left: auto;
+}

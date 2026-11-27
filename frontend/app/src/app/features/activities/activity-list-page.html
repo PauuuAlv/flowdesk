@@ -5,40 +5,63 @@
       <h1>Actividades</h1>
       <p>Organiza llamadas, correos, reuniones y tareas del equipo.</p>
     </div>
-    @if (canCreate) {
-      <a routerLink="/panel/actividades/nueva">Nueva actividad</a>
-    }
+    <div class="header-actions">
+      <div class="view-toggle" role="group" aria-label="Vista">
+        <button type="button" [class.active]="view() === 'list'" [attr.aria-pressed]="view() === 'list'" (click)="setView('list')">Lista</button>
+        <button type="button" [class.active]="view() === 'calendar'" [attr.aria-pressed]="view() === 'calendar'" (click)="setView('calendar')">Calendario</button>
+      </div>
+      @if (canCreate) {
+        <a routerLink="/panel/actividades/nueva">Nueva actividad</a>
+      }
+      <app-data-transfer entity="activities" (imported)="load()" />
+    </div>
   </header>
   @if (error()) {
     <p class="error" role="alert">{{ error() }}</p>
   }
   <div class="filters">
-    <label
-      >Buscar<input
+    <label class="search"
+      >Actividad<input
         type="search"
-        placeholder="Actividad, cliente o responsable"
+        placeholder="Título, descripción, cliente u oportunidad"
         [value]="search()"
         (input)="setSearch($event)" /></label
     ><label
-      >Tipo<app-combobox
-        [options]="[{ value: 'all', label: 'Todos' }, { value: 'call', label: 'Llamadas' }, { value: 'email', label: 'Correos' }, { value: 'meeting', label: 'Reuniones' }, { value: 'task', label: 'Tareas' }]"
-        [selectedValue]="type()"
-        ariaLabel="Tipo"
-        placeholder="Tipo"
-        (selected)="setType($event)"
-      /></label
+      >Tipo<app-combobox [options]="typeOptions" [selectedValue]="type()" ariaLabel="Tipo" placeholder="Tipo" (selected)="setType($event)"
+    /></label
     ><label
-      >Estado<app-combobox
-        [options]="[{ value: 'all', label: 'Todos' }, { value: 'pending', label: 'Pendientes' }, { value: 'completed', label: 'Completadas' }, { value: 'cancelled', label: 'Canceladas' }]"
-        [selectedValue]="status()"
-        ariaLabel="Estado"
-        placeholder="Estado"
-        (selected)="setStatus($event)"
-      /></label
-    >
+      >Estado<app-combobox [options]="statusOptions" [selectedValue]="status()" ariaLabel="Estado" placeholder="Estado" (selected)="setStatus($event)"
+    /></label
+    ><label
+      >Cliente<app-combobox
+        [options]="clientOptions()"
+        [selectedValue]="client()"
+        ariaLabel="Cliente"
+        placeholder="Escribe para buscar"
+        (selected)="client.set($event)"
+    /></label
+    ><label
+      >Responsable<app-combobox
+        [options]="ownerOptions()"
+        [selectedValue]="owner()"
+        ariaLabel="Responsable"
+        placeholder="Escribe para buscar"
+        (selected)="owner.set($event)"
+    /></label
+    ><label>Desde<input type="date" [value]="dateFrom()" (change)="setDate('from', $event)" /></label
+    ><label>Hasta<input type="date" [value]="dateTo()" [min]="dateFrom()" (change)="setDate('to', $event)" /></label>
+    <div class="filter-actions">
+      <button type="button" (click)="onlyToday()">Hoy</button>
+      @if (activeFilters()) {
+        <button type="button" class="clear" (click)="clearFilters()">Limpiar filtros ({{ activeFilters() }})</button>
+      }
+      <span class="count">{{ filtered().length }} de {{ items().length }} actividades</span>
+    </div>
   </div>
   @if (loading()) {
     <div class="state">Cargando actividades…</div>
+  } @else if (view() === 'calendar') {
+    <app-activity-calendar [activities]="filtered()" [anchorDate]="dateFrom() || null" (open)="openFromCalendar($event)" />
   } @else if (!filtered().length) {
     <div class="state">
       <h2>No hay actividades que mostrar</h2>
@@ -47,7 +70,12 @@
   } @else {
     <div class="list">
       @for (item of filtered(); track item.id) {
-        <article [id]="'actividad-' + item.id" [class.overdue]="overdue(item)" [class.flash]="highlighted() === item.id">
+        <article
+          [id]="'actividad-' + item.id"
+          [class.overdue]="overdue(item)"
+          [class.flash]="highlighted() === item.id"
+          [style.--pipeline]="item.pipeline_color ?? noPipelineColor"
+        >
           <div class="type">{{ typeLabel(item.activity_type) }}</div>
           <div class="content">
             <h2>{{ item.title }}</h2>
@@ -58,6 +86,7 @@
               }
             </p>
             <small>{{ item.owner_name }}</small>
+            <small class="pipeline-tag">{{ item.pipeline_name ?? 'Sin oportunidad' }}</small>
           </div>
           <div class="schedule">
             <strong>{{ date(item.scheduled_at) }}</strong>

@@ -1,0 +1,80 @@
+<section class="calendar" aria-label="Calendario de actividades">
+  <header class="calendar-head">
+    <div class="month-nav">
+      <button type="button" class="nav" (click)="move(-1)" aria-label="Mes anterior">‹</button>
+      <h2>{{ monthLabel() }}</h2>
+      <button type="button" class="nav" (click)="move(1)" aria-label="Mes siguiente">›</button>
+      <button type="button" class="today" (click)="goToday()">Hoy</button>
+    </div>
+    @if (legend().length) {
+      <ul class="legend" aria-label="Colores por pipeline">
+        @for (entry of legend(); track entry.name) {
+          <li [style.--pipeline]="entry.color">{{ entry.name }}</li>
+        }
+      </ul>
+    }
+  </header>
+
+  <div class="grid" role="grid">
+    @for (weekday of weekdays; track weekday) {
+      <div class="weekday" role="columnheader">{{ weekday }}</div>
+    }
+    @for (day of days(); track day.key) {
+      <div
+        class="day"
+        role="gridcell"
+        tabindex="0"
+        [class.outside]="!day.inMonth"
+        [class.today]="day.isToday"
+        [class.selected]="day.key === selectedKey()"
+        [attr.aria-label]="day.date.getDate() + ': ' + day.items.length + ' actividades'"
+        (click)="selectDay(day)"
+        (keydown.enter)="selectDay(day)"
+      >
+        <span class="number">{{ day.date.getDate() }}</span>
+        <div class="chips">
+          @for (item of day.items.slice(0, maxChips); track item.id) {
+            <button
+              type="button"
+              class="chip"
+              [style.--pipeline]="color(item)"
+              [class.done]="item.status !== 'pending'"
+              [class.late]="overdue(item)"
+              [title]="time(item) + ' · ' + item.title + ' · ' + item.client_name"
+              (click)="$event.stopPropagation(); open.emit(item.id)"
+            >
+              <span class="chip-time">{{ time(item) }}</span> {{ item.title }}
+            </button>
+          }
+          @if (day.items.length > maxChips) {
+            <span class="more">+{{ day.items.length - maxChips }} más</span>
+          }
+        </div>
+        @if (day.items.length) {
+          <div class="dots" aria-hidden="true">
+            @for (item of day.items.slice(0, 4); track item.id) {
+              <i [style.--pipeline]="color(item)"></i>
+            }
+          </div>
+        }
+      </div>
+    }
+  </div>
+
+  <div class="agenda">
+    <h3>{{ selectedLabel() }}</h3>
+    @for (item of selectedItems(); track item.id) {
+      <button type="button" class="agenda-item" [style.--pipeline]="color(item)" [class.done]="item.status !== 'pending'" (click)="open.emit(item.id)">
+        <span class="agenda-time">{{ time(item) }}</span>
+        <span class="agenda-body">
+          <strong>{{ item.title }}</strong>
+          <small>{{ typeLabel(item) }} · {{ item.client_name }} · {{ item.owner_name }}</small>
+          <small class="agenda-pipeline">{{ item.pipeline_name ?? 'Sin oportunidad' }}</small>
+        </span>
+        <span class="agenda-status" [class.late]="overdue(item)">{{ statusLabel(item) }}</span>
+      </button>
+    } @empty {
+      <p class="agenda-empty">No hay actividades este día con los filtros actuales.</p>
+    }
+  </div>
+</section>

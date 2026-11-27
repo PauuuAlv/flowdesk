@@ -1,7 +1,8 @@
 <section class="stage-page">
-  <header>
+  <header class="with-tools">
     <div><p class="eyebrow">Configuración comercial</p><h1>Pipelines y etapas</h1>
       <p>Organiza tus procesos comerciales en pipelines (por ejemplo, ventas nuevas y renovaciones). Cada pipeline tiene sus propias etapas.</p></div>
+    <div class="header-tools"><app-data-transfer entity="pipelines" (imported)="loadPipelines()" /></div>
   </header>
   @if (error()) { <p class="message error" role="alert">{{ error() }}</p> }
   @if (success()) { <p class="message success">{{ success() }}</p> }
@@ -18,6 +19,7 @@
     @if (selected(); as pipeline) {
       <div class="pipeline-info">
         <div class="pipeline-badges">
+          <span class="badge pipeline-color" [style.--swatch]="pipeline.color" title="Color de sus actividades en el calendario">Color</span>
           @if (pipeline.is_default) { <span class="badge">Predeterminado</span> }
           @if (!pipeline.is_active) { <span class="badge muted">Inactivo</span> }
         </div>
@@ -121,6 +123,27 @@
           <label><span>Nombre *</span><input formControlName="name" maxlength="80" placeholder="Ej: Renovaciones" /></label>
           @if (pipelineForm.controls.name.touched && pipelineForm.controls.name.invalid) { <small class="field-error">Escribe un nombre de 2 a 80 caracteres.</small> }
           <label><span>Descripción</span><input formControlName="description" maxlength="200" placeholder="¿Para qué tipo de oportunidades es?" /></label>
+          <fieldset class="color-field">
+            <legend>Color en el calendario de actividades</legend>
+            <div class="swatches" role="radiogroup" aria-label="Color del pipeline">
+              @for (swatch of palette; track swatch.value) {
+                <button
+                  type="button"
+                  class="swatch"
+                  role="radio"
+                  [style.--swatch]="swatch.value"
+                  [class.selected]="pipelineForm.controls.color.value === swatch.value"
+                  [attr.aria-checked]="pipelineForm.controls.color.value === swatch.value"
+                  [attr.aria-label]="swatch.name"
+                  [title]="swatch.name"
+                  (click)="selectPipelineColor(swatch.value)"
+                ></button>
+              }
+              <label class="swatch custom" [class.selected]="!isPaletteColor(pipelineForm.controls.color.value)" title="Color personalizado">
+                <input type="color" [value]="pipelineForm.controls.color.value" (input)="customPipelineColor($event)" aria-label="Color personalizado" />
+              </label>
+            </div>
+          </fieldset>
           @if (kind === 'create') {
             <label><span>Etapas iniciales</span>
               <app-combobox formControlName="copy_stages_from" [options]="copyOptions()" placeholder="Etapas predeterminadas" />

@@ -1,6 +1,7 @@
-import { Component, DestroyRef, HostListener, computed, inject, signal } from '@angular/core';
-import { RouterLink } from '@angular/router';
-import { forkJoin } from 'rxjs';
+import { Component, DestroyRef, HostListener, computed, effect, inject, signal, untracked } from '@angular/core';
+import { toSignal } from '@angular/core/rxjs-interop';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
+import { forkJoin, map } from 'rxjs';
 import { LossReason, Opportunity, OpportunityStage, OpportunityStageCatalog, OpportunityStageHistory, Pipeline } from '../../core/models/opportunity.models';
 import { PERMISSIONS } from '../../core/models/permission.models';
 import { OpportunityService } from '../../core/services/opportunity.service';
@@ -8,17 +9,26 @@ import { SessionService } from '../../core/services/session.service';
 import { preferredPipeline, rememberPipeline } from '../../core/services/pipeline-selection';
 import { Combobox, ComboOption } from '../../shared/ui/combobox/combobox';
 import { DEFAULT_CURRENCY, formatMoney, MoneyTotal, sumByCurrency } from '../../core/models/currency.models';
+import { DataTransfer } from '../../shared/ui/data-transfer/data-transfer';
 
 @Component({
   selector: 'app-opportunity-board-page',
-  imports: [RouterLink, Combobox],
+  imports: [RouterLink, Combobox, DataTransfer],
   templateUrl: './opportunity-board-page.html',
-  styleUrl: './opportunity-board-page.scss',
+  styleUrls: ['./opportunity-board-page.scss', './opportunity-board-page.flash.scss'],
 })
 export class OpportunityBoardPage {
   private readonly service = inject(OpportunityService);
   private readonly user = inject(SessionService).getUser();
   private readonly companyCurrency = this.user?.tenant_currency || DEFAULT_CURRENCY;
+  private readonly route = inject(ActivatedRoute);
+  private readonly router = inject(Router);
+  /** `?oportunidad=<id>`: viene de una notificación; se desplaza a ella y parpadea. */
+  private readonly focusId = toSignal(this.route.queryParamMap.pipe(map((params) => params.get('oportunidad'))), {
+    initialValue: null,
+  });
+  protected readonly highlighted = signal<string | null>(null);
+  private highlightTimer: ReturnType<typeof setTimeout> | undefined;
   // Pipelines activos y el que se muestra en el tablero (se recuerda en el navegador).
   protected readonly pipelines = signal<Pipeline[]>([]);
   protected readonly pipelineId = signal<string | null>(null);
@@ -68,10 +78,50 @@ export class OpportunityBoardPage {
   });
   constructor() {
     this.load();
+    effect(() => {
+      const id = this.focusId();
+      if (!id || this.loading()) return;
+      untracked(() => this.focusOpportunity(id));
+    });
     // El menú usa posición fija: se cierra al desplazar la página o el tablero (scroll horizontal).
     const onScroll = () => this.dismissMenu();
     document.addEventListener('scroll', onScroll, true);
-    inject(DestroyRef).onDestroy(() => document.removeEventListener('scroll', onScroll, true));
+    inject(DestroyRef).onDestroy(() => {
+      document.removeEventListener('scroll', onScroll, true);
+      clearTimeout(this.highlightTimer);
+    });
+  }
+
+  /**
+   * Muestra la oportunidad aunque esté en otro pipeline, archivada u oculta por
+   * la búsqueda; la centra en el tablero y la hace parpadear 3 veces.
+   */
+  private focusOpportunity(id: string): void {
+    const item = this.items().find((x) => x.id === id);
+    // Se quita el parámetro para que volver a abrir la misma notificación funcione de nuevo.
+    void this.router.navigate([], {
+      relativeTo: this.route,
+      queryParams: { oportunidad: null },
+      queryParamsHandling: 'merge',
+      replaceUrl: true,
+    });
+    if (!item) {
+      this.error.set('La oportunidad de la notificación ya no está disponible.');
+      return;
+    }
+    // Cambia de pipeline solo en esta vista: no reemplaza el que el usuario recuerda.
+    if (item.pipeline_id && item.pipeline_id !== this.pipelineId()) this.pipelineId.set(item.pipeline_id);
+    if (item.archived) this.showArchived.set(true);
+    if (!this.visible().some((x) => x.id === id)) this.search.set('');
+    clearTimeout(this.highlightTimer);
+    this.highlighted.set(null);
+    // Espera a que el tablero se pinte (y se reinicie la animación si ya estaba resaltada).
+    setTimeout(() => {
+      const element = document.getElementById(`oportunidad-${id}`);
+      element?.scrollIntoView({ behavior: 'smooth', block: 'center', inline: 'center' });
+      this.highlighted.set(id);
+      this.highlightTimer = setTimeout(() => this.highlighted.set(null), 2600);
+    }, 60);
   }
   protected load() {
     this.loading.set(true);

@@ -1,0 +1,11 @@
+/* Al abrir una notificación: la tarjeta se centra y parpadea 3 veces. */
+.cards article.flash {
+  animation: opportunity-flash 0.8s ease-in-out 3;
+  scroll-margin: 6rem;
+}
+@keyframes opportunity-flash {
+  50% {
+    background: #fff4e0;
+    box-shadow: 0 0 0 3px #c87923;
+  }
+}

@@ -189,18 +189,42 @@ export const routes: Routes = [
       {
         path: 'productos',
         canActivate: [viewProductsGuard],
+        data: { itemType: 'product' },
         loadComponent: () =>
           import('./features/products/product-list-page').then((c) => c.ProductListPage),
       },
       {
         path: 'productos/nuevo',
         canActivate: [createProductsGuard],
+        data: { itemType: 'product' },
         loadComponent: () =>
           import('./features/products/product-form-page').then((c) => c.ProductFormPage),
       },
       {
         path: 'productos/:productId/editar',
         canActivate: [updateProductsGuard],
+        data: { itemType: 'product' },
+        loadComponent: () =>
+          import('./features/products/product-form-page').then((c) => c.ProductFormPage),
+      },
+      {
+        path: 'servicios',
+        canActivate: [viewProductsGuard],
+        data: { itemType: 'service' },
+        loadComponent: () =>
+          import('./features/products/product-list-page').then((c) => c.ProductListPage),
+      },
+      {
+        path: 'servicios/nuevo',
+        canActivate: [createProductsGuard],
+        data: { itemType: 'service' },
+        loadComponent: () =>
+          import('./features/products/product-form-page').then((c) => c.ProductFormPage),
+      },
+      {
+        path: 'servicios/:productId/editar',
+        canActivate: [updateProductsGuard],
+        data: { itemType: 'service' },
         loadComponent: () =>
           import('./features/products/product-form-page').then((c) => c.ProductFormPage),
       },

@@ -22,3 +22,5 @@ class Pipeline(BaseModel, TenantMixin):
     position = Column(Integer, nullable=False, default=1)
     is_default = Column(Boolean, nullable=False, default=False)
     is_active = Column(Boolean, nullable=False, default=True)
+    # Color (#rrggbb) con el que se distinguen sus actividades en el calendario.
+    color = Column(String(7), nullable=False, default="#3b82f6", server_default="#3b82f6")

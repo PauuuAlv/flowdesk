@@ -156,5 +156,35 @@
         </p>
       }
     </form>
+    <section class="card data-card" aria-labelledby="data-title">
+      <div class="section-title">
+        <span>04</span>
+        <div>
+          <h2 id="data-title">Importar y exportar información</h2>
+          <p>
+            Respalda toda la información de la empresa en un ZIP con un CSV por módulo, o actualízala de forma masiva.
+            Las referencias usan datos legibles (correo del cliente, código del producto, nombre del pipeline, folio).
+          </p>
+        </div>
+      </div>
+      <div class="data-all">
+        <div>
+          <strong>Toda la empresa</strong>
+          <small>Catálogos, productos, servicios, clientes, pipelines y etapas, oportunidades, actividades y cotizaciones.</small>
+        </div>
+        <app-data-transfer entity="all" [menu]="false" />
+      </div>
+      <ul class="data-list">
+        @for (module of dataModules; track module.key) {
+          <li>
+            <div>
+              <strong>{{ module.label }}</strong>
+              <small>{{ module.hint }}</small>
+            </div>
+            <app-data-transfer [entity]="module.key" [compact]="true" [menu]="false" />
+          </li>
+        }
+      </ul>
+    </section>
   }
 </section>

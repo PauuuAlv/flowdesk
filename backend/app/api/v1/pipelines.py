@@ -30,7 +30,7 @@ def _serialize(db: Session, item: Pipeline) -> PipelineResponse:
     ).scalar() or 0
     return PipelineResponse(
         id=str(item.id), name=item.name, description=item.description, position=item.position,
-        is_default=item.is_default, is_active=item.is_active, stage_count=stage_count,
+        is_default=item.is_default, is_active=item.is_active, color=item.color, stage_count=stage_count,
         open_opportunities=open_count, total_opportunities=total, created_at=item.created_at,
     )
 
@@ -68,7 +68,8 @@ def create(
         raise HTTPException(status_code=409, detail="Pipeline limit reached")
     _ensure_unique_name(db, tenant_id, payload.name)
     source = pipeline_or_404(db, tenant_id, payload.copy_stages_from) if payload.copy_stages_from else None
-    item = create_pipeline(db, tenant_id, name=payload.name, description=payload.description, source=source)
+    item = create_pipeline(db, tenant_id, name=payload.name, description=payload.description, source=source,
+        color=payload.color)
     db.commit(); db.refresh(item)
     return _serialize(db, item)
 
@@ -105,6 +106,8 @@ def update(
         db.flush()
     item.name, item.description = payload.name, payload.description
     item.is_active, item.is_default = payload.is_active, payload.is_default
+    if payload.color:
+        item.color = payload.color
     db.commit(); db.refresh(item)
     return _serialize(db, item)
 

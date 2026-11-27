@@ -77,6 +77,10 @@ class ActivityResponse(BaseModel):
     client_name: str
     opportunity_id: str | None
     opportunity_name: str | None
+    # Pipeline de la oportunidad relacionada (para colorear el calendario).
+    pipeline_id: str | None = None
+    pipeline_name: str | None = None
+    pipeline_color: str | None = None
     owner_user_id: str
     owner_name: str
     activity_type: ActivityType

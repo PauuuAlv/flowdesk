@@ -7,7 +7,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from app.core.config import settings
 from app.middleware.tenant import TenantContextMiddleware
-from app.api.v1 import activities, auth, clients, company_settings, contacts, dashboard, notifications, opportunities, opportunity_stages, pipelines, platform_admin, platform_roles, product_catalogs, products, quotes, roles, tenant_plan, users
+from app.api.v1 import activities, auth, clients, company_settings, contacts, dashboard, data_transfer, notifications, opportunities, opportunity_stages, pipelines, platform_admin, platform_roles, product_catalogs, products, quotes, roles, tenant_plan, users
 
 logger = logging.getLogger("flowdesk")
 
@@ -91,6 +91,7 @@ app.include_router(dashboard.router, prefix="/api/dashboard", tags=["dashboard"]
 app.include_router(products.router, prefix="/api/products", tags=["products"])
 app.include_router(product_catalogs.router, prefix="/api/product-catalogs", tags=["product-catalogs"])
 app.include_router(tenant_plan.router, prefix="/api/tenant-plan", tags=["tenant-plan"])
+app.include_router(data_transfer.router, prefix="/api/data-transfer", tags=["data-transfer"])
 
 
 @app.get("/health")

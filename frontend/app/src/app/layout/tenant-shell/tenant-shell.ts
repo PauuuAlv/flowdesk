@@ -31,14 +31,14 @@ export class TenantShell {
   protected readonly notificationsLoading = signal(false);
   protected readonly notifications = signal<FlowdeskNotification[]>([]);
   protected readonly unreadCount = signal(0);
-  /** Submenú de "Productos y servicios" (catálogo, categorías, unidades y marcas). */
+  /** Submenú de "Productos y servicios" (productos, servicios, categorías, unidades y marcas). */
   protected readonly productsOpen = signal(false);
   protected readonly inProductsSection = signal(false);
 
   constructor() {
     // Al entrar a una página de la sección, su submenú se despliega solo.
     const syncSection = (url: string) => {
-      const inside = /^\/panel\/(productos|configuracion\/(categorias|unidades|marcas))(\/|\?|#|$)/.test(url);
+      const inside = /^\/panel\/(productos|servicios|configuracion\/(categorias|unidades|marcas))(\/|\?|#|$)/.test(url);
       this.inProductsSection.set(inside);
       if (inside) this.productsOpen.set(true);
     };

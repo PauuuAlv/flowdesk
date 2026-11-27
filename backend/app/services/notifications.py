@@ -77,7 +77,7 @@ def sync_user_notifications(db: Session, user: User) -> list[Notification]:
     ).all()
     for item in opportunities:
         add(f"opportunity:{item.id}:close", "opportunity_closing", "Cierre estimado próximo",
-            f"{item.name} · {item.expected_close_date.strftime('%d/%m/%Y')}", "/panel/oportunidades")
+            f"{item.name} · {item.expected_close_date.strftime('%d/%m/%Y')}", opportunity_route(item.id))
 
     # Respaldo del despachador: si la API estuvo dormida, los recordatorios
     # vencidos del usuario se generan al consultar sus notificaciones.
@@ -90,6 +90,11 @@ def sync_user_notifications(db: Session, user: User) -> list[Notification]:
 # ---------------------------------------------------------------------------
 # Avisos inmediatos por asignación de actividades
 # ---------------------------------------------------------------------------
+
+def opportunity_route(opportunity_id) -> str:
+    """Tablero de oportunidades enfocado en una: se desplaza a ella y la resalta."""
+    return f"/panel/oportunidades?oportunidad={opportunity_id}"
+
 
 def activity_route(activity_id) -> str:
     """Lista de actividades enfocada en una: la página se desplaza a ella y la resalta."""

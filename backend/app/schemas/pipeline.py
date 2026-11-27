@@ -6,6 +6,13 @@ from pydantic import BaseModel, Field, field_validator
 class PipelinePayload(BaseModel):
     name: str = Field(min_length=2, max_length=80)
     description: str | None = Field(default=None, max_length=200)
+    # Sin indicarlo se conserva (al editar) o se asigna uno de la paleta (al crear).
+    color: str | None = Field(default=None, pattern=r"^#[0-9a-fA-F]{6}$")
+
+    @field_validator("color")
+    @classmethod
+    def normalize_color(cls, value: str | None) -> str | None:
+        return value.lower() if value else None
 
     @field_validator("name")
     @classmethod
@@ -36,6 +43,7 @@ class PipelineResponse(BaseModel):
     position: int
     is_default: bool
     is_active: bool
+    color: str
     stage_count: int
     open_opportunities: int
     total_opportunities: int

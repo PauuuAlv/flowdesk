@@ -54,3 +54,5 @@ button.danger-solid { background: #b23a2e; }
 .swatch.custom input { position: absolute; inset: -6px; width: 40px; height: 40px; padding: 0; border: 0; opacity: 0; cursor: pointer; }
 .color-preview { display: grid; gap: 2px; margin-top: 12px; padding: 12px 14px; background: color-mix(in srgb, var(--stage-color) 16%, #f4f6f8); border-top: 4px solid var(--stage-color); border-radius: 10px; }
 .color-preview span { color: #5f6b73; font-size: .82rem; }
+.pipeline-color { display: inline-flex; align-items: center; gap: 6px; }
+.pipeline-color::before { content: ''; width: 10px; height: 10px; background: var(--swatch); border-radius: 50%; }

@@ -200,3 +200,46 @@ label small {
   }
   .logo-editor { align-items: flex-start; }
 }
+
+.data-card {
+  margin-top: 1.25rem;
+}
+.data-all,
+.data-list li {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.8rem 1.5rem;
+}
+.data-all {
+  padding: 1rem 1.2rem;
+  background: #f7f8fa;
+  border: 1px solid var(--flowdesk-border);
+  border-radius: 0.7rem;
+}
+.data-all strong,
+.data-list strong {
+  display: block;
+  color: var(--flowdesk-navy);
+}
+.data-all small,
+.data-list small {
+  display: block;
+  max-width: 38rem;
+  margin-top: 0.2rem;
+  color: var(--flowdesk-muted);
+  font-size: 0.8rem;
+}
+.data-list {
+  margin: 0.8rem 0 0;
+  padding: 0;
+  list-style: none;
+}
+.data-list li {
+  padding: 0.85rem 0.2rem;
+  border-bottom: 1px solid var(--flowdesk-border);
+}
+.data-list li:last-child {
+  border-bottom: 0;
+}

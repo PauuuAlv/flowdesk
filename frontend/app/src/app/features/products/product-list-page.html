@@ -2,12 +2,21 @@
   <header>
     <div>
       <p class="eyebrow">Catálogo comercial</p>
-      <h1>Productos y servicios</h1>
-      <p>Administra los conceptos que tu empresa utiliza en sus cotizaciones.</p>
+      <h1>{{ isProduct ? 'Productos' : 'Servicios' }}</h1>
+      <p>
+        {{
+          isProduct
+            ? 'Administra los productos que tu empresa utiliza en sus cotizaciones.'
+            : 'Administra los servicios que tu empresa utiliza en sus cotizaciones.'
+        }}
+      </p>
     </div>
-    @if (canCreate) {
-      <a class="primary" routerLink="/panel/productos/nuevo">Nuevo elemento</a>
-    }
+    <div class="header-tools">
+      @if (canCreate) {
+        <a class="primary" [routerLink]="[basePath, 'nuevo']">{{ isProduct ? 'Nuevo producto' : 'Nuevo servicio' }}</a>
+      }
+      <app-data-transfer [entity]="isProduct ? 'products' : 'services'" (imported)="load()" />
+    </div>
   </header>
   @if (success()) {
     <p class="message success" role="status">{{ success() }}</p>
@@ -16,38 +25,58 @@
     <p class="message error" role="alert">{{ error() }}</p>
   }
   <div class="filters">
-    <label
+    <label class="search"
       >Buscar<input
         type="search"
         placeholder="Nombre, código, categoría o marca"
+        [value]="search()"
         (input)="setSearch($event)" /></label
     ><label
-      >Tipo<app-combobox
-        [options]="[{ value: 'all', label: 'Todos' }, { value: 'product', label: 'Productos' }, { value: 'service', label: 'Servicios' }]"
-        [selectedValue]="type()"
-        ariaLabel="Tipo"
-        placeholder="Tipo"
-        (selected)="setType($event)"
+      >Categoría<app-combobox
+        [options]="categoryOptions()"
+        [selectedValue]="category()"
+        ariaLabel="Categoría"
+        placeholder="Categoría"
+        (selected)="setCategory($event)"
+      /></label
+    ><label
+      >Marca<app-combobox
+        [options]="brandOptions()"
+        [selectedValue]="brand()"
+        ariaLabel="Marca"
+        placeholder="Marca"
+        (selected)="setBrand($event)"
+      /></label
+    ><label
+      >Unidad de medida<app-combobox
+        [options]="unitOptions()"
+        [selectedValue]="unitFilter()"
+        ariaLabel="Unidad de medida"
+        placeholder="Unidad"
+        (selected)="setUnit($event)"
       /></label
     ><label
       >Estado<app-combobox
-        [options]="[{ value: 'all', label: 'Todos' }, { value: 'active', label: 'Activos' }, { value: 'inactive', label: 'Inactivos' }]"
+        [options]="statusOptions"
         [selectedValue]="status()"
         ariaLabel="Estado"
         placeholder="Estado"
         (selected)="setStatus($event)"
       /></label
     >
+    @if (hasFilters()) {
+      <button type="button" class="clear" (click)="clearFilters()">Limpiar filtros</button>
+    }
   </div>
   @if (loading()) {
-    <div class="state">Cargando catálogo…</div>
-  } @else if (!items().length) {
+    <div class="state">Cargando {{ isProduct ? 'productos' : 'servicios' }}…</div>
+  } @else if (!filtered().length && !hasFilters()) {
     <div class="state">
       <span>□</span>
-      <h2>Aún no hay productos o servicios</h2>
+      <h2>{{ isProduct ? 'Aún no hay productos' : 'Aún no hay servicios' }}</h2>
       <p>Registra el primer elemento para reutilizarlo en tus propuestas comerciales.</p>
       @if (canCreate) {
-        <a class="primary" routerLink="/panel/productos/nuevo">Crear primer elemento</a>
+        <a class="primary" [routerLink]="[basePath, 'nuevo']">{{ isProduct ? 'Crear primer producto' : 'Crear primer servicio' }}</a>
       }
     </div>
   } @else if (!filtered().length) {
@@ -60,14 +89,41 @@
       <table>
         <thead>
           <tr>
-            <th>Elemento</th>
-            <th>Tipo</th>
-            <th>Categoría</th>
-            <th>Marca</th>
-            <th>Unidad</th>
-            <th>Precio base</th>
-            <th>IVA</th>
-            <th>Estado</th>
+            <th [attr.aria-sort]="ariaSort('name')">
+              <button type="button" class="sort" [class.sorted]="sortKey() === 'name'" (click)="sortBy('name')">
+                Nombre<span class="arrow" aria-hidden="true">{{ sortKey() === 'name' ? (sortDir() === 'asc' ? '▲' : '▼') : '↕' }}</span>
+              </button>
+            </th>
+            <th [attr.aria-sort]="ariaSort('category')">
+              <button type="button" class="sort" [class.sorted]="sortKey() === 'category'" (click)="sortBy('category')">
+                Categoría<span class="arrow" aria-hidden="true">{{ sortKey() === 'category' ? (sortDir() === 'asc' ? '▲' : '▼') : '↕' }}</span>
+              </button>
+            </th>
+            <th [attr.aria-sort]="ariaSort('brand')">
+              <button type="button" class="sort" [class.sorted]="sortKey() === 'brand'" (click)="sortBy('brand')">
+                Marca<span class="arrow" aria-hidden="true">{{ sortKey() === 'brand' ? (sortDir() === 'asc' ? '▲' : '▼') : '↕' }}</span>
+              </button>
+            </th>
+            <th [attr.aria-sort]="ariaSort('unit')">
+              <button type="button" class="sort" [class.sorted]="sortKey() === 'unit'" (click)="sortBy('unit')">
+                Unidad<span class="arrow" aria-hidden="true">{{ sortKey() === 'unit' ? (sortDir() === 'asc' ? '▲' : '▼') : '↕' }}</span>
+              </button>
+            </th>
+            <th [attr.aria-sort]="ariaSort('base_price')">
+              <button type="button" class="sort" [class.sorted]="sortKey() === 'base_price'" (click)="sortBy('base_price')">
+                Precio base<span class="arrow" aria-hidden="true">{{ sortKey() === 'base_price' ? (sortDir() === 'asc' ? '▲' : '▼') : '↕' }}</span>
+              </button>
+            </th>
+            <th [attr.aria-sort]="ariaSort('tax_rate')">
+              <button type="button" class="sort" [class.sorted]="sortKey() === 'tax_rate'" (click)="sortBy('tax_rate')">
+                IVA<span class="arrow" aria-hidden="true">{{ sortKey() === 'tax_rate' ? (sortDir() === 'asc' ? '▲' : '▼') : '↕' }}</span>
+              </button>
+            </th>
+            <th [attr.aria-sort]="ariaSort('status')">
+              <button type="button" class="sort" [class.sorted]="sortKey() === 'status'" (click)="sortBy('status')">
+                Estado<span class="arrow" aria-hidden="true">{{ sortKey() === 'status' ? (sortDir() === 'asc' ? '▲' : '▼') : '↕' }}</span>
+              </button>
+            </th>
             <th></th>
           </tr>
         </thead>
@@ -78,8 +134,7 @@
                 <strong>{{ item.name }}</strong
                 ><span>{{ item.sku }}</span>
               </td>
-              <td>{{ item.item_type === 'product' ? 'Producto' : 'Servicio' }}</td>
-              <td>{{ item.category }}</td>
+              <td>{{ item.category || 'Sin categoría' }}</td>
               <td>{{ item.brand_name || 'Sin marca' }}</td>
               <td>{{ item.unit_name }}</td>
               <td>
@@ -93,7 +148,7 @@
               </td>
               <td class="actions">
                 @if (canUpdate) {
-                  <a [routerLink]="['/panel/productos', item.id, 'editar']">Editar</a>
+                  <a [routerLink]="[basePath, item.id, 'editar']">Editar</a>
                 }
                 @if (canDelete) {
                   <button type="button" (click)="pending.set(item)">
@@ -112,7 +167,7 @@
   <div class="backdrop">
     <section class="dialog" role="dialog" aria-modal="true">
       <span>!</span>
-      <h2>{{ item.status === 'active' ? 'Desactivar' : 'Reactivar' }} elemento</h2>
+      <h2>{{ item.status === 'active' ? 'Desactivar' : 'Reactivar' }} {{ isProduct ? 'producto' : 'servicio' }}</h2>
       <p>
         ¿Confirmas el cambio de estado de <strong>{{ item.name }}</strong
         >?

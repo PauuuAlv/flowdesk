@@ -7,12 +7,14 @@ import { Activity, ActivityStatus, ActivityType } from '../../core/models/activi
 import { PERMISSIONS } from '../../core/models/permission.models';
 import { ActivityService } from '../../core/services/activity.service';
 import { SessionService } from '../../core/services/session.service';
-import { Combobox } from '../../shared/ui/combobox/combobox';
+import { Combobox, ComboOption } from '../../shared/ui/combobox/combobox';
+import { ActivityCalendar, localDateKey, NO_PIPELINE_COLOR } from './activity-calendar';
 import { ActivityRemindersEditor, loadReminders, ReminderGroup, reminderPayload } from './activity-reminders-editor';
+import { DataTransfer } from '../../shared/ui/data-transfer/data-transfer';
 
 @Component({
   selector: 'app-activity-list-page',
-  imports: [RouterLink, Combobox, ActivityRemindersEditor],
+  imports: [RouterLink, Combobox, ActivityRemindersEditor, ActivityCalendar, DataTransfer],
   templateUrl: './activity-list-page.html',
   styleUrl: './activity-list-page.scss',
 })
@@ -32,9 +34,52 @@ export class ActivityListPage {
   protected readonly items = signal<Activity[]>([]);
   protected readonly loading = signal(true);
   protected readonly error = signal('');
+  /** Vista activa: lista o calendario (se recuerda en este navegador). */
+  protected readonly view = signal<'list' | 'calendar'>(this.storedView());
+  protected readonly noPipelineColor = NO_PIPELINE_COLOR;
+  // --- Filtros (aplican a la lista y al calendario) ---
   protected readonly search = signal('');
-  protected readonly status = signal<ActivityStatus | 'all'>('all');
+  protected readonly status = signal<ActivityStatus | 'all' | 'overdue'>('all');
   protected readonly type = signal<ActivityType | 'all'>('all');
+  protected readonly client = signal('all');
+  protected readonly owner = signal('all');
+  /** Fechas AAAA-MM-DD; con una sola se filtra desde/hasta ese día. */
+  protected readonly dateFrom = signal('');
+  protected readonly dateTo = signal('');
+  protected readonly typeOptions: ComboOption[] = [
+    { value: 'all', label: 'Todos' },
+    { value: 'call', label: 'Llamadas' },
+    { value: 'email', label: 'Correos' },
+    { value: 'meeting', label: 'Reuniones' },
+    { value: 'task', label: 'Tareas' },
+  ];
+  protected readonly statusOptions: ComboOption[] = [
+    { value: 'all', label: 'Todos' },
+    { value: 'pending', label: 'Pendientes' },
+    { value: 'overdue', label: 'Vencidas' },
+    { value: 'completed', label: 'Completadas' },
+    { value: 'cancelled', label: 'Canceladas' },
+  ];
+  protected readonly clientOptions = computed<ComboOption[]>(() => [
+    { value: 'all', label: 'Todos' },
+    ...this.distinct(this.items().map((x) => ({ value: x.client_id, label: x.client_name }))),
+  ]);
+  protected readonly ownerOptions = computed<ComboOption[]>(() => [
+    { value: 'all', label: 'Todos' },
+    ...this.distinct(this.items().map((x) => ({ value: x.owner_user_id, label: x.owner_name }))),
+  ]);
+  protected readonly activeFilters = computed(
+    () =>
+      [
+        this.search().trim(),
+        this.status() !== 'all',
+        this.type() !== 'all',
+        this.client() !== 'all',
+        this.owner() !== 'all',
+        this.dateFrom(),
+        this.dateTo(),
+      ].filter(Boolean).length,
+  );
   protected readonly canCreate = this.has(PERMISSIONS.activitiesCreate);
   protected readonly canUpdate = this.has(PERMISSIONS.activitiesUpdate);
   protected readonly canComplete = this.has(PERMISSIONS.activitiesComplete);
@@ -45,15 +90,25 @@ export class ActivityListPage {
   protected readonly reminderForm = this.fb.array<ReminderGroup>([]);
   protected readonly filtered = computed(() => {
     const q = this.search().trim().toLowerCase();
-    return this.items().filter(
-      (x) =>
-        (this.status() === 'all' || x.status === this.status()) &&
+    const status = this.status();
+    let from = this.dateFrom();
+    let to = this.dateTo();
+    if (from && to && from > to) [from, to] = [to, from];
+    return this.items().filter((x) => {
+      const day = localDateKey(x.scheduled_at);
+      return (
+        (status === 'all' || (status === 'overdue' ? this.overdue(x) : x.status === status)) &&
         (this.type() === 'all' || x.activity_type === this.type()) &&
+        (this.client() === 'all' || x.client_id === this.client()) &&
+        (this.owner() === 'all' || x.owner_user_id === this.owner()) &&
+        (!from || day >= from) &&
+        (!to || day <= to) &&
         (!q ||
-          `${x.title} ${x.client_name} ${x.opportunity_name ?? ''} ${x.owner_name}`
+          `${x.title} ${x.description ?? ''} ${x.client_name} ${x.opportunity_name ?? ''} ${x.owner_name}`
             .toLowerCase()
-            .includes(q)),
-    );
+            .includes(q))
+      );
+    });
   });
   constructor() {
     this.load();
@@ -79,11 +134,8 @@ export class ActivityListPage {
       this.error.set('La actividad de la notificación ya no está disponible.');
       return;
     }
-    if (!this.filtered().some((x) => x.id === id)) {
-      this.search.set('');
-      this.status.set('all');
-      this.type.set('all');
-    }
+    this.setView('list');
+    if (!this.filtered().some((x) => x.id === id)) this.clearFilters();
     clearTimeout(this.highlightTimer);
     this.highlighted.set(null);
     // Espera a que la lista se pinte (y se reinicie la animación si ya estaba resaltada).
@@ -111,7 +163,49 @@ export class ActivityListPage {
     this.search.set((e.target as HTMLInputElement).value);
   }
   protected setStatus(value: string) {
-    this.status.set(value as ActivityStatus | 'all');
+    this.status.set(value as ActivityStatus | 'all' | 'overdue');
+  }
+  protected setDate(which: 'from' | 'to', event: Event) {
+    const value = (event.target as HTMLInputElement).value;
+    (which === 'from' ? this.dateFrom : this.dateTo).set(value);
+  }
+  /** Atajo: solo las actividades de hoy. */
+  protected onlyToday() {
+    const today = localDateKey(new Date());
+    this.dateFrom.set(today);
+    this.dateTo.set(today);
+  }
+  protected clearFilters() {
+    this.search.set('');
+    this.status.set('all');
+    this.type.set('all');
+    this.client.set('all');
+    this.owner.set('all');
+    this.dateFrom.set('');
+    this.dateTo.set('');
+  }
+  protected setView(view: 'list' | 'calendar') {
+    this.view.set(view);
+    try {
+      localStorage.setItem('flowdesk.activities.view', view);
+    } catch {
+      /* almacenamiento no disponible: solo no se recuerda */
+    }
+  }
+  /** Desde el calendario: vuelve a la lista, se desplaza a la actividad y parpadea. */
+  protected openFromCalendar(id: string) {
+    this.focusActivity(id);
+  }
+  private storedView(): 'list' | 'calendar' {
+    try {
+      return localStorage.getItem('flowdesk.activities.view') === 'calendar' ? 'calendar' : 'list';
+    } catch {
+      return 'list';
+    }
+  }
+  private distinct(options: ComboOption[]): ComboOption[] {
+    const map = new Map(options.map((option) => [option.value, option]));
+    return [...map.values()].sort((a, b) => a.label.localeCompare(b.label, 'es'));
   }
   protected setType(value: string) {
     this.type.set(value as ActivityType | 'all');

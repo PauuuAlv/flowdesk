@@ -6,10 +6,11 @@ import { PERMISSIONS } from '../../core/models/permission.models';
 import { ClientService } from '../../core/services/client.service';
 import { SessionService } from '../../core/services/session.service';
 import { Combobox } from '../../shared/ui/combobox/combobox';
+import { DataTransfer } from '../../shared/ui/data-transfer/data-transfer';
 
 @Component({
   selector: 'app-client-list-page',
-  imports: [RouterLink, Combobox],
+  imports: [RouterLink, Combobox, DataTransfer],
   templateUrl: './client-list-page.html',
   styleUrl: './client-list-page.scss',
 })

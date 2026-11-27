@@ -34,7 +34,12 @@ export class ProductFormPage {
   protected readonly units = signal<MeasurementUnit[]>([]);
   protected readonly brands = signal<Brand[]>([]);
   protected readonly categories = signal<ProductCategory[]>([]);
-  private readonly itemType = signal<ProductType>('service');
+  /** Tipo de la sección desde la que se abrió (productos o servicios). */
+  protected readonly routeType: ProductType =
+    this.route.snapshot.data['itemType'] === 'product' ? 'product' : 'service';
+  /** Ruta de la lista de la sección actual. */
+  protected readonly listPath = this.routeType === 'product' ? '/panel/productos' : '/panel/servicios';
+  private readonly itemType = signal<ProductType>(this.routeType);
   /** Solo las unidades del tipo seleccionado (producto o servicio). */
   protected readonly availableUnits = computed(() =>
     this.units().filter((unit) => unit.item_type === this.itemType()),
@@ -81,7 +86,7 @@ export class ProductFormPage {
         Validators.pattern(/^[A-Za-z0-9._-]+$/),
       ],
     ],
-    item_type: ['service' as ProductType, Validators.required],
+    item_type: [this.routeType, Validators.required],
     unit_id: ['', Validators.required],
     brand_id: [''],
     category_id: [''],
@@ -134,7 +139,8 @@ export class ProductFormPage {
     this.saving.set(true);
     this.error.set('');
     this.service.save(body, this.id ?? undefined).subscribe({
-      next: () => void this.router.navigate(['/panel/productos']),
+      next: (saved) =>
+        void this.router.navigate([saved.item_type === 'product' ? '/panel/productos' : '/panel/servicios']),
       error: (e) => {
         this.saving.set(false);
         const duplicateName = e.message?.startsWith('DUPLICATE_NAME:');

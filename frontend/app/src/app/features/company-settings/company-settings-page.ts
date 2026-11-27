@@ -5,14 +5,18 @@ import { CompanySettingsService } from '../../core/services/company-settings.ser
 import { SessionService } from '../../core/services/session.service';
 import { Combobox } from '../../shared/ui/combobox/combobox';
 import { CURRENCY_OPTIONS } from '../../core/models/currency.models';
+import { DataTransfer } from '../../shared/ui/data-transfer/data-transfer';
+import { DATA_ENTITIES } from '../../core/services/data-transfer.service';
 @Component({
   selector: 'app-company-settings-page',
-  imports: [ReactiveFormsModule, Combobox],
+  imports: [ReactiveFormsModule, Combobox, DataTransfer],
   templateUrl: './company-settings-page.html',
   styleUrl: './company-settings-page.scss',
 })
 export class CompanySettingsPage {
   protected readonly currencyOptions = CURRENCY_OPTIONS;
+  /** Módulos con exportación e importación individual en CSV. */
+  protected readonly dataModules = DATA_ENTITIES;
   private readonly fb = inject(FormBuilder);
   private readonly service = inject(CompanySettingsService);
   private readonly session = inject(SessionService);

@@ -51,7 +51,8 @@ header p:last-child {
 }
 .filters {
   display: grid;
-  grid-template-columns: 1fr 12rem 12rem;
+  grid-template-columns: minmax(14rem, 1.6fr) repeat(4, minmax(9rem, 1fr));
+  align-items: end;
   gap: 1rem;
   padding: 1rem;
   margin-bottom: 1rem;
@@ -64,7 +65,8 @@ header p:last-child {
   font-weight: 750;
 }
 .filters input,
-.filters select, .filters app-combobox {
+.filters select,
+.filters app-combobox {
   display: block;
   width: 100%;
   padding: 0.7rem;
@@ -72,6 +74,45 @@ header p:last-child {
   border: 1px solid var(--flowdesk-border);
   border-radius: 0.45rem;
   box-sizing: border-box;
+}
+.filters .clear {
+  grid-column: 1 / -1;
+  justify-self: end;
+  padding: 0;
+  color: #275d78;
+  background: none;
+  border: 0;
+  font-size: 0.78rem;
+  font-weight: 750;
+  cursor: pointer;
+}
+.sort {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0;
+  color: inherit;
+  background: none;
+  border: 0;
+  font: inherit;
+  letter-spacing: inherit;
+  text-transform: inherit;
+  white-space: nowrap;
+  cursor: pointer;
+}
+.sort:hover,
+.sort.sorted {
+  color: var(--flowdesk-navy);
+}
+.sort .arrow {
+  font-size: 0.62rem;
+  opacity: 0.45;
+}
+.sort.sorted .arrow {
+  opacity: 1;
+}
+.filters app-combobox {
+  display: flex; // el combo acomoda texto y flecha en una sola línea
 }
 .table-wrap {
   overflow-x: auto;
@@ -181,6 +222,14 @@ td span {
 .dialog .danger {
   color: #fff;
   background: #a9443a;
+}
+@media (max-width: 75rem) {
+  .filters {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .filters .search {
+    grid-column: 1 / -1;
+  }
 }
 @media (max-width: 50rem) {
   header {

@@ -7,6 +7,7 @@ import { Observable } from 'rxjs';
 import { Brand, MeasurementUnit, ProductCategory, ProductType } from '../../core/models/product.models';
 import { ProductService } from '../../core/services/product.service';
 import { Combobox, ComboOption } from '../../shared/ui/combobox/combobox';
+import { DataTransfer } from '../../shared/ui/data-transfer/data-transfer';
 
 export const UNIT_TYPE_LABELS: Record<ProductType, string> = { product: 'Producto', service: 'Servicio' };
 
@@ -38,7 +39,7 @@ const CATALOGS: Record<CatalogKind, { title: string; help: string; singular: str
 
 @Component({
   selector: 'app-product-catalog-settings-page',
-  imports: [ReactiveFormsModule, Combobox],
+  imports: [ReactiveFormsModule, Combobox, DataTransfer],
   templateUrl: './product-catalog-settings-page.html',
   styleUrl: './product-catalog-settings-page.scss',
 })

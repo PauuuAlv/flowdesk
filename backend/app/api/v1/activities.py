@@ -49,7 +49,11 @@ def _relations(payload: SaveActivityRequest, tenant_id, db: Session):
 def _serialize(item: Activity) -> ActivityResponse:
     return ActivityResponse(id=str(item.id),client_id=str(item.client_id),client_name=item.client.company_name,
         opportunity_id=str(item.opportunity_id) if item.opportunity_id else None,
-        opportunity_name=item.opportunity.name if item.opportunity else None,owner_user_id=str(item.owner_user_id),
+        opportunity_name=item.opportunity.name if item.opportunity else None,
+        pipeline_id=str(item.opportunity.pipeline_id) if item.opportunity else None,
+        pipeline_name=item.opportunity.pipeline.name if item.opportunity else None,
+        pipeline_color=item.opportunity.pipeline.color if item.opportunity else None,
+        owner_user_id=str(item.owner_user_id),
         owner_name=item.owner.full_name or item.owner.email,activity_type=item.activity_type,title=item.title,
         description=item.description,scheduled_at=item.scheduled_at,status=item.status,completed_at=item.completed_at,
         reminders=[ActivityReminderResponse(id=str(r.id),minutes_before=r.minutes_before,fixed_at=r.fixed_at,remind_at=r.remind_at,

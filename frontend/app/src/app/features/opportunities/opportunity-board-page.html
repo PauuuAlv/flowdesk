@@ -5,9 +5,12 @@
       <h1>Oportunidades</h1>
       <p>Visualiza el avance de cada negociación y el valor de tu pipeline.</p>
     </div>
-    @if (canCreate) {
-      <a routerLink="/panel/oportunidades/nueva" [queryParams]="{ pipeline: pipelineId() }">Nueva oportunidad</a>
-    }
+    <div class="header-tools">
+      @if (canCreate) {
+        <a routerLink="/panel/oportunidades/nueva" [queryParams]="{ pipeline: pipelineId() }">Nueva oportunidad</a>
+      }
+      <app-data-transfer entity="opportunities" (imported)="load()" />
+    </div>
   </header>
   @if (error()) {
     <p class="error" role="alert">{{ error() }}</p>
@@ -29,11 +32,12 @@
       ><input
         type="search"
         placeholder="Oportunidad, cliente o responsable"
+        [value]="search()"
         (input)="updateSearch($event)"
     /></label>
     @if (canArchive) {
       <label class="archived-filter"
-        ><input type="checkbox" (change)="toggleArchived($event)" /> Mostrar archivadas</label
+        ><input type="checkbox" [checked]="showArchived()" (change)="toggleArchived($event)" /> Mostrar archivadas</label
       >
     }
   </div>
@@ -74,6 +78,8 @@
           <div class="cards">
             @for (item of byStage(stage.key); track item.id) {
               <article
+                [id]="'oportunidad-' + item.id"
+                [class.flash]="highlighted() === item.id"
                 [class.archived]="item.archived"
                 [class.expanded]="isExpanded(item.id)"
                 [class.draggable]="canDrag(item)"

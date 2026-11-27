@@ -5,9 +5,12 @@
       <h1>Clientes</h1>
       <p>Centraliza los datos de contacto y conserva el estado de cada relación comercial.</p>
     </div>
-    @if (canCreate) {
-      <a class="primary-action" routerLink="/panel/clientes/nuevo">Nuevo cliente</a>
-    }
+    <div class="header-tools">
+      @if (canCreate) {
+        <a class="primary-action" routerLink="/panel/clientes/nuevo">Nuevo cliente</a>
+      }
+      <app-data-transfer entity="clients" (imported)="load()" />
+    </div>
   </header>
 
   @if (successMessage()) {

@@ -2,10 +2,10 @@
   <header>
     <div>
       <p class="eyebrow">Catálogo comercial</p>
-      <h1>{{ id ? 'Editar elemento' : 'Nuevo producto o servicio' }}</h1>
+      <h1>{{ id ? (routeType === 'product' ? 'Editar producto' : 'Editar servicio') : (routeType === 'product' ? 'Nuevo producto' : 'Nuevo servicio') }}</h1>
       <p>Define la información que se reutilizará en las cotizaciones.</p>
     </div>
-    <a routerLink="/panel/productos">Volver al catálogo</a>
+    <a [routerLink]="listPath">{{ routeType === 'product' ? 'Volver a productos' : 'Volver a servicios' }}</a>
   </header>
   @if (error()) {
     <p class="message" role="alert">{{ error() }}</p>
@@ -100,7 +100,7 @@
         </div>
       </section>
       <div class="form-actions">
-        <a routerLink="/panel/productos">Cancelar</a
+        <a [routerLink]="listPath">Cancelar</a
         ><button type="submit" [disabled]="saving()">
           {{ saving() ? 'Guardando…' : 'Guardar elemento' }}
         </button>

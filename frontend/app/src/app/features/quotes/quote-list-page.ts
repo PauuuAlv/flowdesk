@@ -6,10 +6,11 @@ import { QuoteService } from '../../core/services/quote.service';
 import { SessionService } from '../../core/services/session.service';
 import { Combobox } from '../../shared/ui/combobox/combobox';
 import { formatMoney } from '../../core/models/currency.models';
+import { DataTransfer } from '../../shared/ui/data-transfer/data-transfer';
 
 @Component({
   selector: 'app-quote-list-page',
-  imports: [RouterLink, Combobox],
+  imports: [RouterLink, Combobox, DataTransfer],
   templateUrl: './quote-list-page.html',
   styleUrl: './quote-list-page.scss',
 })
@@ -33,6 +34,9 @@ export class QuoteListPage {
     );
   });
   constructor() {
+    this.load();
+  }
+  protected load() {
     this.s.list().subscribe({
       next: (x) => {
         this.items.set(x);

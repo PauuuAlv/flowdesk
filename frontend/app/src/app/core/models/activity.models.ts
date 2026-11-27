@@ -19,6 +19,10 @@ export interface Activity {
   client_name: string;
   opportunity_id: string | null;
   opportunity_name: string | null;
+  /** Pipeline de la oportunidad relacionada; null si la actividad no tiene oportunidad. */
+  pipeline_id: string | null;
+  pipeline_name: string | null;
+  pipeline_color: string | null;
   owner_user_id: string;
   owner_name: string;
   activity_type: ActivityType;
