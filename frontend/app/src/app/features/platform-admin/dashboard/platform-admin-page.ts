@@ -12,11 +12,12 @@ import {
 import { AuthService } from '../../../core/services/auth.service';
 import { PlatformAccessService } from '../../../core/services/platform-access.service';
 import { Combobox, ComboOption } from '../../../shared/ui/combobox/combobox';
+import { MultiSelect } from '../../../shared/ui/multi-select/multi-select';
 import { PLAN_OPTIONS, SUBSCRIPTION_STATUS_OPTIONS } from '../platform-options';
 
 @Component({
   selector: 'app-platform-admin-page',
-  imports: [ReactiveFormsModule, RouterLink, Combobox],
+  imports: [ReactiveFormsModule, RouterLink, Combobox, MultiSelect],
   templateUrl: './platform-admin-page.html',
   styleUrl: './platform-admin-page.scss',
 })
@@ -41,12 +42,12 @@ export class PlatformAdminPage {
   protected readonly loadingTenants = signal(true);
   protected readonly updatingTenant = signal<string | null>(null);
   protected readonly search = signal('');
-  protected readonly statusFilter = signal<SubscriptionStatus | 'all'>('all');
+  protected readonly statusFilter = signal<SubscriptionStatus[]>([]); // vacío = todos
   protected readonly visibleTenants = computed(() => {
     const q = this.search().trim().toLowerCase();
     return this.tenants().filter(
       (t) =>
-        (this.statusFilter() === 'all' || t.subscription_status === this.statusFilter()) &&
+        (!this.statusFilter().length || this.statusFilter().includes(t.subscription_status)) &&
         (!q || `${t.name} ${t.slug} ${t.plan_name}`.toLowerCase().includes(q)),
     );
   });
@@ -157,8 +158,8 @@ export class PlatformAdminPage {
   protected setSearch(event: Event) {
     this.search.set((event.target as HTMLInputElement).value);
   }
-  protected setStatusFilter(value: string) {
-    this.statusFilter.set(value as SubscriptionStatus | 'all');
+  protected setStatusFilter(values: string[]) {
+    this.statusFilter.set(values as SubscriptionStatus[]);
   }
   protected updateTenant(
     tenant: TenantSaaS,

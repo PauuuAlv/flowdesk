@@ -27,7 +27,7 @@ button:disabled { cursor: not-allowed; opacity: .55; }
 .link-row { display: grid; grid-template-columns: 1fr auto; gap: .5rem; margin: .6rem 0; }
 .link-row button { color: #fff; background: var(--flowdesk-navy); }
 
-input, select, app-combobox { width: 100%; box-sizing: border-box; padding: .7rem .8rem; color: var(--flowdesk-ink); background: #fff; border: 1px solid #cbd1d8; border-radius: .45rem; font: inherit; }
+input, select, app-combobox, app-multi-select { width: 100%; box-sizing: border-box; padding: .7rem .8rem; color: var(--flowdesk-ink); background: #fff; border: 1px solid #cbd1d8; border-radius: .45rem; font: inherit; }
 input:disabled, select:disabled, app-combobox.is-disabled { background: #f3f5f7; }
 
 .stats { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 1rem; margin-bottom: 1rem; }

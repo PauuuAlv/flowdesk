@@ -32,36 +32,36 @@
         [value]="search()"
         (input)="setSearch($event)" /></label
     ><label
-      >Categoría<app-combobox
+      >Categoría<app-multi-select
         [options]="categoryOptions()"
-        [selectedValue]="category()"
+        [selected]="category()"
         ariaLabel="Categoría"
-        placeholder="Categoría"
-        (selected)="setCategory($event)"
+        placeholder="Todas las categorías"
+        (selectedChange)="setCategory($event)"
       /></label
     ><label
-      >Marca<app-combobox
+      >Marca<app-multi-select
         [options]="brandOptions()"
-        [selectedValue]="brand()"
+        [selected]="brand()"
         ariaLabel="Marca"
-        placeholder="Marca"
-        (selected)="setBrand($event)"
+        placeholder="Todas las marcas"
+        (selectedChange)="setBrand($event)"
       /></label
     ><label
-      >Unidad de medida<app-combobox
+      >Unidad de medida<app-multi-select
         [options]="unitOptions()"
-        [selectedValue]="unitFilter()"
+        [selected]="unitFilter()"
         ariaLabel="Unidad de medida"
-        placeholder="Unidad"
-        (selected)="setUnit($event)"
+        placeholder="Todas las unidades"
+        (selectedChange)="setUnit($event)"
       /></label
     ><label
-      >Estado<app-combobox
+      >Estado<app-multi-select
         [options]="statusOptions"
-        [selectedValue]="status()"
+        [selected]="status()"
         ariaLabel="Estado"
-        placeholder="Estado"
-        (selected)="setStatus($event)"
+        placeholder="Todos los estados"
+        (selectedChange)="setStatus($event)"
       /></label
     >
     @if (hasFilters()) {

@@ -5,12 +5,13 @@ import { Client, ClientStatus } from '../../core/models/client.models';
 import { PERMISSIONS } from '../../core/models/permission.models';
 import { ClientService } from '../../core/services/client.service';
 import { SessionService } from '../../core/services/session.service';
-import { Combobox } from '../../shared/ui/combobox/combobox';
+
+import { MultiSelect } from '../../shared/ui/multi-select/multi-select';
 import { DataTransfer } from '../../shared/ui/data-transfer/data-transfer';
 
 @Component({
   selector: 'app-client-list-page',
-  imports: [RouterLink, Combobox, DataTransfer],
+  imports: [RouterLink, DataTransfer, MultiSelect],
   templateUrl: './client-list-page.html',
   styleUrl: './client-list-page.scss',
 })
@@ -24,7 +25,7 @@ export class ClientListPage {
   protected readonly errorMessage = signal('');
   protected readonly successMessage = signal('');
   protected readonly search = signal('');
-  protected readonly statusFilter = signal<ClientStatus | 'all'>('all');
+  protected readonly statusFilter = signal<ClientStatus[]>([]); // vacío = todos
   protected readonly clientToToggle = signal<Client | null>(null);
 
   protected readonly canCreate = this.hasPermission(PERMISSIONS.clientsCreate);
@@ -36,7 +37,7 @@ export class ClientListPage {
     const status = this.statusFilter();
     return this.clients().filter((client) => {
       const content = `${client.company_name} ${client.contact_name} ${client.email}`.toLowerCase();
-      return (!term || content.includes(term)) && (status === 'all' || client.status === status);
+      return (!term || content.includes(term)) && (!status.length || status.includes(client.status));
     });
   });
 
@@ -63,8 +64,8 @@ export class ClientListPage {
     this.search.set((event.target as HTMLInputElement).value);
   }
 
-  protected updateStatusFilter(value: string): void {
-    this.statusFilter.set(value as ClientStatus | 'all');
+  protected updateStatusFilter(values: string[]): void {
+    this.statusFilter.set(values as ClientStatus[]);
   }
 
   protected requestStatusChange(client: Client): void {

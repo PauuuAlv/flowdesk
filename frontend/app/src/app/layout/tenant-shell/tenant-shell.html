@@ -236,6 +236,19 @@
     </header>
 
     <main class="page-content" (click)="closeProfile()">
+      @if (push.askNeeded()) {
+        <aside class="push-prompt" role="dialog" aria-labelledby="push-prompt-title">
+          <span class="push-prompt-icon" aria-hidden="true"></span>
+          <div>
+            <strong id="push-prompt-title">¿Quieres recibir notificaciones?</strong>
+            <p>Te avisaremos de actividades asignadas, recordatorios y vencimientos aunque Flowdesk esté cerrado.</p>
+          </div>
+          <div class="push-prompt-actions">
+            <button type="button" class="secondary" (click)="declinePush()" [disabled]="push.busy()">Ahora no</button>
+            <button type="button" (click)="enablePush()" [disabled]="push.busy()">Activar</button>
+          </div>
+        </aside>
+      }
       <router-outlet />
     </main>
   </section>

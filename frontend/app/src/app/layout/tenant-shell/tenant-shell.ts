@@ -7,6 +7,7 @@ import { PERMISSIONS } from '../../core/models/permission.models';
 import { FlowdeskNotification } from '../../core/models/notification.models';
 import { NotificationService } from '../../core/services/notification.service';
 import { PushNotificationService } from '../../core/services/push-notification.service';
+import { KnownAccountsService } from '../../core/services/known-accounts.service';
 import { SessionService } from '../../core/services/session.service';
 
 @Component({
@@ -58,7 +59,9 @@ export class TenantShell {
       this.notificationsLoading.set(false);
     });
     this.listenToServiceWorker();
-    void this.push.sync().catch(() => undefined);
+    // Sesiones abiertas antes de existir el selector de cuentas también quedan registradas.
+    inject(KnownAccountsService).remember(this.user);
+    void this.push.sync(this.user?.id ?? null).catch(() => undefined);
   }
 
   /** Mensajes de `public/sw.js`: llegó un push o se hizo clic en una notificación. */
@@ -96,6 +99,11 @@ export class TenantShell {
     } catch {
       this.pushMessage.set('No fue posible enviar el aviso de prueba.');
     }
+  }
+
+  /** Pregunta inicial (primera sesión del usuario en este navegador). */
+  protected declinePush(): void {
+    this.push.declinePrompt();
   }
 
   protected async disablePush(): Promise<void> {
@@ -223,8 +231,9 @@ export class TenantShell {
   }
 
   protected async logout(): Promise<void> {
-    // Este navegador deja de recibir avisos de la cuenta que cierra sesión.
-    await this.push.disable().catch(() => undefined);
+    // El servidor deja de enviar aquí los avisos de esta cuenta; la suscripción del
+    // navegador se conserva y se reactiva sola al volver a iniciar sesión.
+    await this.push.detach().catch(() => undefined);
     this.sessionService.clear();
     void this.router.navigate(['/iniciar-sesion']);
   }

@@ -4,7 +4,8 @@ import { Product, ProductStatus, ProductType } from '../../core/models/product.m
 import { PERMISSIONS } from '../../core/models/permission.models';
 import { ProductService } from '../../core/services/product.service';
 import { SessionService } from '../../core/services/session.service';
-import { Combobox, ComboOption } from '../../shared/ui/combobox/combobox';
+import { ComboOption } from '../../shared/ui/combobox/combobox';
+import { MultiSelect } from '../../shared/ui/multi-select/multi-select';
 import { formatMoney } from '../../core/models/currency.models';
 import { DataTransfer } from '../../shared/ui/data-transfer/data-transfer';
 
@@ -34,7 +35,7 @@ function sortValue(item: Product, key: SortKey): string | number {
 
 @Component({
   selector: 'app-product-list-page',
-  imports: [RouterLink, Combobox, DataTransfer],
+  imports: [RouterLink, DataTransfer, MultiSelect],
   templateUrl: './product-list-page.html',
   styleUrl: './product-list-page.scss',
 })
@@ -51,10 +52,11 @@ export class ProductListPage {
   protected readonly isProduct = this.itemType === 'product';
   protected readonly basePath = this.isProduct ? '/panel/productos' : '/panel/servicios';
   protected readonly search = signal('');
-  protected readonly status = signal<ProductStatus | 'all'>('all');
-  protected readonly category = signal('all');
-  protected readonly brand = signal('all');
-  protected readonly unitFilter = signal('all');
+  // Cada filtro admite varios valores; vacío = todos.
+  protected readonly status = signal<ProductStatus[]>([]);
+  protected readonly category = signal<string[]>([]);
+  protected readonly brand = signal<string[]>([]);
+  protected readonly unitFilter = signal<string[]>([]);
   protected readonly sortKey = signal<SortKey>('name');
   protected readonly sortDir = signal<'asc' | 'desc'>('asc');
   protected readonly pending = signal<Product | null>(null);
@@ -63,7 +65,6 @@ export class ProductListPage {
   protected readonly canUpdate = this.has(PERMISSIONS.productsUpdate);
   protected readonly canDelete = this.has(PERMISSIONS.productsDelete);
   protected readonly statusOptions: ComboOption[] = [
-    { value: 'all', label: 'Todos' },
     { value: 'active', label: 'Activos' },
     { value: 'inactive', label: 'Inactivos' },
   ];
@@ -80,14 +81,14 @@ export class ProductListPage {
   protected readonly hasFilters = computed(
     () =>
       Boolean(this.search().trim()) ||
-      [this.status(), this.category(), this.brand(), this.unitFilter()].some((v) => v !== 'all'),
+      [this.status(), this.category(), this.brand(), this.unitFilter()].some((v) => v.length > 0),
   );
   protected readonly filtered = computed(() => {
     const q = this.search().trim().toLowerCase();
-    const matches = (filter: string, id: string | null) => filter === 'all' || filter === (id ?? NONE);
+    const matches = (filter: string[], id: string | null) => !filter.length || filter.includes(id ?? NONE);
     const rows = this.sectionItems().filter(
       (x) =>
-        (this.status() === 'all' || x.status === this.status()) &&
+        (!this.status().length || this.status().includes(x.status)) &&
         matches(this.category(), x.category_id) &&
         matches(this.brand(), x.brand_id) &&
         matches(this.unitFilter(), x.unit_id) &&
@@ -124,24 +125,24 @@ export class ProductListPage {
   protected setSearch(e: Event) {
     this.search.set((e.target as HTMLInputElement).value);
   }
-  protected setStatus(value: string) {
-    this.status.set(value as ProductStatus | 'all');
+  protected setStatus(values: string[]) {
+    this.status.set(values as ProductStatus[]);
   }
-  protected setCategory(value: string) {
-    this.category.set(value || 'all');
+  protected setCategory(values: string[]) {
+    this.category.set(values);
   }
-  protected setBrand(value: string) {
-    this.brand.set(value || 'all');
+  protected setBrand(values: string[]) {
+    this.brand.set(values);
   }
-  protected setUnit(value: string) {
-    this.unitFilter.set(value || 'all');
+  protected setUnit(values: string[]) {
+    this.unitFilter.set(values);
   }
   protected clearFilters() {
     this.search.set('');
-    this.status.set('all');
-    this.category.set('all');
-    this.brand.set('all');
-    this.unitFilter.set('all');
+    this.status.set([]);
+    this.category.set([]);
+    this.brand.set([]);
+    this.unitFilter.set([]);
   }
   /** Primer clic ordena ascendente; clics siguientes alternan el sentido. */
   protected sortBy(key: SortKey) {
@@ -199,7 +200,7 @@ export class ProductListPage {
     options.sort((a, b) =>
       a.value === NONE ? 1 : b.value === NONE ? -1 : a.label.localeCompare(b.label, 'es', { sensitivity: 'base' }),
     );
-    return [{ value: 'all', label: 'Todas' }, ...options];
+    return options; // sin selección = todas
   }
   private has(p: (typeof PERMISSIONS)[keyof typeof PERMISSIONS]) {
     return Boolean(this.user?.permissions?.includes(p));

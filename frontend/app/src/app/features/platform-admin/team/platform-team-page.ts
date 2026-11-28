@@ -12,9 +12,10 @@ import {
 import { PlatformAccessService } from '../../../core/services/platform-access.service';
 import { PlatformTeamService } from '../../../core/services/platform-team.service';
 import { Combobox, ComboOption } from '../../../shared/ui/combobox/combobox';
+import { MultiSelect } from '../../../shared/ui/multi-select/multi-select';
 
 type Tab = 'members' | 'roles';
-type MemberFilter = 'all' | 'active' | 'pending' | 'inactive';
+type MemberFilter = 'active' | 'pending' | 'inactive';
 
 const ALL_PERMISSIONS: PlatformPermissionCode[] = PLATFORM_PERMISSION_MODULES.flatMap((module) =>
   module.permissions.map((permission) => permission.code),
@@ -22,7 +23,7 @@ const ALL_PERMISSIONS: PlatformPermissionCode[] = PLATFORM_PERMISSION_MODULES.fl
 
 @Component({
   selector: 'app-platform-team-page',
-  imports: [ReactiveFormsModule, Combobox],
+  imports: [ReactiveFormsModule, Combobox, MultiSelect],
   templateUrl: './platform-team-page.html',
   styleUrl: './platform-team-page.scss',
 })
@@ -44,7 +45,7 @@ export class PlatformTeamPage {
   protected readonly success = signal('');
   protected readonly busyMember = signal<string | null>(null);
   protected readonly search = signal('');
-  protected readonly memberFilter = signal<MemberFilter>('all');
+  protected readonly memberFilter = signal<MemberFilter[]>([]); // vacío = todos
 
   // Invitación
   protected readonly inviteOpen = signal(false);
@@ -81,7 +82,7 @@ export class PlatformTeamPage {
     const filter = this.memberFilter();
     return this.members().filter((member) => {
       const content = `${member.full_name ?? ''} ${member.email} ${member.role_name}`.toLowerCase();
-      return (!term || content.includes(term)) && (filter === 'all' || this.memberState(member) === filter);
+      return (!term || content.includes(term)) && (!filter.length || filter.includes(this.memberState(member) as MemberFilter));
     });
   });
   protected readonly stats = computed(() => {
@@ -142,8 +143,8 @@ export class PlatformTeamPage {
     this.search.set((event.target as HTMLInputElement).value);
   }
 
-  protected setMemberFilter(value: string): void {
-    this.memberFilter.set(value as MemberFilter);
+  protected setMemberFilter(values: string[]): void {
+    this.memberFilter.set(values as MemberFilter[]);
   }
 
   // --- Integrantes ---------------------------------------------------------

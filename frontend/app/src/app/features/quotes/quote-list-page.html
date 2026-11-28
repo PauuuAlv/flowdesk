@@ -15,15 +15,52 @@
   @if (error()) {
     <p class="error">{{ error() }}</p>
   }
+  @if (sentNotice()) {
+    <p class="notice" role="status">{{ sentNotice() }}</p>
+  }
   <div class="filters">
-    <input type="search" placeholder="Folio o cliente" (input)="setSearch($event)" /><app-combobox
-        [options]="[{ value: 'all', label: 'Todos los estados' }, { value: 'draft', label: 'Borradores' }, { value: 'sent', label: 'Enviadas' }, { value: 'accepted', label: 'Aceptadas' }, { value: 'rejected', label: 'Rechazadas' }, { value: 'expired', label: 'Vencidas' }]"
-        [selectedValue]="filter()"
-        ariaLabel="Estado"
-        placeholder="Estado"
-        (selected)="setFilter($event)"
-      />
+    <input
+      type="search"
+      placeholder="Folio, cliente, oportunidad o responsable"
+      aria-label="Buscar cotizaciones"
+      [value]="search()"
+      (input)="setSearch($event)"
+    />
+    <app-multi-select
+      [options]="opportunityOptions()"
+      [selected]="opportunities()"
+      ariaLabel="Oportunidad"
+      placeholder="Todas las oportunidades"
+      (selectedChange)="opportunities.set($event)"
+    />
+    <app-multi-select
+      [options]="ownerOptions()"
+      [selected]="owners()"
+      ariaLabel="Responsable"
+      placeholder="Todos los responsables"
+      (selectedChange)="owners.set($event)"
+    />
+    <app-multi-select
+      [options]="conceptOptions()"
+      [selected]="concepts()"
+      ariaLabel="Conceptos"
+      placeholder="Todos los conceptos"
+      (selectedChange)="concepts.set($event)"
+    />
+    <app-multi-select
+      [options]="statusOptions"
+      [selected]="filter()"
+      ariaLabel="Estado"
+      placeholder="Todos los estados"
+      (selectedChange)="setFilter($event)"
+    />
   </div>
+  @if (hasFilters()) {
+    <div class="filter-summary">
+      <span>{{ visible().length }} de {{ items().length }} cotizaciones</span>
+      <button type="button" (click)="clearFilters()">Limpiar filtros</button>
+    </div>
+  }
   @if (loading()) {
     <div class="state">Cargando…</div>
   } @else {
@@ -33,6 +70,7 @@
           <div>
             <strong>{{ q.folio }}</strong
             ><span>{{ q.client_name }}</span>
+            <small>{{ q.opportunity_name || 'Sin oportunidad' }} · {{ q.owner_name }}</small>
           </div>
           <span>{{ q.issue_date }} — {{ q.valid_until }}</span
           ><b>{{ money(q.total, q.currency) }}</b
@@ -43,7 +81,7 @@
               <a [routerLink]="['/panel/cotizaciones', q.id, 'editar']">Editar</a>
             }
             @if (canStatus && q.status === 'draft') {
-              <button (click)="change(q, 'sent')">Marcar enviada</button>
+              <button (click)="openSend(q)">Enviar por correo</button>
             }
             @if (canStatus && q.status === 'sent') {
               <button (click)="change(q, 'accepted')">Aceptar</button
@@ -57,3 +95,58 @@
     </div>
   }
 </section>
+
+@if (sending(); as q) {
+  <div class="modal-backdrop" role="presentation" (click)="closeSend()">
+    <section
+      class="send-dialog"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="send-quote-title"
+      (click)="$event.stopPropagation()"
+    >
+      <h2 id="send-quote-title">Enviar cotización {{ q.folio }}</h2>
+      <p class="hint">Se enviará el PDF adjunto y la cotización quedará como enviada.</p>
+      <dl>
+        <dt>De</dt>
+        <dd>{{ q.owner_name }} <span>&lt;{{ q.owner_email }}&gt;</span></dd>
+        <dt>Para</dt>
+        <dd>
+          @if (q.client_email) {
+            {{ q.client_contact || q.client_name }} <span>&lt;{{ q.client_email }}&gt;</span>
+          } @else {
+            <em class="missing">El cliente {{ q.client_name }} no tiene correo registrado.</em>
+          }
+        </dd>
+        <dt>Asunto</dt>
+        <dd>Cotización {{ q.folio }} - {{ q.tenant_name }}</dd>
+        <dt>Adjunto</dt>
+        <dd>{{ q.folio }}.pdf</dd>
+      </dl>
+      <label>
+        Mensaje (opcional)
+        <textarea
+          rows="4"
+          maxlength="2000"
+          placeholder="Agrega un mensaje para el cliente"
+          [value]="sendMessage()"
+          (input)="sendMessage.set($any($event.target).value)"
+        ></textarea>
+      </label>
+      @if (sendError()) {
+        <p class="error" role="alert">{{ sendError() }}</p>
+      }
+      <div class="dialog-actions">
+        <button class="secondary" type="button" [disabled]="sendBusy()" (click)="closeSend()">Cancelar</button>
+        <button
+          class="primary"
+          type="button"
+          [disabled]="sendBusy() || !q.client_email"
+          (click)="confirmSend()"
+        >
+          {{ sendBusy() ? 'Enviando…' : 'Enviar correo' }}
+        </button>
+      </div>
+    </section>
+  </div>
+}

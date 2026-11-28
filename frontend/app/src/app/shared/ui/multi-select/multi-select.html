@@ -1,43 +1,47 @@
-<button
-  type="button"
-  class="trigger"
-  aria-haspopup="listbox"
-  [attr.aria-label]="ariaLabel()"
-  [attr.aria-expanded]="open()"
-  [attr.aria-controls]="listId"
-  [title]="summaryTitle()"
-  (click)="toggleOpen()"
-  (keydown)="onTriggerKeydown($event)"
->
-  <span class="summary" [class.placeholder]="!selected().length">{{ summary() }}</span>
+<div class="control" [title]="summary()">
+  <input
+    #field
+    class="field"
+    type="text"
+    role="combobox"
+    autocomplete="off"
+    spellcheck="false"
+    aria-autocomplete="list"
+    [attr.aria-label]="ariaLabel()"
+    [attr.aria-expanded]="open()"
+    [attr.aria-controls]="listId"
+    [attr.aria-activedescendant]="open() && filtered().length ? optionId(active()) : null"
+    [placeholder]="fieldPlaceholder()"
+    [value]="text()"
+    (focus)="openList()"
+    (click)="openList()"
+    (input)="onInput($event)"
+    (keydown)="onKeydown($event)"
+  />
   @if (selected().length > 1) {
-    <span class="count">{{ selected().length }}</span>
+    <span class="count" aria-hidden="true">{{ selected().length }}</span>
   }
-  <svg viewBox="0 0 20 20" aria-hidden="true"><path d="m5 7.5 5 5 5-5" /></svg>
-</button>
+  <button
+    class="chevron"
+    type="button"
+    tabindex="-1"
+    aria-hidden="true"
+    (mousedown)="$event.preventDefault()"
+    (click)="toggleFromChevron()"
+  >
+    <svg viewBox="0 0 20 20"><path d="m5 7.5 5 5 5-5" /></svg>
+  </button>
+</div>
 
 @if (open()) {
-  <div class="panel" (keydown)="onListKeydown($event)">
-    @if (options().length >= searchFrom()) {
-      <input
-        class="search"
-        type="search"
-        placeholder="Buscar…"
-        aria-label="Buscar opciones"
-        [value]="query()"
-        (input)="onSearch($any($event.target).value)"
-      />
-    }
+  <div class="panel" (mousedown)="$event.preventDefault()">
     <div class="actions">
-      <button type="button" (click)="selectAllVisible()">Seleccionar todos</button>
-      <button type="button" [disabled]="!selected().length" (click)="clear()">Limpiar</button>
+      <button type="button" tabindex="-1" (click)="selectAllVisible()">
+        {{ query() ? 'Seleccionar coincidencias' : 'Seleccionar todos' }}
+      </button>
+      <button type="button" tabindex="-1" [disabled]="!selected().length" (click)="clear()">Limpiar</button>
     </div>
-    <ul
-      role="listbox"
-      aria-multiselectable="true"
-      [id]="listId"
-      [attr.aria-activedescendant]="filtered().length ? optionId(active()) : null"
-    >
+    <ul role="listbox" aria-multiselectable="true" [id]="listId">
       @for (option of filtered(); track option.value; let i = $index) {
         <li
           role="option"
@@ -45,7 +49,6 @@
           [class.active]="i === active()"
           [attr.aria-selected]="selectedSet().has(option.value)"
           (mouseenter)="active.set(i)"
-          (mousedown)="$event.preventDefault()"
           (click)="toggleOption(option.value)"
         >
           <span class="check" [class.on]="selectedSet().has(option.value)" aria-hidden="true">

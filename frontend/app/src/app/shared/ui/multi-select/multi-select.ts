@@ -7,22 +7,27 @@ import {
   input,
   output,
   signal,
+  viewChild,
 } from '@angular/core';
 
 import { ComboOption } from '../combobox/combobox';
 
 let nextId = 0;
 
-/** Quita acentos y mayúsculas para comparar al filtrar. */
+/** Quita acentos y mayúsculas para comparar al filtrar ("Méx" encuentra "mexico"). */
 function normalize(text: string): string {
   return text.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().trim();
 }
 
 /**
- * Selección múltiple con casillas. Sin selección significa "todos".
+ * Selección múltiple con casillas para filtros. Sin selección significa "todos".
  *
- * Teclado: Enter/Espacio/↓ abren; ↑/↓ recorren; Espacio o Enter marcan;
- * Esc cierra. Con muchas opciones muestra un buscador.
+ * Igual que app-combobox, se escribe directamente en el campo para filtrar
+ * las opciones. Cerrado, el campo muestra lo seleccionado.
+ *
+ * Teclado: escribir filtra; ↑/↓ recorren; Enter marca/desmarca la opción
+ * resaltada y limpia lo escrito; Esc cierra; Tab sale. Retroceso con el campo vacío quita la
+ * última opción marcada.
  */
 @Component({
   selector: 'app-multi-select',
@@ -32,6 +37,7 @@ function normalize(text: string): string {
 })
 export class MultiSelect {
   private readonly host = inject<ElementRef<HTMLElement>>(ElementRef);
+  private readonly field = viewChild.required<ElementRef<HTMLInputElement>>('field');
 
   readonly options = input<ComboOption[]>([]);
   /** Valores marcados. */
@@ -39,8 +45,6 @@ export class MultiSelect {
   /** Texto cuando no hay nada marcado (equivale a "todos"). */
   readonly placeholder = input('Todos');
   readonly ariaLabel = input<string | null>(null);
-  /** A partir de cuántas opciones se muestra el buscador. */
-  readonly searchFrom = input(7);
   readonly selectedChange = output<string[]>();
 
   protected readonly listId = `multi-select-${++nextId}`;
@@ -52,27 +56,41 @@ export class MultiSelect {
   protected readonly filtered = computed(() => {
     const term = normalize(this.query());
     return term
-      ? this.options().filter((option) => normalize(option.label).includes(term))
+      ? this.options().filter((option) => normalize(`${option.label} ${option.hint ?? ''}`).includes(term))
       : this.options();
   });
-  protected readonly summary = computed(() => {
-    const chosen = this.options().filter((option) => this.selectedSet().has(option.value));
-    if (chosen.length === 0) return this.placeholder();
-    // Con varias, se listan (el contador al lado indica cuántas son).
-    return chosen.map((option) => option.label).join(', ');
-  });
-  protected readonly summaryTitle = computed(() =>
+  /** Etiquetas de lo seleccionado, en el orden de las opciones. */
+  protected readonly summary = computed(() =>
     this.options()
       .filter((option) => this.selectedSet().has(option.value))
       .map((option) => option.label)
       .join(', '),
   );
+  /** Lo que muestra el campo: lo escrito mientras está abierto; si no, la selección. */
+  protected readonly text = computed(() => (this.open() ? this.query() : this.summary()));
+  protected readonly fieldPlaceholder = computed(() =>
+    this.open() ? this.summary() || 'Escribe para filtrar' : this.placeholder(),
+  );
 
-  protected toggleOpen(): void {
-    this.open.update((value) => !value);
+  protected openList(): void {
+    if (this.open()) return;
+    this.query.set('');
+    this.active.set(0);
+    this.open.set(true);
+  }
+
+  protected close(): void {
+    this.open.set(false);
+    this.query.set('');
+  }
+
+  /** Botón de la flecha: abre/cierra y deja el foco en el campo para escribir. */
+  protected toggleFromChevron(): void {
     if (this.open()) {
-      this.query.set('');
-      this.active.set(0);
+      this.close();
+    } else {
+      this.openList();
+      this.field().nativeElement.focus();
     }
   }
 
@@ -80,13 +98,12 @@ export class MultiSelect {
     const next = new Set(this.selected());
     if (next.has(value)) next.delete(value);
     else next.add(value);
-    // Se respeta el orden de las opciones.
-    this.selectedChange.emit(this.options().map((o) => o.value).filter((v) => next.has(v)));
+    this.emit(next);
   }
 
+  /** Marca todas las opciones visibles (las que coinciden con lo escrito). */
   protected selectAllVisible(): void {
-    const next = new Set([...this.selected(), ...this.filtered().map((option) => option.value)]);
-    this.selectedChange.emit(this.options().map((o) => o.value).filter((v) => next.has(v)));
+    this.emit(new Set([...this.selected(), ...this.filtered().map((option) => option.value)]));
   }
 
   protected clear(): void {
@@ -97,48 +114,80 @@ export class MultiSelect {
     return `${this.listId}-option-${index}`;
   }
 
-  protected onTriggerKeydown(event: KeyboardEvent): void {
-    if (['Enter', ' ', 'ArrowDown'].includes(event.key) && !this.open()) {
-      event.preventDefault();
-      this.toggleOpen();
-      return;
-    }
-    this.onListKeydown(event);
-  }
-
-  protected onListKeydown(event: KeyboardEvent): void {
-    if (!this.open()) return;
-    const count = this.filtered().length;
-    if (event.key === 'Escape') {
-      event.preventDefault();
-      this.open.set(false);
-    } else if (event.key === 'ArrowDown' && count) {
-      event.preventDefault();
-      this.active.update((i) => (i + 1) % count);
-    } else if (event.key === 'ArrowUp' && count) {
-      event.preventDefault();
-      this.active.update((i) => (i - 1 + count) % count);
-    } else if ((event.key === 'Enter' || (event.key === ' ' && event.target instanceof HTMLButtonElement)) && count) {
-      event.preventDefault();
-      this.toggleOption(this.filtered()[this.active()].value);
-    }
-  }
-
-  protected onSearch(value: string): void {
-    this.query.set(value);
+  protected onInput(event: Event): void {
+    this.query.set((event.target as HTMLInputElement).value);
     this.active.set(0);
+    this.open.set(true);
+  }
+
+  protected onKeydown(event: KeyboardEvent): void {
+    const count = this.filtered().length;
+    switch (event.key) {
+      case 'ArrowDown':
+        event.preventDefault();
+        if (!this.open()) this.openList();
+        else if (count) this.active.update((i) => (i + 1) % count);
+        break;
+      case 'ArrowUp':
+        event.preventDefault();
+        if (this.open() && count) this.active.update((i) => (i - 1 + count) % count);
+        break;
+      case 'Enter':
+        event.preventDefault();
+        if (!this.open()) this.openList();
+        else if (count) {
+          this.toggleOption(this.filtered()[Math.min(this.active(), count - 1)].value);
+          // Se limpia lo escrito para buscar la siguiente opción.
+          this.query.set('');
+          this.active.set(0);
+        }
+        break;
+      case 'Escape':
+        if (this.open()) {
+          event.preventDefault();
+          this.close();
+        }
+        break;
+      case 'Tab':
+        this.close();
+        break;
+      case 'Backspace': {
+        // Con el campo vacío, quita la última opción marcada.
+        const selected = this.selected();
+        if (this.open() && !this.query() && selected.length) {
+          event.preventDefault();
+          this.emit(new Set(selected.slice(0, -1)));
+        }
+        break;
+      }
+    }
+  }
+
+  private emit(values: Set<string>): void {
+    // Se respeta el orden de las opciones.
+    this.selectedChange.emit(this.options().map((o) => o.value).filter((v) => values.has(v)));
+  }
+
+  /**
+   * Muchos filtros envuelven el campo en un <label>; el navegador reenvía los
+   * clics dentro del label a su control. Cancelar la acción por defecto evita
+   * ese reenvío (el foco ya lo maneja el campo).
+   */
+  @HostListener('click', ['$event'])
+  protected onHostClick(event: MouseEvent): void {
+    event.preventDefault();
   }
 
   @HostListener('document:mousedown', ['$event'])
   protected onDocumentMousedown(event: MouseEvent): void {
     if (this.open() && !this.host.nativeElement.contains(event.target as Node)) {
-      this.open.set(false);
+      this.close();
     }
   }
 
   @HostListener('focusout', ['$event'])
   protected onFocusOut(event: FocusEvent): void {
     const next = event.relatedTarget as Node | null;
-    if (next && !this.host.nativeElement.contains(next)) this.open.set(false);
+    if (next && !this.host.nativeElement.contains(next)) this.close();
   }
 }

@@ -31,12 +31,12 @@
     </label>
     <label>
       <span>Estado</span>
-      <app-combobox
-        [options]="[{ value: 'all', label: 'Todos' }, { value: 'active', label: 'Activos' }, { value: 'inactive', label: 'Inactivos' }]"
-        [selectedValue]="statusFilter()"
+      <app-multi-select
+        [options]="[{ value: 'active', label: 'Activos' }, { value: 'inactive', label: 'Inactivos' }]"
+        [selected]="statusFilter()"
         ariaLabel="Estado"
-        placeholder="Estado"
-        (selected)="updateStatusFilter($event)"
+        placeholder="Todos los estados"
+        (selectedChange)="updateStatusFilter($event)"
       />
     </label>
   </div>

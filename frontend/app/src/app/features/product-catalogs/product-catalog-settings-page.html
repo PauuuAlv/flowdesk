@@ -11,12 +11,12 @@
     @if (kind !== 'units') { <label>Descripción<textarea formControlName="description" maxlength="300" [placeholder]="config.descriptionHint"></textarea></label> }
     <div class="actions"><button [disabled]="saving()">{{ saving() ? 'Guardando…' : 'Guardar' }}</button>@if (editing()) { <button class="secondary" type="button" (click)="cancel()">Cancelar</button> }</div>
   </form><section><div class="search" [class.with-filter]="kind === 'units'"><label>Buscar {{ title.toLowerCase() }}<input type="search" placeholder="Escribe un nombre" (input)="searchChanged($event)" /></label>
-    @if (kind === 'units') { <label>Tipo<app-combobox
-        [options]="[{ value: 'all', label: 'Todos' }, { value: 'product', label: 'Productos' }, { value: 'service', label: 'Servicios' }]"
-        [selectedValue]="typeFilter()"
+    @if (kind === 'units') { <label>Tipo<app-multi-select
+        [options]="[{ value: 'product', label: 'Productos' }, { value: 'service', label: 'Servicios' }]"
+        [selected]="typeFilter()"
         ariaLabel="Tipo"
-        placeholder="Tipo"
-        (selected)="typeFilterChanged($event)"
+        placeholder="Todos los tipos"
+        (selectedChange)="typeFilterChanged($event)"
       /></label> }</div>
     @if (loading()) { <div class="card state">Cargando…</div> } @else { <div class="list">
       @for (item of items(); track item.id) { <article class="card" [class.inactive]="!item.is_active"><div><h3>{{ item.name }}

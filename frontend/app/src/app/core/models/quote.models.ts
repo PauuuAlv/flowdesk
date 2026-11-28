@@ -23,6 +23,7 @@ export interface Quote {
   opportunity_name: string | null;
   owner_user_id: string;
   owner_name: string;
+  owner_email: string | null;
   issue_date: string;
   valid_until: string;
   currency: string;

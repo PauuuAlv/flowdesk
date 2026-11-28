@@ -1,10 +1,12 @@
-import { Injectable } from '@angular/core';
+import { inject, Injectable } from '@angular/core';
 import { Subject } from 'rxjs';
 
 import { PlatformAdminTokenResponse, TokenResponse, UserMeResponse } from '../models/auth.models';
+import { KnownAccountsService } from './known-accounts.service';
 
 @Injectable({ providedIn: 'root' })
 export class SessionService {
+  private readonly knownAccounts = inject(KnownAccountsService);
   private readonly userUpdates = new Subject<UserMeResponse | null>();
   readonly userUpdates$ = this.userUpdates.asObservable();
   private readonly accessTokenKey = 'flowdesk.access_token';
@@ -20,6 +22,8 @@ export class SessionService {
 
   saveUser(user: UserMeResponse): void {
     localStorage.setItem(this.userKey, JSON.stringify(user));
+    // Se recuerda en el selector de cuentas de este navegador.
+    this.knownAccounts.remember(user);
     this.userUpdates.next(user);
   }
 

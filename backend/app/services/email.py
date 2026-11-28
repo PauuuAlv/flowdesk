@@ -5,7 +5,9 @@ from email.message import EmailMessage
 from email.utils import formataddr
 from functools import lru_cache
 from html import escape
+from dataclasses import dataclass
 from typing import Protocol
+import base64
 from urllib.error import HTTPError, URLError
 from urllib.request import Request, urlopen
 
@@ -14,8 +16,35 @@ from app.core.config import settings
 logger = logging.getLogger("flowdesk.email")
 
 
+@dataclass(frozen=True)
+class EmailAttachment:
+    filename: str
+    content: bytes
+    mime_type: str = "application/pdf"
+
+
+@dataclass(frozen=True)
+class EmailAddress:
+    email: str
+    name: str | None = None
+
+    def formatted(self) -> str:
+        return formataddr((self.name or "", self.email))
+
+
 class EmailService(Protocol):
     """Contrato independiente del proveedor de correo transaccional."""
+
+    def send_quote(
+        self,
+        *,
+        sender: EmailAddress,
+        recipient: EmailAddress,
+        subject: str,
+        text: str,
+        html: str,
+        attachment: EmailAttachment,
+    ) -> None: ...
 
     def send_invitation(
         self,
@@ -37,6 +66,21 @@ class EmailService(Protocol):
 
 class DevelopmentEmailService:
     """No envía mensajes: deja los enlaces visibles únicamente en logs locales."""
+
+    def send_quote(
+        self,
+        *,
+        sender: EmailAddress,
+        recipient: EmailAddress,
+        subject: str,
+        text: str,
+        html: str,
+        attachment: EmailAttachment,
+    ) -> None:
+        logger.warning(
+            "[EMAIL DEVELOPMENT] quote from=%s to=%s subject=%s attachment=%s (%d bytes)",
+            sender.formatted(), recipient.formatted(), subject, attachment.filename, len(attachment.content),
+        )
 
     def send_invitation(
         self,
@@ -72,8 +116,35 @@ class DevelopmentEmailService:
 class TransactionalEmailService:
     """Construye los mensajes comunes y delega el transporte al proveedor."""
 
-    def _send(self, *, recipient: str, subject: str, text: str, html: str) -> None:
+    def _send(
+        self,
+        *,
+        recipient: str,
+        subject: str,
+        text: str,
+        html: str,
+        sender: EmailAddress | None = None,
+        reply_to: EmailAddress | None = None,
+        attachments: tuple[EmailAttachment, ...] = (),
+    ) -> None:
         raise NotImplementedError
+
+    def send_quote(
+        self,
+        *,
+        sender: EmailAddress,
+        recipient: EmailAddress,
+        subject: str,
+        text: str,
+        html: str,
+        attachment: EmailAttachment,
+    ) -> None:
+        # Las respuestas del cliente llegan siempre al responsable (Reply-To),
+        # aunque el proveedor no permita usar su dirección como remitente.
+        self._send(
+            recipient=recipient.formatted(), subject=subject, text=text, html=html,
+            sender=sender, reply_to=sender, attachments=(attachment,),
+        )
 
     def send_invitation(
         self,
@@ -140,15 +211,35 @@ class SmtpEmailService(TransactionalEmailService):
                 "SMTP_USERNAME and SMTP_PASSWORD are required when EMAIL_PROVIDER=smtp."
             )
 
-    def _send(self, *, recipient: str, subject: str, text: str, html: str) -> None:
+    def _send(
+        self,
+        *,
+        recipient: str,
+        subject: str,
+        text: str,
+        html: str,
+        sender: EmailAddress | None = None,
+        reply_to: EmailAddress | None = None,
+        attachments: tuple[EmailAttachment, ...] = (),
+    ) -> None:
         message = EmailMessage()
         message["Subject"] = subject
-        message["From"] = formataddr(
+        message["From"] = sender.formatted() if sender else formataddr(
             (settings.EMAIL_FROM_NAME, settings.EMAIL_FROM_ADDRESS)
         )
+        if reply_to:
+            message["Reply-To"] = reply_to.formatted()
         message["To"] = recipient
         message.set_content(text)
         message.add_alternative(html, subtype="html")
+        for attachment in attachments:
+            maintype, subtype = attachment.mime_type.split("/", 1)
+            message.add_attachment(
+                attachment.content, maintype=maintype, subtype=subtype, filename=attachment.filename,
+            )
+        # Sobre (MAIL FROM) con la cuenta autenticada: así el servidor SMTP no
+        # rechaza el envío aunque el encabezado From sea el del responsable.
+        envelope_from = settings.SMTP_USERNAME or settings.EMAIL_FROM_ADDRESS
 
         with smtplib.SMTP(
             settings.SMTP_HOST,
@@ -160,7 +251,7 @@ class SmtpEmailService(TransactionalEmailService):
                 smtp.starttls()
                 smtp.ehlo()
             smtp.login(settings.SMTP_USERNAME, settings.SMTP_PASSWORD)
-            smtp.send_message(message)
+            smtp.send_message(message, from_addr=envelope_from)
 
 
 class ResendEmailService(TransactionalEmailService):
@@ -172,18 +263,35 @@ class ResendEmailService(TransactionalEmailService):
                 "RESEND_API_KEY is required when EMAIL_PROVIDER=resend."
             )
 
-    def _send(self, *, recipient: str, subject: str, text: str, html: str) -> None:
-        payload = json.dumps(
-            {
-                "from": formataddr(
-                    (settings.EMAIL_FROM_NAME, settings.EMAIL_FROM_ADDRESS)
-                ),
-                "to": [recipient],
-                "subject": subject,
-                "text": text,
-                "html": html,
-            }
-        ).encode("utf-8")
+    def _send(
+        self,
+        *,
+        recipient: str,
+        subject: str,
+        text: str,
+        html: str,
+        sender: EmailAddress | None = None,
+        reply_to: EmailAddress | None = None,
+        attachments: tuple[EmailAttachment, ...] = (),
+    ) -> None:
+        # Resend solo acepta remitentes de dominios verificados: se usa la
+        # dirección configurada con el nombre del responsable, y Reply-To a él.
+        from_name = sender.name if sender and sender.name else settings.EMAIL_FROM_NAME
+        body = {
+            "from": formataddr((from_name, settings.EMAIL_FROM_ADDRESS)),
+            "to": [recipient],
+            "subject": subject,
+            "text": text,
+            "html": html,
+        }
+        if reply_to:
+            body["reply_to"] = reply_to.formatted()
+        if attachments:
+            body["attachments"] = [
+                {"filename": a.filename, "content": base64.b64encode(a.content).decode("ascii")}
+                for a in attachments
+            ]
+        payload = json.dumps(body).encode("utf-8")
         request = Request(
             settings.RESEND_API_URL,
             data=payload,

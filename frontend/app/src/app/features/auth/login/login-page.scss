@@ -1,1 +1,27 @@
 @use '../auth-layout';
+
+// --- Selector de cuentas de este navegador ---
+.account-list { display: grid; margin: 0; padding: 0; list-style: none; border-top: 1px solid #e3e8ec; }
+.account-list li { border-bottom: 1px solid #e3e8ec; }
+button.account,
+button.account-chip { display: flex; align-items: center; gap: .8rem; width: 100%; padding: .75rem .5rem; color: #17324a; background: transparent; border: 0; border-radius: .5rem; font-weight: 400; text-align: left; box-shadow: none; }
+button.account:hover:not(:disabled) { background: #f1f6f9; transform: none; }
+button.account.removing:hover:not(:disabled) { background: #fdeceb; }
+.avatar { display: grid; flex: none; place-items: center; width: 2.4rem; height: 2.4rem; color: #fff; background: #8796a3; border-radius: 50%; font-size: .85rem; font-weight: 800; }
+.account.other .avatar { color: #275d78; background: #e8f1f6; font-size: 1.2rem; }
+.account-text { display: grid; flex: 1; min-width: 0; gap: .1rem; }
+.account-text strong { overflow: hidden; font-size: .92rem; text-overflow: ellipsis; white-space: nowrap; }
+.account-text small { overflow: hidden; color: #5d7182; font-size: .78rem; text-overflow: ellipsis; white-space: nowrap; }
+.account-text .account-company { color: #8a5b00; font-weight: 700; }
+.account-remove { display: grid; place-items: center; width: 1.6rem; height: 1.6rem; color: #fff; background: #b54035; border-radius: 50%; font-weight: 800; }
+button.account-chip { justify-self: start; width: auto; max-width: 100%; padding: .3rem .8rem .3rem .3rem; border: 1px solid #d5dee5; border-radius: 999px; }
+button.account-chip:hover:not(:disabled) { background: #f1f6f9; transform: none; }
+.account-chip .avatar { width: 1.9rem; height: 1.9rem; font-size: .72rem; }
+.chip-caret { color: #5d7182; font-size: .8rem; }
+button.link-button { justify-self: start; width: auto; padding: .3rem 0; color: #275d78; background: none; border: 0; font-size: .85rem; font-weight: 700; box-shadow: none; }
+button.link-button:hover:not(:disabled) { background: none; text-decoration: underline; transform: none; }
+.sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
+.form-options:has(.link-button) { justify-content: space-between; align-items: center; }
+button.link-button { margin-top: 0; }
+button.account-chip { display: inline-flex; margin: -0.75rem 0 1.25rem; }
+.account-list + .link-button { margin-top: .75rem; }

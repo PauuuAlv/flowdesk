@@ -1,5 +1,7 @@
 import io
+import logging
 import uuid
+from html import escape
 from datetime import date
 from pathlib import Path
 from fastapi import APIRouter,Depends,HTTPException,status
@@ -22,10 +24,14 @@ from app.models.product import Product
 from app.models.quote import Quote,QuoteItem
 from app.models.tenant import Tenant
 from app.models.user import User
-from app.schemas.quote import QuoteItemResponse,QuoteResponse,SaveQuoteRequest,UpdateQuoteStatusRequest,calculate_totals
+from app.schemas.quote import QuoteItemResponse,QuoteResponse,SaveQuoteRequest,SendQuoteEmailRequest,UpdateQuoteStatusRequest,calculate_totals
 from app.security.permissions import require_permission
+from app.core.audit import record_event
+from app.services.audit_report import resolve_timezone
+from app.services.email import EmailAddress,EmailAttachment,EmailService,get_email_service
 
 router=APIRouter()
+logger=logging.getLogger("flowdesk.quotes")
 
 
 def _get(quote_id:uuid.UUID,tenant_id,db:Session):
@@ -49,7 +55,7 @@ def _relations(payload:SaveQuoteRequest,tenant_id,db:Session):
 def _effective_status(item:Quote):return "expired" if item.status=="sent" and item.valid_until<date.today() else item.status
 def _serialize(item:Quote,tenant:Tenant|None):
     tenant_name=tenant.name if tenant else "Empresa";prefix=item.prefix or "COT"
-    return QuoteResponse(id=str(item.id),folio=f"{prefix}-{item.issue_date.year}-{item.sequence:04d}",tenant_name=tenant_name,client_id=str(item.client_id),client_name=item.client.company_name,client_contact=item.client.contact_name,client_email=item.client.email,opportunity_id=str(item.opportunity_id) if item.opportunity_id else None,opportunity_name=item.opportunity.name if item.opportunity else None,owner_user_id=str(item.owner_user_id),owner_name=item.owner.full_name or item.owner.email,issue_date=item.issue_date,valid_until=item.valid_until,currency=item.currency,discount=item.discount,tax_rate=item.tax_rate,subtotal=item.subtotal,tax=item.tax,total=item.total,status=_effective_status(item),notes=item.notes,items=[QuoteItemResponse(id=str(x.id),product_id=str(x.product_id) if x.product_id else None,position=x.position,description=x.description,quantity=x.quantity,unit_price=x.unit_price,gross_amount=x.gross_amount,discount_percent=x.discount_percent,discount_amount=x.discount_amount,amount=x.amount) for x in item.items],created_at=item.created_at,updated_at=item.updated_at)
+    return QuoteResponse(id=str(item.id),folio=f"{prefix}-{item.issue_date.year}-{item.sequence:04d}",tenant_name=tenant_name,client_id=str(item.client_id),client_name=item.client.company_name,client_contact=item.client.contact_name,client_email=item.client.email,opportunity_id=str(item.opportunity_id) if item.opportunity_id else None,opportunity_name=item.opportunity.name if item.opportunity else None,owner_user_id=str(item.owner_user_id),owner_name=item.owner.full_name or item.owner.email,owner_email=item.owner.email,issue_date=item.issue_date,valid_until=item.valid_until,currency=item.currency,discount=item.discount,tax_rate=item.tax_rate,subtotal=item.subtotal,tax=item.tax,total=item.total,status=_effective_status(item),notes=item.notes,items=[QuoteItemResponse(id=str(x.id),product_id=str(x.product_id) if x.product_id else None,position=x.position,description=x.description,quantity=x.quantity,unit_price=x.unit_price,gross_amount=x.gross_amount,discount_percent=x.discount_percent,discount_amount=x.discount_amount,amount=x.amount) for x in item.items],created_at=item.created_at,updated_at=item.updated_at)
 
 def _quote_items(payload:SaveQuoteRequest,tenant_id,db:Session,currency:str):
     items=[]
@@ -84,9 +90,23 @@ def create_quote(payload:SaveQuoteRequest,db:Session=Depends(get_db),user:User=D
 @router.get("/{quote_id}",response_model=QuoteResponse)
 def get_quote(quote_id:uuid.UUID,db:Session=Depends(get_db),user:User=Depends(require_permission("quotes.view"))):return _serialize(_get(quote_id,user.tenant_id,db),_tenant(user.tenant_id,db))
 
-@router.get("/{quote_id}/pdf")
-def quote_pdf(quote_id:uuid.UUID,db:Session=Depends(get_db),user:User=Depends(require_permission("quotes.view"))):
-    tenant=_tenant(user.tenant_id,db);data=_serialize(_get(quote_id,user.tenant_id,db),tenant)
+# Zona horaria por defecto para la hora de emisión (si el navegador no envía la suya).
+DEFAULT_TIMEZONE="America/Mexico_City"
+
+
+def _zone(tz:str|None):
+    return resolve_timezone(tz or DEFAULT_TIMEZONE)
+
+
+def _render_pdf(data:QuoteResponse,tenant:Tenant|None,*,show_status:bool=True,tz=None)->io.BytesIO:
+    """PDF de la cotización con la identidad de la EMPRESA que cotiza (logo,
+    nombre y datos de contacto), no la de Flowdesk.
+
+    - show_status: el recuadro de estado (Borrador, Enviada…) es información
+      interna; se muestra en la descarga del sistema pero no en el PDF que
+      se envía al cliente.
+    - tz: zona horaria para la hora de emisión."""
+    issued_at=f"{data.issue_date.strftime('%d/%m/%Y')} {data.created_at.astimezone(tz or _zone(None)).strftime('%H:%M')} h"
     buffer=io.BytesIO()
     navy=colors.HexColor("#123040")
     blue=colors.HexColor("#275d78")
@@ -112,16 +132,26 @@ def quote_pdf(quote_id:uuid.UUID,db:Session=Depends(get_db),user:User=Depends(re
         canvas.setFillColor(navy)
         canvas.rect(0,height-2.15*cm,width,2.15*cm,fill=1,stroke=0)
         logo_path=Path(settings.MEDIA_ROOT)/"logos"/f"{tenant.id}.webp" if tenant else None
+        name_x=1.5*cm
         if logo_path and logo_path.exists():
             logo=ImageReader(str(logo_path));source_width,source_height=logo.getSize();max_width,max_height=3.8*cm,1.35*cm
             scale=min(max_width/source_width,max_height/source_height);logo_width,logo_height=source_width*scale,source_height*scale
             canvas.setFillColor(white);canvas.roundRect(1.5*cm,height-1.75*cm,max_width,1.35*cm,.12*cm,fill=1,stroke=0)
             canvas.drawImage(logo,1.5*cm+(max_width-logo_width)/2,height-1.75*cm+(1.35*cm-logo_height)/2,width=logo_width,height=logo_height,mask="auto")
-        else:
-            canvas.setFillColor(white);canvas.setFont("Helvetica-Bold",17);canvas.drawString(1.5*cm,height-1.25*cm,"FLOWDESK")
-        canvas.setFillColor(colors.HexColor("#a9c9d8"))
-        canvas.setFont("Helvetica",8)
-        canvas.drawRightString(width-1.5*cm,height-1.2*cm,"CRM SaaS multiempresa")
+            name_x=1.5*cm+max_width+.45*cm
+        # Nombre de la empresa (y razón social / RFC debajo, si existen).
+        company_name=(tenant.name if tenant else data.tenant_name) or "Empresa"
+        legal=" · ".join(x for x in [(tenant.legal_name if tenant else None),(f"RFC {tenant.tax_id}" if tenant and tenant.tax_id else None)] if x)
+        canvas.setFillColor(white);canvas.setFont("Helvetica-Bold",15 if legal else 16)
+        canvas.drawString(name_x,height-(1.05 if legal else 1.25)*cm,company_name[:48])
+        if legal:
+            canvas.setFillColor(colors.HexColor("#a9c9d8"));canvas.setFont("Helvetica",7.5)
+            canvas.drawString(name_x,height-1.5*cm,legal[:80])
+        # Datos de contacto de la empresa a la derecha.
+        contact=[x for x in [(tenant.contact_email if tenant else None),(tenant.contact_phone if tenant else None),(tenant.website if tenant else None)] if x]
+        canvas.setFillColor(colors.HexColor("#a9c9d8"));canvas.setFont("Helvetica",7.5)
+        for index,value in enumerate(contact[:3]):
+            canvas.drawRightString(width-1.5*cm,height-(0.8+index*0.38)*cm,value[:60])
         canvas.setStrokeColor(line)
         canvas.line(1.5*cm,1.25*cm,width-1.5*cm,1.25*cm)
         canvas.setFillColor(muted)
@@ -130,15 +160,19 @@ def quote_pdf(quote_id:uuid.UUID,db:Session=Depends(get_db),user:User=Depends(re
         canvas.restoreState()
 
     status_labels={"draft":"BORRADOR","sent":"ENVIADA","accepted":"ACEPTADA","rejected":"RECHAZADA","expired":"VENCIDA"}
+    heading_title=Paragraph(f"Cotización <font color='#275d78'>{data.folio}</font>",title)
     heading=Table([
-        [Paragraph(f"Cotización <font color='#275d78'>{data.folio}</font>",title),Paragraph(f"<b>{status_labels.get(data.status,data.status.upper())}</b>",right)],
+        [heading_title,Paragraph(f"<b>{status_labels.get(data.status,data.status.upper())}</b>",right)],
         [Paragraph(data.tenant_name,body),""]
     ],colWidths=[12.5*cm,5.0*cm])
     heading.setStyle(TableStyle([("VALIGN",(0,0),(-1,-1),"TOP"),("BACKGROUND",(1,0),(1,0),soft),("BOX",(1,0),(1,0),.5,line),("LEFTPADDING",(1,0),(1,0),10),("RIGHTPADDING",(1,0),(1,0),10),("TOPPADDING",(1,0),(1,0),7),("BOTTOMPADDING",(1,0),(1,0),7)]))
+    if not show_status:
+        heading=Table([[heading_title],[Paragraph(data.tenant_name,body)]],colWidths=[17.5*cm])
+        heading.setStyle(TableStyle([("VALIGN",(0,0),(-1,-1),"TOP")]))
 
     client_card=Table([
         [Paragraph("PREPARADA PARA",label),Paragraph("VIGENCIA Y RESPONSABLE",label)],
-        [Paragraph(f"<b>{data.client_name}</b><br/>{data.client_contact or 'Sin contacto registrado'}<br/><font color='#5f6b76'>{data.client_email or 'Sin correo registrado'}</font>",body),Paragraph(f"Emisión: <b>{data.issue_date.strftime('%d/%m/%Y')}</b><br/>Válida hasta: <b>{data.valid_until.strftime('%d/%m/%Y')}</b><br/>Responsable: <b>{data.owner_name}</b>",body)]
+        [Paragraph(f"<b>{data.client_name}</b><br/>{data.client_contact or 'Sin contacto registrado'}<br/><font color='#5f6b76'>{data.client_email or 'Sin correo registrado'}</font>",body),Paragraph(f"Emisión: <b>{issued_at}</b><br/>Válida hasta: <b>{data.valid_until.strftime('%d/%m/%Y')}</b><br/>Responsable: <b>{data.owner_name}</b>",body)]
     ],colWidths=[9.0*cm,8.5*cm])
     client_card.setStyle(TableStyle([("BACKGROUND",(0,0),(-1,-1),soft),("BOX",(0,0),(-1,-1),.6,line),("LINEBEFORE",(1,0),(1,-1),.6,line),("VALIGN",(0,0),(-1,-1),"TOP"),("LEFTPADDING",(0,0),(-1,-1),12),("RIGHTPADDING",(0,0),(-1,-1),12),("TOPPADDING",(0,0),(-1,0),10),("BOTTOMPADDING",(0,0),(-1,0),2),("TOPPADDING",(0,1),(-1,1),2),("BOTTOMPADDING",(0,1),(-1,1),11)]))
 
@@ -168,7 +202,14 @@ def quote_pdf(quote_id:uuid.UUID,db:Session=Depends(get_db),user:User=Depends(re
         story.extend([Spacer(1,16),notes])
     doc.build(story,onFirstPage=decorate_page,onLaterPages=decorate_page)
     buffer.seek(0)
-    return StreamingResponse(buffer,media_type="application/pdf",headers={"Content-Disposition":f'attachment; filename="{data.folio}.pdf"'})
+    return buffer
+
+
+@router.get("/{quote_id}/pdf")
+def quote_pdf(quote_id:uuid.UUID,tz:str|None=None,db:Session=Depends(get_db),user:User=Depends(require_permission("quotes.view"))):
+    """Descarga desde el sistema: incluye el recuadro de estado."""
+    tenant=_tenant(user.tenant_id,db);data=_serialize(_get(quote_id,user.tenant_id,db),tenant)
+    return StreamingResponse(_render_pdf(data,tenant,tz=_zone(tz)),media_type="application/pdf",headers={"Content-Disposition":f'attachment; filename="{data.folio}.pdf"'})
 
 
 @router.patch("/{quote_id}",response_model=QuoteResponse)
@@ -186,3 +227,62 @@ def update_status(quote_id:uuid.UUID,payload:UpdateQuoteStatusRequest,db:Session
     item=_get(quote_id,user.tenant_id,db);allowed={"draft":{"sent"},"sent":{"accepted","rejected"}}
     if payload.status not in allowed.get(item.status,set()):raise HTTPException(409,"Invalid quote status transition")
     item.status=payload.status;db.commit();db.refresh(item);return _serialize(item,_tenant(user.tenant_id,db))
+
+
+def _money(value,currency:str)->str:
+    return f"${value:,.2f} {currency}"
+
+
+@router.post("/{quote_id}/send",response_model=QuoteResponse)
+def send_quote_email(
+    quote_id:uuid.UUID,
+    payload:SendQuoteEmailRequest,
+    db:Session=Depends(get_db),
+    user:User=Depends(require_permission("quotes.status")),
+    email_service:EmailService=Depends(get_email_service),
+):
+    """Envía la cotización (PDF adjunto) al cliente por correo.
+
+    - Remitente: el responsable de la cotización (nombre y correo); las
+      respuestas del cliente le llegan a él (Reply-To).
+    - Destinatario: el contacto y correo del cliente.
+    - Un borrador pasa a "enviada" solo si el correo se envió bien.
+    """
+    item=_get(quote_id,user.tenant_id,db)
+    if item.status not in ("draft","sent"):raise HTTPException(409,"Only draft or sent quotes can be emailed")
+    tenant=_tenant(user.tenant_id,db);data=_serialize(item,tenant)
+    if not data.client_email:raise HTTPException(422,"Client has no email")
+    owner=item.owner
+    sender=EmailAddress(email=owner.email,name=owner.full_name or None)
+    recipient=EmailAddress(email=data.client_email,name=data.client_contact or data.client_name)
+    company=data.tenant_name
+    greeting=f"Hola {data.client_contact}," if data.client_contact else "Hola,"
+    summary=(f"Te compartimos la cotización {data.folio} de {company} por un total de "
+             f"{_money(data.total,data.currency)}, vigente hasta el {data.valid_until.strftime('%d/%m/%Y')}.")
+    message=(payload.message or "").strip()
+    signature=[owner.full_name or owner.email,company,owner.email]
+    text="\n\n".join(x for x in [greeting,summary,message,"Encontrarás el detalle en el PDF adjunto.","Saludos,\n"+"\n".join(signature)] if x)
+    html=(f"<p>{escape(greeting)}</p><p>{escape(summary)}</p>"
+          +(f"<p>{escape(message).replace(chr(10),'<br/>')}</p>" if message else "")
+          +"<p>Encontrarás el detalle en el PDF adjunto.</p>"
+          +"<p>Saludos,<br/>"+"<br/>".join(escape(x) for x in signature)+"</p>")
+    # Al cliente se le envía sin el recuadro de estado (es información interna).
+    pdf=_render_pdf(data,tenant,show_status=False,tz=_zone(payload.tz)).getvalue()
+    try:
+        email_service.send_quote(
+            sender=sender,recipient=recipient,subject=f"Cotización {data.folio} - {company}",
+            text=text,html=html,attachment=EmailAttachment(filename=f"{data.folio}.pdf",content=pdf),
+        )
+    except Exception as exc:
+        logger.exception("Quote email delivery failed quote=%s",item.id)
+        raise HTTPException(502,"Email delivery failed") from exc
+
+    was_draft=item.status=="draft"
+    if was_draft:item.status="sent"
+    record_event(
+        db,"quote.email_sent",f"Envió por correo la cotización {data.folio} a {data.client_email}",
+        tenant_id=user.tenant_id,entity="quotes",entity_id=item.id,
+        details={"folio":data.folio,"from":sender.formatted(),"to":recipient.formatted(),"marked_sent":was_draft},
+    )
+    db.commit();db.refresh(item)
+    return _serialize(item,tenant)

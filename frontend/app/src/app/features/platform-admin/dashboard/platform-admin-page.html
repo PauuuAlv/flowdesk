@@ -27,12 +27,12 @@
             placeholder="Nombre, identificador o plan"
             (input)="setSearch($event)" /></label
         ><label
-          >Estado<app-combobox
-        [options]="[{ value: 'all', label: 'Todos' }, { value: 'trial', label: 'En prueba' }, { value: 'active', label: 'Activos' }, { value: 'suspended', label: 'Suspendidos' }, { value: 'cancelled', label: 'Cancelados' }]"
-        [selectedValue]="statusFilter()"
+          >Estado<app-multi-select
+        [options]="[{ value: 'trial', label: 'En prueba' }, { value: 'active', label: 'Activos' }, { value: 'suspended', label: 'Suspendidos' }, { value: 'cancelled', label: 'Cancelados' }]"
+        [selected]="statusFilter()"
         ariaLabel="Estado"
-        placeholder="Estado"
-        (selected)="setStatusFilter($event)"
+        placeholder="Todos los estados"
+        (selectedChange)="setStatusFilter($event)"
       /></label
         >
       </div>

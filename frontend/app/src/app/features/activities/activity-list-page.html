@@ -27,26 +27,26 @@
         [value]="search()"
         (input)="setSearch($event)" /></label
     ><label
-      >Tipo<app-combobox [options]="typeOptions" [selectedValue]="type()" ariaLabel="Tipo" placeholder="Tipo" (selected)="setType($event)"
+      >Tipo<app-multi-select [options]="typeOptions" [selected]="type()" ariaLabel="Tipo" placeholder="Todos los tipos" (selectedChange)="setType($event)"
     /></label
     ><label
-      >Estado<app-combobox [options]="statusOptions" [selectedValue]="status()" ariaLabel="Estado" placeholder="Estado" (selected)="setStatus($event)"
+      >Estado<app-multi-select [options]="statusOptions" [selected]="status()" ariaLabel="Estado" placeholder="Todos los estados" (selectedChange)="setStatus($event)"
     /></label
     ><label
-      >Cliente<app-combobox
+      >Cliente<app-multi-select
         [options]="clientOptions()"
-        [selectedValue]="client()"
+        [selected]="client()"
         ariaLabel="Cliente"
-        placeholder="Escribe para buscar"
-        (selected)="client.set($event)"
+        placeholder="Todos los clientes"
+        (selectedChange)="client.set($event)"
     /></label
     ><label
-      >Responsable<app-combobox
+      >Responsable<app-multi-select
         [options]="ownerOptions()"
-        [selectedValue]="owner()"
+        [selected]="owner()"
         ariaLabel="Responsable"
-        placeholder="Escribe para buscar"
-        (selected)="owner.set($event)"
+        placeholder="Todos los responsables"
+        (selectedChange)="owner.set($event)"
     /></label
     ><label>Desde<input type="date" [value]="dateFrom()" (change)="setDate('from', $event)" /></label
     ><label>Hasta<input type="date" [value]="dateTo()" [min]="dateFrom()" (change)="setDate('to', $event)" /></label>

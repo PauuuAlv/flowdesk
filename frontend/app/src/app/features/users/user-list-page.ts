@@ -7,10 +7,11 @@ import { AccessControlService } from '../../core/services/access-control.service
 import { PERMISSIONS } from '../../core/models/permission.models';
 import { SessionService } from '../../core/services/session.service';
 import { Combobox, ComboOption } from '../../shared/ui/combobox/combobox';
+import { MultiSelect } from '../../shared/ui/multi-select/multi-select';
 
 @Component({
   selector: 'app-user-list-page',
-  imports: [RouterLink, Combobox],
+  imports: [RouterLink, Combobox, MultiSelect],
   templateUrl: './user-list-page.html',
   styleUrls: ['./user-list-page.scss', './user-list-page.states.scss'],
 })
@@ -21,10 +22,9 @@ export class UserListPage {
 
   protected readonly users = signal<TenantMember[]>([]);
   protected readonly roles = signal<TenantRole[]>([]);
-  protected readonly roleFilterOptions = computed<ComboOption[]>(() => [
-    { value: 'all', label: 'Todos los roles' },
-    ...this.roles().map((role) => ({ value: role.id, label: role.name })),
-  ]);
+  protected readonly roleFilterOptions = computed<ComboOption[]>(() =>
+    this.roles().map((role) => ({ value: role.id, label: role.name })),
+  );
   protected readonly roleOptions = computed<ComboOption[]>(() =>
     this.roles().map((role) => ({ value: role.id, label: role.name })),
   );
@@ -32,8 +32,9 @@ export class UserListPage {
   protected readonly errorMessage = signal('');
   protected readonly successMessage = signal('');
   protected readonly search = signal('');
-  protected readonly statusFilter = signal<MemberStatus | 'all'>('all');
-  protected readonly roleFilter = signal('all');
+  // Cada filtro admite varios valores; vacío = todos.
+  protected readonly statusFilter = signal<MemberStatus[]>([]);
+  protected readonly roleFilter = signal<string[]>([]);
   protected readonly userToDeactivate = signal<TenantMember | null>(null);
   protected readonly processing = signal(false);
 
@@ -45,8 +46,8 @@ export class UserListPage {
     const term = this.search().trim().toLowerCase();
     return this.users().filter((user) => {
       const matchesTerm = !term || `${user.full_name} ${user.email}`.toLowerCase().includes(term);
-      const matchesStatus = this.statusFilter() === 'all' || user.status === this.statusFilter();
-      const matchesRole = this.roleFilter() === 'all' || user.role_id === this.roleFilter();
+      const matchesStatus = !this.statusFilter().length || this.statusFilter().includes(user.status);
+      const matchesRole = !this.roleFilter().length || this.roleFilter().includes(user.role_id);
       return matchesTerm && matchesStatus && matchesRole;
     });
   });
@@ -78,12 +79,12 @@ export class UserListPage {
     this.search.set((event.target as HTMLInputElement).value);
   }
 
-  protected updateStatus(value: string): void {
-    this.statusFilter.set(value as MemberStatus | 'all');
+  protected updateStatus(values: string[]): void {
+    this.statusFilter.set(values as MemberStatus[]);
   }
 
-  protected updateRoleFilter(value: string): void {
-    this.roleFilter.set(value);
+  protected updateRoleFilter(values: string[]): void {
+    this.roleFilter.set(values);
   }
 
   protected changeRole(user: TenantMember, roleId: string, combo: Combobox): void {

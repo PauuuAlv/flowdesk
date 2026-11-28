@@ -4,3 +4,12 @@
 .push-settings small { flex-basis: 100%; color: #a5481f; }
 .push-settings .push-actions { display: flex; gap: .4rem; }
 .push-settings small { color: var(--flowdesk-muted); }
+
+.push-prompt { position: fixed; right: 1.25rem; bottom: 1.25rem; z-index: 60; display: grid; grid-template-columns: auto 1fr; gap: .6rem .8rem; width: min(24rem, calc(100vw - 2rem)); padding: 1rem; color: var(--flowdesk-ink); background: #fff; border: 1px solid var(--flowdesk-border); border-radius: .75rem; box-shadow: 0 12px 32px rgb(15 35 50 / .18); }
+.push-prompt-icon { width: 2.2rem; height: 2.2rem; background: #275d78; border-radius: 50%; mask: radial-gradient(circle at 50% 42%, #000 38%, transparent 39%), linear-gradient(#000 0 0) 50% 78% / 30% 12% no-repeat; }
+.push-prompt strong { color: var(--flowdesk-navy); font-size: .9rem; }
+.push-prompt p { margin: .25rem 0 0; color: var(--flowdesk-muted); font-size: .78rem; line-height: 1.4; }
+.push-prompt-actions { grid-column: 1 / -1; display: flex; justify-content: flex-end; gap: .5rem; }
+.push-prompt-actions button { padding: .45rem .9rem; color: #fff; background: #275d78; border: 1px solid #275d78; border-radius: .45rem; font-size: .78rem; font-weight: 750; cursor: pointer; }
+.push-prompt-actions button.secondary { color: #275d78; background: #fff; border-color: var(--flowdesk-border); }
+.push-prompt-actions button:disabled { opacity: .6; cursor: wait; }

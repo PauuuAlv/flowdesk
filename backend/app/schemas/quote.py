@@ -47,7 +47,7 @@ class QuoteItemResponse(BaseModel):
 
 
 class QuoteResponse(BaseModel):
-    id:str;folio:str;tenant_name:str;client_id:str;client_name:str;client_contact:str;client_email:str;opportunity_id:str|None;opportunity_name:str|None;owner_user_id:str;owner_name:str
+    id:str;folio:str;tenant_name:str;client_id:str;client_name:str;client_contact:str;client_email:str;opportunity_id:str|None;opportunity_name:str|None;owner_user_id:str;owner_name:str;owner_email:str|None=None
     issue_date:date;valid_until:date;currency:str;discount:Decimal;tax_rate:Decimal;subtotal:Decimal;tax:Decimal;total:Decimal;status:QuoteStatus;notes:str|None;items:list[QuoteItemResponse];created_at:datetime;updated_at:datetime
 
 
@@ -56,3 +56,10 @@ def calculate_totals(payload:SaveQuoteRequest):
     subtotal=sum((x.quantity*x.unit_price for x in payload.items),Decimal("0")).quantize(money,ROUND_HALF_UP)
     discount=sum(((x.quantity*x.unit_price)*x.discount_percent/Decimal("100") for x in payload.items),Decimal("0")).quantize(money,ROUND_HALF_UP)
     return subtotal,discount,(subtotal-discount).quantize(money,ROUND_HALF_UP)
+
+
+class SendQuoteEmailRequest(BaseModel):
+    """Mensaje opcional que el responsable agrega al correo de la cotización."""
+    message:str|None=Field(default=None,max_length=2000)
+    # Zona horaria IANA del navegador, para la hora de emisión del PDF.
+    tz:str|None=Field(default=None,max_length=64)

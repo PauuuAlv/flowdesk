@@ -7,6 +7,7 @@ import { Observable } from 'rxjs';
 import { Brand, MeasurementUnit, ProductCategory, ProductType } from '../../core/models/product.models';
 import { ProductService } from '../../core/services/product.service';
 import { Combobox, ComboOption } from '../../shared/ui/combobox/combobox';
+import { MultiSelect } from '../../shared/ui/multi-select/multi-select';
 import { DataTransfer } from '../../shared/ui/data-transfer/data-transfer';
 
 export const UNIT_TYPE_LABELS: Record<ProductType, string> = { product: 'Producto', service: 'Servicio' };
@@ -39,7 +40,7 @@ const CATALOGS: Record<CatalogKind, { title: string; help: string; singular: str
 
 @Component({
   selector: 'app-product-catalog-settings-page',
-  imports: [ReactiveFormsModule, Combobox, DataTransfer],
+  imports: [ReactiveFormsModule, Combobox, DataTransfer, MultiSelect],
   templateUrl: './product-catalog-settings-page.html',
   styleUrl: './product-catalog-settings-page.scss',
 })
@@ -61,11 +62,11 @@ export class ProductCatalogSettingsPage {
   protected readonly error = signal('');
   protected readonly success = signal('');
   protected readonly search = signal('');
-  protected readonly typeFilter = signal<ProductType | 'all'>('all');
+  protected readonly typeFilter = signal<ProductType[]>([]); // vacío = todos
   protected readonly editing = signal<CatalogItem | null>(null);
   protected readonly visibleUnits = computed(() => {
     const filter = this.typeFilter();
-    return filter === 'all' ? this.units() : this.units().filter((unit) => unit.item_type === filter);
+    return !filter.length ? this.units() : this.units().filter((unit) => filter.includes(unit.item_type));
   });
   protected readonly items = computed<CatalogItem[]>(() =>
     this.kind === 'units' ? this.visibleUnits() : this.described(),
@@ -102,7 +103,7 @@ export class ProductCatalogSettingsPage {
   }
 
   protected searchChanged(event: Event) { this.search.set((event.target as HTMLInputElement).value); this.load(); }
-  protected typeFilterChanged(value: string) { this.typeFilter.set(value as ProductType | 'all'); }
+  protected typeFilterChanged(values: string[]) { this.typeFilter.set(values as ProductType[]); }
 
   protected edit(item: CatalogItem) {
     this.editing.set(item);

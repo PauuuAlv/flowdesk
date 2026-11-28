@@ -7,14 +7,15 @@ import { Activity, ActivityStatus, ActivityType } from '../../core/models/activi
 import { PERMISSIONS } from '../../core/models/permission.models';
 import { ActivityService } from '../../core/services/activity.service';
 import { SessionService } from '../../core/services/session.service';
-import { Combobox, ComboOption } from '../../shared/ui/combobox/combobox';
+import { ComboOption } from '../../shared/ui/combobox/combobox';
+import { MultiSelect } from '../../shared/ui/multi-select/multi-select';
 import { ActivityCalendar, localDateKey, NO_PIPELINE_COLOR } from './activity-calendar';
 import { ActivityRemindersEditor, loadReminders, ReminderGroup, reminderPayload } from './activity-reminders-editor';
 import { DataTransfer } from '../../shared/ui/data-transfer/data-transfer';
 
 @Component({
   selector: 'app-activity-list-page',
-  imports: [RouterLink, Combobox, ActivityRemindersEditor, ActivityCalendar, DataTransfer],
+  imports: [RouterLink, ActivityRemindersEditor, ActivityCalendar, DataTransfer, MultiSelect],
   templateUrl: './activity-list-page.html',
   styleUrl: './activity-list-page.scss',
 })
@@ -39,43 +40,40 @@ export class ActivityListPage {
   protected readonly noPipelineColor = NO_PIPELINE_COLOR;
   // --- Filtros (aplican a la lista y al calendario) ---
   protected readonly search = signal('');
-  protected readonly status = signal<ActivityStatus | 'all' | 'overdue'>('all');
-  protected readonly type = signal<ActivityType | 'all'>('all');
-  protected readonly client = signal('all');
-  protected readonly owner = signal('all');
+  // Cada filtro admite varios valores; vacío = todos.
+  protected readonly status = signal<(ActivityStatus | 'overdue')[]>([]);
+  protected readonly type = signal<ActivityType[]>([]);
+  protected readonly client = signal<string[]>([]);
+  protected readonly owner = signal<string[]>([]);
   /** Fechas AAAA-MM-DD; con una sola se filtra desde/hasta ese día. */
   protected readonly dateFrom = signal('');
   protected readonly dateTo = signal('');
   protected readonly typeOptions: ComboOption[] = [
-    { value: 'all', label: 'Todos' },
     { value: 'call', label: 'Llamadas' },
     { value: 'email', label: 'Correos' },
     { value: 'meeting', label: 'Reuniones' },
     { value: 'task', label: 'Tareas' },
   ];
   protected readonly statusOptions: ComboOption[] = [
-    { value: 'all', label: 'Todos' },
     { value: 'pending', label: 'Pendientes' },
     { value: 'overdue', label: 'Vencidas' },
     { value: 'completed', label: 'Completadas' },
     { value: 'cancelled', label: 'Canceladas' },
   ];
-  protected readonly clientOptions = computed<ComboOption[]>(() => [
-    { value: 'all', label: 'Todos' },
-    ...this.distinct(this.items().map((x) => ({ value: x.client_id, label: x.client_name }))),
-  ]);
-  protected readonly ownerOptions = computed<ComboOption[]>(() => [
-    { value: 'all', label: 'Todos' },
-    ...this.distinct(this.items().map((x) => ({ value: x.owner_user_id, label: x.owner_name }))),
-  ]);
+  protected readonly clientOptions = computed<ComboOption[]>(() =>
+    this.distinct(this.items().map((x) => ({ value: x.client_id, label: x.client_name }))),
+  );
+  protected readonly ownerOptions = computed<ComboOption[]>(() =>
+    this.distinct(this.items().map((x) => ({ value: x.owner_user_id, label: x.owner_name }))),
+  );
   protected readonly activeFilters = computed(
     () =>
       [
         this.search().trim(),
-        this.status() !== 'all',
-        this.type() !== 'all',
-        this.client() !== 'all',
-        this.owner() !== 'all',
+        this.status().length,
+        this.type().length,
+        this.client().length,
+        this.owner().length,
         this.dateFrom(),
         this.dateTo(),
       ].filter(Boolean).length,
@@ -97,10 +95,10 @@ export class ActivityListPage {
     return this.items().filter((x) => {
       const day = localDateKey(x.scheduled_at);
       return (
-        (status === 'all' || (status === 'overdue' ? this.overdue(x) : x.status === status)) &&
-        (this.type() === 'all' || x.activity_type === this.type()) &&
-        (this.client() === 'all' || x.client_id === this.client()) &&
-        (this.owner() === 'all' || x.owner_user_id === this.owner()) &&
+        (!status.length || status.some((s) => (s === 'overdue' ? this.overdue(x) : x.status === s))) &&
+        (!this.type().length || this.type().includes(x.activity_type)) &&
+        (!this.client().length || this.client().includes(x.client_id)) &&
+        (!this.owner().length || this.owner().includes(x.owner_user_id)) &&
         (!from || day >= from) &&
         (!to || day <= to) &&
         (!q ||
@@ -162,8 +160,8 @@ export class ActivityListPage {
   protected setSearch(e: Event) {
     this.search.set((e.target as HTMLInputElement).value);
   }
-  protected setStatus(value: string) {
-    this.status.set(value as ActivityStatus | 'all' | 'overdue');
+  protected setStatus(values: string[]) {
+    this.status.set(values as (ActivityStatus | 'overdue')[]);
   }
   protected setDate(which: 'from' | 'to', event: Event) {
     const value = (event.target as HTMLInputElement).value;
@@ -177,10 +175,10 @@ export class ActivityListPage {
   }
   protected clearFilters() {
     this.search.set('');
-    this.status.set('all');
-    this.type.set('all');
-    this.client.set('all');
-    this.owner.set('all');
+    this.status.set([]);
+    this.type.set([]);
+    this.client.set([]);
+    this.owner.set([]);
     this.dateFrom.set('');
     this.dateTo.set('');
   }
@@ -207,8 +205,8 @@ export class ActivityListPage {
     const map = new Map(options.map((option) => [option.value, option]));
     return [...map.values()].sort((a, b) => a.label.localeCompare(b.label, 'es'));
   }
-  protected setType(value: string) {
-    this.type.set(value as ActivityType | 'all');
+  protected setType(values: string[]) {
+    this.type.set(values as ActivityType[]);
   }
   protected changeStatus(item: Activity, status: ActivityStatus) {
     this.service.updateStatus(item.id, status).subscribe({

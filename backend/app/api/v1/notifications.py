@@ -95,10 +95,14 @@ def save_push_subscription(payload: PushSubscriptionRequest, request: Request,
 @router.delete("/push/subscriptions", status_code=204)
 def delete_push_subscription(payload: PushUnsubscribeRequest, db: Session = Depends(get_db),
                              current_user: User = Depends(get_current_user)):
+    """Desvincula este navegador: deja de recibir avisos de cualquier cuenta.
+
+    El endpoint solo lo conoce el navegador que lo generó, así que basta con él;
+    así se libera también una suscripción que quedó asociada a otra cuenta que
+    no cerró sesión en este navegador.
+    """
     db.query(PushSubscription).filter(
         PushSubscription.endpoint == payload.endpoint,
-        PushSubscription.tenant_id == current_user.tenant_id,
-        PushSubscription.user_id == current_user.id,
     ).delete(synchronize_session=False)
     db.commit()
 

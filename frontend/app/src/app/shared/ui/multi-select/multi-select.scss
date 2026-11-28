@@ -3,8 +3,10 @@
 :host {
   position: relative;
   display: block;
+  box-sizing: border-box;
   width: 100%;
   min-width: 0;
+  padding: 0.7rem 0.8rem;
   color: var(--flowdesk-ink);
   background: #fff;
   border: 1px solid #cbd1d8;
@@ -17,26 +19,49 @@
   box-shadow: 0 0 0 3px rgb(38 82 107 / 14%);
 }
 
-.trigger {
+.control {
   display: flex;
   align-items: center;
   gap: 0.4rem;
+  min-width: 0;
+  cursor: text;
+}
+
+.field {
+  flex: 1 1 auto;
+  min-width: 0;
   width: 100%;
   padding: 0;
   margin: 0;
   color: inherit;
   font: inherit;
-  text-align: left;
-  cursor: pointer;
+  text-overflow: ellipsis;
   background: transparent;
   border: 0;
   outline: none;
 
+  &::placeholder {
+    color: var(--flowdesk-muted);
+    opacity: 0.85;
+  }
+}
+
+.chevron {
+  display: grid;
+  flex: 0 0 auto;
+  width: 1.25rem;
+  height: 1.25rem;
+  place-items: center;
+  padding: 0;
+  margin: 0;
+  color: var(--flowdesk-muted);
+  cursor: pointer;
+  background: transparent;
+  border: 0;
+
   svg {
-    flex: 0 0 auto;
     width: 1rem;
     height: 1rem;
-    color: var(--flowdesk-muted);
     fill: none;
     stroke: currentColor;
     stroke-width: 1.8;
@@ -46,20 +71,8 @@
   }
 }
 
-:host(.is-open) .trigger svg {
+:host(.is-open) .chevron svg {
   transform: rotate(180deg);
-}
-
-.summary {
-  flex: 1 1 auto;
-  min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-
-  &.placeholder {
-    color: var(--flowdesk-ink);
-  }
 }
 
 .count {
@@ -89,21 +102,6 @@
   border: 1px solid var(--flowdesk-border);
   border-radius: 0.55rem;
   box-shadow: 0 0.8rem 2rem rgb(20 42 56 / 14%);
-}
-
-.search {
-  box-sizing: border-box;
-  width: 100%;
-  padding: 0.5rem 0.6rem !important;
-  margin-bottom: 0.3rem;
-  font: inherit;
-  border: 1px solid var(--flowdesk-border) !important;
-  border-radius: 0.4rem;
-  outline: none;
-
-  &:focus {
-    border-color: var(--flowdesk-navy-light) !important;
-  }
 }
 
 .actions {

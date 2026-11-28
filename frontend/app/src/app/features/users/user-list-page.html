@@ -25,22 +25,22 @@
     /></label>
     <label
       ><span>Estado</span
-      ><app-combobox
-        [options]="[{ value: 'all', label: 'Todos' }, { value: 'active', label: 'Activos' }, { value: 'pending', label: 'Pendientes' }, { value: 'inactive', label: 'Inactivos' }]"
-        [selectedValue]="statusFilter()"
+      ><app-multi-select
+        [options]="[{ value: 'active', label: 'Activos' }, { value: 'pending', label: 'Pendientes' }, { value: 'inactive', label: 'Inactivos' }]"
+        [selected]="statusFilter()"
         ariaLabel="Estado"
-        placeholder="Estado"
-        (selected)="updateStatus($event)"
+        placeholder="Todos los estados"
+        (selectedChange)="updateStatus($event)"
       /></label
     >
     <label
       ><span>Rol</span
-      ><app-combobox
+      ><app-multi-select
         [options]="roleFilterOptions()"
-        [selectedValue]="roleFilter()"
+        [selected]="roleFilter()"
         ariaLabel="Rol"
-        placeholder="Rol"
-        (selected)="updateRoleFilter($event)"
+        placeholder="Todos los roles"
+        (selectedChange)="updateRoleFilter($event)"
       /></label
     >
   </section>

@@ -55,12 +55,12 @@
       <label><span>Buscar</span><input type="search" placeholder="Nombre, correo o rol" (input)="setSearch($event)" /></label>
       <label>
         <span>Estado</span>
-        <app-combobox
-        [options]="[{ value: 'all', label: 'Todos' }, { value: 'active', label: 'Activas' }, { value: 'pending', label: 'Invitación pendiente' }, { value: 'inactive', label: 'Desactivadas' }]"
-        [selectedValue]="memberFilter()"
+        <app-multi-select
+        [options]="[{ value: 'active', label: 'Activas' }, { value: 'pending', label: 'Invitación pendiente' }, { value: 'inactive', label: 'Desactivadas' }]"
+        [selected]="memberFilter()"
         ariaLabel="Estado"
-        placeholder="Estado"
-        (selected)="setMemberFilter($event)"
+        placeholder="Todos los estados"
+        (selectedChange)="setMemberFilter($event)"
       />
       </label>
     </div>
